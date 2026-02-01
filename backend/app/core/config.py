@@ -1,0 +1,53 @@
+"""
+Application configuration using Pydantic Settings.
+Environment variables are loaded from .env file.
+"""
+
+from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+    
+    # Application
+    app_name: str = "ActiveHQ"
+    app_version: str = "1.0.0"
+    debug: bool = False
+    environment: str = "development"  # development, staging, production
+    
+    # Database (using psycopg3 driver)
+    database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/activehq"
+    db_echo: bool = False  # Log SQL queries (disable in production)
+    
+    # JWT Authentication
+    jwt_secret_key: str = "CHANGE-THIS-IN-PRODUCTION-USE-STRONG-SECRET"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24  # 24 hours
+    refresh_token_expire_days: int = 30
+    
+    # Security
+    password_min_length: int = 8
+    bcrypt_rounds: int = 12
+    
+    # CORS (update for production)
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    
+    # Pagination defaults
+    default_page_size: int = 20
+    max_page_size: int = 100
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Cached settings instance."""
+    return Settings()
+
+
+settings = get_settings()
