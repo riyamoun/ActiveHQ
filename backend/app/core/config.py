@@ -31,11 +31,42 @@ class Settings(BaseSettings):
     @property
     def database_url_sqlalchemy(self) -> str:
         """Get SQLAlchemy-compatible database URL (converts postgres:// to postgresql+psycopg://)."""
-        url = self.database_url
+        import urllib.parse
+        
+        url = self.database_url.strip()
+        
+        # Debug: print URL scheme (safe to log)
+        scheme = url.split("://")[0] if "://" in url else "unknown"
+        print(f"[Config] Database URL scheme: {scheme}, length: {len(url)}")
+        
+        # Handle different postgres URL formats
         if url.startswith("postgres://"):
-            return url.replace("postgres://", "postgresql+psycopg://", 1)
-        if url.startswith("postgresql://") and "+psycopg" not in url:
-            return url.replace("postgresql://", "postgresql+psycopg://", 1)
+            url = "postgresql+psycopg://" + url[11:]
+        elif url.startswith("postgresql://") and "+psycopg" not in url:
+            url = "postgresql+psycopg://" + url[13:]
+        
+        # Try to parse and re-encode to handle special characters in password
+        try:
+            parsed = urllib.parse.urlparse(url)
+            if parsed.password:
+                # URL-encode the password to handle special characters
+                encoded_password = urllib.parse.quote(parsed.password, safe='')
+                # Reconstruct the URL with encoded password
+                if parsed.port:
+                    netloc = f"{parsed.username}:{encoded_password}@{parsed.hostname}:{parsed.port}"
+                else:
+                    netloc = f"{parsed.username}:{encoded_password}@{parsed.hostname}"
+                url = urllib.parse.urlunparse((
+                    parsed.scheme,
+                    netloc,
+                    parsed.path,
+                    parsed.params,
+                    parsed.query,
+                    parsed.fragment
+                ))
+        except Exception as e:
+            print(f"[Config] Warning: Could not parse/encode database URL: {e}")
+        
         return url
     
     # JWT Authentication
