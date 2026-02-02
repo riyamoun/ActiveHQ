@@ -6,9 +6,9 @@ import { getErrorMessage } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { Sparkles, Eye, EyeOff } from 'lucide-react'
 
-// Demo credentials
-const DEMO_EMAIL = 'owner@fitfirst.com'
-const DEMO_PASSWORD = 'demo123456'
+// Demo credentials (from seed data)
+const DEMO_EMAIL = 'owner@fitzonegym.com'
+const DEMO_PASSWORD = 'Owner@123'
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams()
