@@ -217,8 +217,8 @@ APP_VERSION=1.0.0
 ENVIRONMENT=development
 DEBUG=true
 
-# CORS
-CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+# CORS (comma-separated, no spaces around commas)
+CORS_ORIGINS_STR=http://localhost:5173,http://localhost:3000
 ```
 
 ### Frontend (.env)

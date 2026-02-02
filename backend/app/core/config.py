@@ -4,8 +4,7 @@ Environment variables are loaded from .env file.
 """
 
 from functools import lru_cache
-from typing import Union
-from pydantic import field_validator
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,17 +37,14 @@ class Settings(BaseSettings):
     password_min_length: int = 8
     bcrypt_rounds: int = 12
     
-    # CORS (update for production) - accepts comma-separated string or list
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    # CORS - stored as comma-separated string, accessed as list via property
+    cors_origins_str: str = "http://localhost:3000,http://localhost:5173"
     
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v: Union[str, list[str]]) -> list[str]:
-        """Parse CORS origins from comma-separated string or list."""
-        if isinstance(v, str):
-            # Handle comma-separated string
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
+    @computed_field
+    @property
+    def cors_origins(self) -> list[str]:
+        """Parse CORS origins from comma-separated string."""
+        return [origin.strip() for origin in self.cors_origins_str.split(",") if origin.strip()]
     
     # Pagination defaults
     default_page_size: int = 20
