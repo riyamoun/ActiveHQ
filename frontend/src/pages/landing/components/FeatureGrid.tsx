@@ -80,7 +80,7 @@ export function FeatureGrid() {
 
         {/* Feature cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, i) => (
+          {features.map((feature) => (
             <div
               key={feature.title}
               className="group relative rounded-3xl bg-gradient-to-b from-slate-800/50 to-slate-900/50 border border-slate-700/50 p-8 transition-all duration-500 hover:border-slate-600/50 hover:scale-[1.02] overflow-hidden"

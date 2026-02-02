@@ -9,7 +9,7 @@ export function ArticlesPage() {
         {articles.map((article) => (
           <Link
             key={article.id}
-            to={/articles/}
+            to={`/articles/${article.id}`}
             className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700"
           >
             <div className="text-xs text-slate-500">{article.category}</div>

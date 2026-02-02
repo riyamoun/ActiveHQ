@@ -5,7 +5,6 @@ import {
   Calendar, 
   Bell, 
   ArrowUpRight,
-  CheckCircle2,
   Clock,
   Dumbbell
 } from 'lucide-react';

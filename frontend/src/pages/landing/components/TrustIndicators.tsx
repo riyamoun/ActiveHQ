@@ -58,7 +58,7 @@ export function TrustIndicators() {
 
         {/* Testimonials */}
         <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
+          {testimonials.map((t) => (
             <div
               key={t.name}
               className="group relative rounded-3xl bg-gradient-to-b from-slate-800/50 to-slate-800/20 border border-slate-700/50 p-8 transition-all hover:border-emerald-500/30"
@@ -94,7 +94,7 @@ export function TrustIndicators() {
         <div className="mt-20 text-center">
           <p className="text-slate-500 text-sm mb-6 uppercase tracking-wider">Powering gyms in</p>
           <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4">
-            {['Bangalore', 'Mumbai', 'Delhi', 'Pune', 'Hyderabad', 'Chennai'].map((city, i) => (
+            {['Bangalore', 'Mumbai', 'Delhi', 'Pune', 'Hyderabad', 'Chennai'].map((city) => (
               <span 
                 key={city} 
                 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-slate-400 to-slate-300"

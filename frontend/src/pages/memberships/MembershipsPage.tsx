@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { format } from 'date-fns'
-import type { MembershipStatus, MembershipSummary } from '@/types'
+import type { MembershipStatus } from '@/types'
 
 export default function MembershipsPage() {
   const navigate = useNavigate()

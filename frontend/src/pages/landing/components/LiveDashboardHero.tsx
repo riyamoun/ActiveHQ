@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { 
   Users, 
   IndianRupee, 
-  Calendar, 
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -153,7 +152,7 @@ export function LiveDashboardHero() {
                   { day: 'Fri', am: 38, pm: 45 },
                   { day: 'Sat', am: 45, pm: 52 },
                   { day: 'Sun', am: 32, pm: 28 },
-                ].map((d, i) => (
+                ].map((d) => (
                   <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
                     <div className="w-full flex gap-0.5 h-24 items-end">
                       <div

@@ -4,7 +4,6 @@ import type {
   MemberWithMembership,
   MemberListResponse,
   MemberCreate,
-  ExpiringMemberInfo,
 } from '@/types'
 
 export const memberService = {

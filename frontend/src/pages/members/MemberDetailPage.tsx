@@ -19,10 +19,8 @@ import {
   Phone,
   Mail,
   Calendar,
-  CreditCard,
   UserCheck,
   Plus,
-  Clock,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'

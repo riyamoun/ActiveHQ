@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { gymService, authService } from '@/services/authService'
 import { getErrorMessage } from '@/lib/api'
@@ -11,7 +11,6 @@ import toast from 'react-hot-toast'
 
 export default function SettingsPage() {
   const { gym, user, setGym } = useAuthStore()
-  const queryClient = useQueryClient()
 
   // Gym form state
   const [gymForm, setGymForm] = useState({
