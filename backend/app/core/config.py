@@ -4,7 +4,7 @@ Environment variables are loaded from .env file.
 """
 
 from functools import lru_cache
-from pydantic import computed_field
+from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +26,16 @@ class Settings(BaseSettings):
     # Database (using psycopg3 driver)
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/activehq"
     db_echo: bool = False  # Log SQL queries (disable in production)
+    
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def fix_database_url(cls, v: str) -> str:
+        """Convert postgres:// to postgresql+psycopg:// for SQLAlchemy 2.0 compatibility."""
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+psycopg://", 1)
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        return v
     
     # JWT Authentication
     jwt_secret_key: str = "CHANGE-THIS-IN-PRODUCTION-USE-STRONG-SECRET"
