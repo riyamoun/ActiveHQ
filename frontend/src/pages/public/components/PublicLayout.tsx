@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogIn, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navLinks = [
@@ -67,17 +67,29 @@ export function PublicLayout() {
               ))}
             </nav>
 
-            {/* CTA */}
-            <div className="hidden md:block">
+            {/* Login Options */}
+            <div className="hidden md:flex items-center gap-4">
               <Link
-                to="/contact"
-                className={`px-6 py-2.5 text-sm tracking-wide rounded-full border transition-all ${
+                to="/login"
+                className={`flex items-center gap-2 px-4 py-2 text-sm tracking-wide transition-colors ${
                   isHome && !scrolled
-                    ? 'border-white/30 text-white hover:bg-white hover:text-slate-900'
-                    : 'border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
+                    ? 'text-white/80 hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Get Started
+                <LogIn className="w-4 h-4" />
+                Owner Login
+              </Link>
+              <Link
+                to="/login?demo=true"
+                className={`flex items-center gap-2 px-5 py-2.5 text-sm tracking-wide rounded-full border transition-all ${
+                  isHome && !scrolled
+                    ? 'border-emerald-400 text-emerald-400 hover:bg-emerald-400 hover:text-white'
+                    : 'border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                Try Demo
               </Link>
             </div>
             
@@ -110,13 +122,23 @@ export function PublicLayout() {
                   {link.label}
                 </NavLink>
               ))}
-              <Link
-                to="/contact"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block w-full py-3 bg-slate-900 text-white text-center rounded-full mt-6"
-              >
-                Get Started
-              </Link>
+              <div className="border-t border-slate-100 mt-4 pt-4 space-y-3">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 py-2 text-slate-600"
+                >
+                  <LogIn className="w-5 h-5" />
+                  Owner Login
+                </Link>
+                <Link
+                  to="/login?demo=true"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full py-3 bg-emerald-600 text-white text-center rounded-full"
+                >
+                  Try Demo
+                </Link>
+              </div>
             </div>
           </div>
         )}
@@ -137,7 +159,7 @@ export function PublicLayout() {
       ═══════════════════════════════════════════════════════════════════ */}
       <footer className="bg-slate-950 text-white">
         <div className="max-w-7xl mx-auto px-8 py-20">
-          <div className="grid md:grid-cols-4 gap-12">
+          <div className="grid md:grid-cols-5 gap-12">
             {/* Brand */}
             <div className="md:col-span-2">
               <div className="text-2xl mb-6">
