@@ -42,12 +42,12 @@ def register_gym(
     db: DbDep,
 ):
     """
-    Register a new gym with owner account.
+    Register a new gym with admin account.
     
     This is the onboarding endpoint for new gyms.
     Creates:
     - New gym (tenant)
-    - Owner user account
+    - Admin user account
     - Returns auth tokens
     """
     service = AuthService(db)

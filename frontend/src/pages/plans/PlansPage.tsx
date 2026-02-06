@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { planService } from '@/services/planService'
 import { getErrorMessage } from '@/lib/api'
@@ -192,7 +192,7 @@ function PlanModal({
   })
 
   // Reset form when plan changes
-  useState(() => {
+  useEffect(() => {
     if (plan) {
       setFormData({
         name: plan.name,
@@ -208,7 +208,7 @@ function PlanModal({
         price: 0,
       })
     }
-  })
+  }, [plan])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

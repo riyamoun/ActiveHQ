@@ -202,13 +202,16 @@ class AuthService:
     
     def register_gym(self, request: GymRegister) -> GymRegisterResponse:
         """
-        Register a new gym with owner user.
+        Register a new gym with admin user.
         
         Args:
             request: Gym registration data
             
         Returns:
             GymRegisterResponse with gym, user, and tokens
+            
+        Raises:
+            HTTPException: If gym email or user email already exists
         """
         # Generate unique slug
         base_slug = self._generate_slug(request.gym_name)

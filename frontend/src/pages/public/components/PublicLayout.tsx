@@ -78,7 +78,18 @@ export function PublicLayout() {
                 }`}
               >
                 <LogIn className="w-4 h-4" />
-                Owner Login
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className={`flex items-center gap-2 px-4 py-2 text-sm tracking-wide transition-colors ${
+                  isHome && !scrolled
+                    ? 'text-white/80 hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                Register
               </Link>
               <Link
                 to="/login?demo=true"
@@ -129,7 +140,15 @@ export function PublicLayout() {
                   className="flex items-center gap-2 py-2 text-slate-600"
                 >
                   <LogIn className="w-5 h-5" />
-                  Owner Login
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 py-2 text-slate-600"
+                >
+                  <User className="w-5 h-5" />
+                  Register
                 </Link>
                 <Link
                   to="/login?demo=true"

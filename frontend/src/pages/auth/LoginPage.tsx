@@ -3,12 +3,15 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { authService, gymService } from '@/services/authService'
 import { getErrorMessage } from '@/lib/api'
+import { validators } from '@/lib/validation'
+import { AUTH_CONSTANTS } from '@/constants'
 import toast from 'react-hot-toast'
 import { Sparkles, Eye, EyeOff } from 'lucide-react'
 
 // Demo credentials (from seed data)
-const DEMO_EMAIL = 'owner@fitzonegym.com'
-const DEMO_PASSWORD = 'Owner@123'
+const DEMO_CREDENTIALS = AUTH_CONSTANTS.DEMO_CREDENTIALS
+const DEMO_EMAIL = DEMO_CREDENTIALS.email
+const DEMO_PASSWORD = DEMO_CREDENTIALS.password
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams()
