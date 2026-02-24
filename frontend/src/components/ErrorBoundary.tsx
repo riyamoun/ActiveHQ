@@ -36,7 +36,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             <p className="text-slate-600 mb-4">
               An unexpected error occurred. Please refresh the page and try again.
             </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
                 <summary className="cursor-pointer font-medium mb-2">Error details</summary>
                 <pre className="overflow-auto">{this.state.error.toString()}</pre>

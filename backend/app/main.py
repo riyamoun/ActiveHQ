@@ -5,7 +5,7 @@ Main FastAPI application entry point.
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
@@ -62,15 +62,13 @@ async def health_check():
 
 
 @app.get("/setup-database")
-async def setup_database():
+async def setup_database(setup_key: str = Query(default="")):
     """
     One-time database setup endpoint.
     Creates tables and seeds demo data.
     Call this once after deployment: GET /setup-database
     """
-    import sys
-    import os
-    from datetime import date, timedelta, datetime, timezone
+    from datetime import date, timedelta
     from decimal import Decimal
     import random
     
@@ -80,12 +78,17 @@ async def setup_database():
     from app.core.config import settings
     from app.core.security import hash_password
     from app.core.base import Base
-    from app.models import Gym, User, Member, Plan, Membership, Payment, Attendance
+    from app.models import Gym, User, Member, Plan, Membership
     from app.models.enums import (
         SubscriptionStatus, BillingCycle, UserRole, Gender,
         MembershipStatus, PaymentMode
     )
     
+    if not settings.setup_database_key:
+        raise HTTPException(status_code=403, detail="Database setup endpoint is disabled")
+    if setup_key != settings.setup_database_key:
+        raise HTTPException(status_code=403, detail="Invalid setup key")
+
     try:
         engine = create_engine(settings.database_url_sqlalchemy, echo=False)
         
