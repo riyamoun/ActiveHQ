@@ -71,3 +71,33 @@ class NotificationStatus(str, enum.Enum):
     PENDING = "pending"
     SENT = "sent"
     FAILED = "failed"
+
+
+class DeviceVendor(str, enum.Enum):
+    """Supported biometric device vendors."""
+    ESSL = "essl"
+    GENERIC = "generic"
+
+
+class BiometricEventType(str, enum.Enum):
+    """Biometric attendance event type."""
+    CHECK_IN = "check_in"
+    CHECK_OUT = "check_out"
+    UNKNOWN = "unknown"
+
+
+class BiometricEventStatus(str, enum.Enum):
+    """Ingestion lifecycle status for biometric events."""
+    PENDING = "pending"
+    PROCESSED = "processed"
+    DUPLICATE = "duplicate"
+    CONFLICT = "conflict"
+    FAILED = "failed"
+
+
+class CampaignTriggerType(str, enum.Enum):
+    """Automation trigger categories."""
+    RENEWAL_REMINDER = "renewal_reminder"
+    PAYMENT_FOLLOWUP = "payment_followup"
+    INACTIVITY_NUDGE = "inactivity_nudge"
+    CUSTOM = "custom"

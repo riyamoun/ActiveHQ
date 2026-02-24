@@ -250,6 +250,8 @@ from app.payments.router import router as payments_router
 from app.attendance.router import router as attendance_router
 from app.reports.router import router as reports_router
 from app.public.router import router as public_router
+from app.biometric.router import router as biometric_router
+from app.automation.router import router as automation_router
 
 # Include all routers
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
@@ -261,3 +263,5 @@ app.include_router(payments_router, prefix="/api/v1/payments", tags=["Payments"]
 app.include_router(attendance_router, prefix="/api/v1/attendance", tags=["Attendance"])
 app.include_router(reports_router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(public_router, prefix="/api/v1/public", tags=["Public"])
+app.include_router(biometric_router, prefix="/api/v1/biometric", tags=["Biometric"])
+app.include_router(automation_router, prefix="/api/v1/automation", tags=["Automation"])

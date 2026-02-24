@@ -16,6 +16,10 @@ from app.models.enums import (
     NotificationType,
     NotificationChannel,
     NotificationStatus,
+    DeviceVendor,
+    BiometricEventType,
+    BiometricEventStatus,
+    CampaignTriggerType,
 )
 from app.models.gym import Gym
 from app.models.user import User
@@ -26,6 +30,9 @@ from app.models.payment import Payment
 from app.models.attendance import Attendance
 from app.models.notification import Notification
 from app.models.demo_request import DemoRequest
+from app.models.biometric_device import BiometricDevice
+from app.models.biometric_event import BiometricEvent
+from app.models.automation_campaign import AutomationCampaign, CampaignDeliveryLog
 
 __all__ = [
     # Enums
@@ -38,6 +45,10 @@ __all__ = [
     "NotificationType",
     "NotificationChannel",
     "NotificationStatus",
+    "DeviceVendor",
+    "BiometricEventType",
+    "BiometricEventStatus",
+    "CampaignTriggerType",
     # Models
     "Gym",
     "User",
@@ -48,4 +59,8 @@ __all__ = [
     "Attendance",
     "Notification",
     "DemoRequest",
+    "BiometricDevice",
+    "BiometricEvent",
+    "AutomationCampaign",
+    "CampaignDeliveryLog",
 ]
