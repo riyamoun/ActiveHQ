@@ -79,6 +79,9 @@ class Settings(BaseSettings):
     password_min_length: int = 8
     bcrypt_rounds: int = 12
     setup_database_key: str = ""
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.1
+    lead_webhook_url: str = ""
     
     # CORS - stored as comma-separated string, accessed as list via property
     cors_origins_str: str = "http://localhost:3000,http://localhost:5173"

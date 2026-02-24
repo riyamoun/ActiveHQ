@@ -63,7 +63,8 @@ export default function RegisterPage() {
     setIsLoading(true)
     
     try {
-      const { confirm_password, ...registerData } = formData
+      const registerData = { ...formData }
+      delete (registerData as { confirm_password?: string }).confirm_password
       const response = await authService.register(registerData)
       
       useAuthStore.getState().setTokens(

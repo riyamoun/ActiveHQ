@@ -5,10 +5,13 @@ Main FastAPI application entry point.
 
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.core.config import settings
+from app.core.database import engine
 
 
 @asynccontextmanager
@@ -20,6 +23,13 @@ async def lifespan(app: FastAPI):
     # Startup
     print(f"🚀 Starting {settings.app_name} v{settings.app_version}")
     print(f"   Environment: {settings.environment}")
+    if settings.sentry_dsn:
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            traces_sample_rate=settings.sentry_traces_sample_rate,
+            environment=settings.environment,
+        )
+        print("   Sentry monitoring enabled")
     yield
     # Shutdown
     print(f"👋 Shutting down {settings.app_name}")
@@ -59,6 +69,25 @@ async def root():
 async def health_check():
     """Health check endpoint for monitoring."""
     return {"status": "healthy"}
+
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """Detailed health check for uptime monitors and diagnostics."""
+    db_status = "healthy"
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "unhealthy"
+
+    return {
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "services": {
+            "api": "healthy",
+            "database": db_status,
+        },
+    }
 
 
 @app.get("/setup-database")

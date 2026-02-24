@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Menu, X, LogIn, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 const navLinks = [
   { to: '/', label: 'Home' },
@@ -93,6 +94,7 @@ export function PublicLayout() {
               </Link>
               <Link
                 to="/login?demo=true"
+                onClick={() => trackEvent('cta_click', { location: 'header', cta: 'try_demo' })}
                 className={`flex items-center gap-2 px-5 py-2.5 text-sm tracking-wide rounded-full border transition-all ${
                   isHome && !scrolled
                     ? 'border-emerald-400 text-emerald-400 hover:bg-emerald-400 hover:text-white'

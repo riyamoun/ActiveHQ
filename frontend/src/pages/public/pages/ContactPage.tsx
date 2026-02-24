@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Phone, Mail, MapPin, Check } from 'lucide-react';
-import axios from 'axios';
+import { api } from '@/lib/api';
+import { SeoMeta } from '@/components/seo/SeoMeta';
+import { buildLeadSource, trackEvent } from '@/lib/analytics';
 
 export function ContactPage() {
   const [form, setForm] = useState({
@@ -22,16 +24,19 @@ export function ContactPage() {
     e.preventDefault();
     setStatus('loading');
     setErrorMsg('');
+    trackEvent('demo_request_submit_attempt', { city: form.city });
 
     try {
-      await axios.post('/api/v1/public/demo-request', {
+      await api.post('/public/demo-request', {
         ...form,
-        source: 'public_site',
+        source: buildLeadSource('public_site'),
       });
       setStatus('success');
+      trackEvent('demo_request_submit_success', { city: form.city });
     } catch (err) {
       setStatus('error');
       setErrorMsg('Something went wrong. Please try again or call us directly.');
+      trackEvent('demo_request_submit_failed', { city: form.city });
     }
   };
 
@@ -61,6 +66,12 @@ export function ContactPage() {
 
   return (
     <div className="bg-white text-slate-900">
+      <SeoMeta
+        title="Request a Demo | ActiveHQ"
+        description="Book a personalized ActiveHQ demo for your gym. Get setup, pricing, and growth automation walkthrough."
+        path="/contact"
+      />
+
       {/* ═══════════════════════════════════════════════════════════════════
           HERO
       ═══════════════════════════════════════════════════════════════════ */}

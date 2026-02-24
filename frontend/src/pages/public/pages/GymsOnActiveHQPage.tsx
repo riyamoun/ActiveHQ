@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
+import { SeoMeta } from '@/components/seo/SeoMeta';
+import { trackEvent } from '@/lib/analytics';
 
 const stories = [
   {
@@ -39,6 +41,12 @@ const stories = [
 export function GymsOnActiveHQPage() {
   return (
     <div className="bg-white text-slate-900">
+      <SeoMeta
+        title="Gyms Using ActiveHQ | Success Stories"
+        description="Explore real gym success stories from Gurgaon using ActiveHQ for attendance, payments, and member retention."
+        path="/gyms"
+      />
+
       {/* ═══════════════════════════════════════════════════════════════════
           HERO
       ═══════════════════════════════════════════════════════════════════ */}
@@ -176,6 +184,7 @@ export function GymsOnActiveHQPage() {
           </h2>
           <Link
             to="/contact"
+            onClick={() => trackEvent('cta_click', { location: 'stories_final_cta', cta: 'get_started' })}
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-full hover:bg-emerald-400 hover:text-white transition-all"
           >
             Get Started <ArrowRight className="w-4 h-4" />

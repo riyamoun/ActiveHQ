@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://active-hq-git-main-riyamouns-projects.vercel.app/sitemap.xml

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore'
 import { authService, gymService } from '@/services/authService'
 import { getErrorMessage } from '@/lib/api'
 import { AUTH_CONSTANTS } from '@/constants'
+import { trackEvent } from '@/lib/analytics'
 import toast from 'react-hot-toast'
 import { Sparkles, Eye, EyeOff } from 'lucide-react'
 
@@ -69,9 +70,11 @@ export default function LoginPage() {
       login(user, gym, tokens.access_token, tokens.refresh_token)
       
       toast.success('Welcome back!')
+      trackEvent('login_success', { role: user.role })
       navigate('/dashboard')
     } catch (error) {
       toast.error(getErrorMessage(error))
+      trackEvent('login_failed')
     } finally {
       setIsLoading(false)
     }

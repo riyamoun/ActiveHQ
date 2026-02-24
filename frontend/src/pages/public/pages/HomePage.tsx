@@ -11,10 +11,41 @@ import {
   Zap,
   Shield
 } from 'lucide-react';
+import { SeoMeta } from '@/components/seo/SeoMeta';
+import { trackEvent } from '@/lib/analytics';
+
+const orgSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'ActiveHQ',
+  url: 'https://active-hq-git-main-riyamouns-projects.vercel.app',
+  email: 'hello@activehq.in',
+  telephone: '+91 98765 43210',
+};
+
+const softwareSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'ActiveHQ',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    priceCurrency: 'INR',
+    price: '15000',
+  },
+};
 
 export function HomePage() {
   return (
     <div className="bg-white text-slate-900">
+      <SeoMeta
+        title="ActiveHQ | Gym Management Software for Indian Gym Owners"
+        description="Manage memberships, payments, attendance, and renewals in one AI-ready gym operating system built for Indian fitness businesses."
+        path="/"
+        schemas={[orgSchema, softwareSchema]}
+      />
+
       {/* HERO */}
       <section className="relative min-h-screen flex items-center">
         <div className="absolute inset-0">
@@ -44,6 +75,7 @@ export function HomePage() {
             <div className="flex items-center gap-6">
               <Link
                 to="/contact"
+                onClick={() => trackEvent('cta_click', { location: 'home_hero', cta: 'get_started' })}
                 className="px-8 py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-emerald-400 hover:text-white transition-colors duration-200"
               >
                 Get Started
@@ -437,6 +469,7 @@ export function HomePage() {
 
             <Link
               to="/contact"
+              onClick={() => trackEvent('cta_click', { location: 'home_pricing', cta: 'start_free_trial' })}
               className="block w-full py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-emerald-400 hover:text-white transition-colors duration-200"
             >
               Start Free Trial
@@ -463,6 +496,7 @@ export function HomePage() {
           </h2>
           <Link
             to="/contact"
+            onClick={() => trackEvent('cta_click', { location: 'home_final_cta', cta: 'get_started' })}
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-emerald-400 hover:text-white transition-colors duration-200"
           >
             Get Started <ArrowRight className="w-4 h-4" />

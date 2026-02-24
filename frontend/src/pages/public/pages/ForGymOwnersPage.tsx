@@ -1,9 +1,17 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { SeoMeta } from '@/components/seo/SeoMeta';
+import { trackEvent } from '@/lib/analytics';
 
 export function ForGymOwnersPage() {
   return (
     <div className="bg-white text-slate-900">
+      <SeoMeta
+        title="For Gym Owners | ActiveHQ"
+        description="See how ActiveHQ improves renewals, tracks payments, and streamlines day-to-day operations for Indian gym owners."
+        path="/for-gym-owners"
+      />
+
       {/* ═══════════════════════════════════════════════════════════════════
           HERO - Full width image
       ═══════════════════════════════════════════════════════════════════ */}
@@ -212,6 +220,7 @@ export function ForGymOwnersPage() {
 
             <Link
               to="/contact"
+              onClick={() => trackEvent('cta_click', { location: 'for_owners_pricing', cta: 'start_free_trial' })}
               className="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-full hover:bg-emerald-600 transition-all"
             >
               Start Free Trial <ArrowRight className="w-4 h-4" />
@@ -240,6 +249,7 @@ export function ForGymOwnersPage() {
           </h2>
           <Link
             to="/contact"
+            onClick={() => trackEvent('cta_click', { location: 'for_owners_final_cta', cta: 'get_started' })}
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-full hover:bg-emerald-400 hover:text-white transition-all"
           >
             Get Started <ArrowRight className="w-4 h-4" />
