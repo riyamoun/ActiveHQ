@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.config import settings
-from app.core.database import get_db
 from app.auth.dependencies import TenantDep, DbDep, require_manager_or_above
 from app.automation.cron_runner import run_renewal_and_payment_automation
 from app.automation.reminder_list import get_reminder_list
@@ -89,8 +88,8 @@ def reminder_list(
 
 @router.get("/run-cron")
 def run_cron(
+    db: DbDep,
     secret: str = Query(..., description="CRON_SECRET"),
-    db: DbDep = Depends(get_db),
 ):
     """
     Run renewal + payment-due automation (WhatsApp/SMS).
