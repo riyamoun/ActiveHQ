@@ -21,7 +21,8 @@ class BillingCycle(str, enum.Enum):
 
 
 class UserRole(str, enum.Enum):
-    """Staff user roles within a gym."""
+    """User roles: super_admin (platform), owner/manager/staff (gym-scoped)."""
+    SUPER_ADMIN = "super_admin"
     OWNER = "owner"
     MANAGER = "manager"
     STAFF = "staff"

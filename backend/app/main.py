@@ -8,10 +8,13 @@ from contextlib import asynccontextmanager
 import sentry_sdk
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine
+from app.core.rate_limit import limiter
 
 
 @asynccontextmanager
@@ -44,6 +47,8 @@ app = FastAPI(
     docs_url="/docs" if settings.debug else None,  # Disable docs in production
     redoc_url="/redoc" if settings.debug else None,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware
 app.add_middleware(
@@ -67,26 +72,36 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for monitoring."""
+    """Liveness: API is up. Use for process managers."""
     return {"status": "healthy"}
+
+
+@app.get("/health/ready")
+async def readiness_check():
+    """
+    Readiness: API + DB are up. Returns 503 if DB unreachable.
+    Use for load balancers / k8s readinessProbe.
+    """
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    return {"status": "ready"}
 
 
 @app.get("/health/detailed")
 async def detailed_health_check():
-    """Detailed health check for uptime monitors and diagnostics."""
+    """Detailed health for diagnostics (includes DB status)."""
     db_status = "healthy"
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
     except Exception:
         db_status = "unhealthy"
-
     return {
         "status": "healthy" if db_status == "healthy" else "degraded",
-        "services": {
-            "api": "healthy",
-            "database": db_status,
-        },
+        "services": {"api": "healthy", "database": db_status},
     }
 
 

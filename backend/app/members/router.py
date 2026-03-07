@@ -4,9 +4,9 @@ Member management API endpoints.
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.auth.dependencies import TenantDep, DbDep
+from app.auth.dependencies import TenantDep, DbDep, require_manager_or_above, require_owner
 from app.members.schemas import (
     MemberCreate,
     MemberUpdate,
@@ -25,12 +25,14 @@ def create_member(
     request: MemberCreate,
     tenant: TenantDep,
     db: DbDep,
+    _: None = Depends(require_manager_or_above),
 ):
     """
     Create a new member.
     
     Members are gym customers who have memberships.
     They do not login to the system.
+    Requires: Owner or Manager (Staff cannot add members).
     """
     service = MemberService(db)
     
@@ -175,11 +177,13 @@ def delete_member(
     member_id: str,
     tenant: TenantDep,
     db: DbDep,
+    _: None = Depends(require_owner),
 ):
     """
     Deactivate a member (soft delete).
     
     Member data is preserved for historical records.
+    Requires: Owner only (Manager/Staff cannot delete members).
     """
     try:
         member_uuid = uuid.UUID(member_id)
@@ -207,9 +211,11 @@ def reactivate_member(
     member_id: str,
     tenant: TenantDep,
     db: DbDep,
+    _: None = Depends(require_owner),
 ):
     """
     Reactivate a previously deactivated member.
+    Requires: Owner only.
     """
     try:
         member_uuid = uuid.UUID(member_id)

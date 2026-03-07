@@ -243,13 +243,13 @@ class ReportsService:
         self,
         gym_id: uuid.UUID,
         days: int = 7,
+        page: int = 1,
+        page_size: int = 100,
     ) -> list[ExpiringMemberInfo]:
-        """Get list of members with expiring memberships."""
+        """Get list of members with expiring memberships (paginated)."""
         today = date.today()
         end_date = today + timedelta(days=days)
-        
-        # Get expiring memberships with member and plan info
-        result = self.db.execute(
+        q = (
             select(Membership, Member, Plan)
             .join(Member, Membership.member_id == Member.id)
             .join(Plan, Membership.plan_id == Plan.id)
@@ -260,8 +260,10 @@ class ReportsService:
                 Membership.end_date <= end_date,
             )
             .order_by(Membership.end_date)
-        ).all()
-        
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        result = self.db.execute(q).all()
         return [
             ExpiringMemberInfo(
                 member_id=str(membership.member_id),
@@ -278,10 +280,11 @@ class ReportsService:
     def get_members_with_dues_report(
         self,
         gym_id: uuid.UUID,
+        page: int = 1,
+        page_size: int = 100,
     ) -> list[DuesMemberInfo]:
-        """Get list of members with pending dues."""
-        # Get memberships with dues
-        result = self.db.execute(
+        """Get list of members with pending dues (paginated)."""
+        stmt = (
             select(
                 Membership.member_id,
                 Member.name,
@@ -297,8 +300,10 @@ class ReportsService:
             .group_by(Membership.member_id, Member.name, Member.phone)
             .having(func.sum(Membership.amount_total - Membership.amount_paid) > 0)
             .order_by(func.sum(Membership.amount_total - Membership.amount_paid).desc())
-        ).all()
-        
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        result = self.db.execute(stmt).all()
         return [
             DuesMemberInfo(
                 member_id=str(row[0]),

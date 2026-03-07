@@ -70,15 +70,14 @@ class PlanService:
         self,
         gym_id: uuid.UUID,
         active_only: bool = True,
+        page: int = 1,
+        page_size: int = 100,
     ) -> list[Plan]:
-        """List all plans for a gym."""
+        """List plans for a gym with pagination. Never returns more than page_size."""
         query = select(Plan).where(Plan.gym_id == gym_id)
-        
         if active_only:
             query = query.where(Plan.is_active == True)  # noqa: E712
-        
-        query = query.order_by(Plan.duration_days)
-        
+        query = query.order_by(Plan.duration_days).offset((page - 1) * page_size).limit(page_size)
         result = self.db.execute(query)
         return list(result.scalars().all())
     

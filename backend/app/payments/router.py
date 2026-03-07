@@ -32,6 +32,7 @@ def create_payment(
     
     If membership_id is provided, the membership's amount_paid
     will be automatically updated.
+    Audit: received_by (tenant.user_id) and created_at are stored for traceability.
     """
     service = PaymentService(db)
     

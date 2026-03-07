@@ -1,0 +1,20 @@
+# Dependencies and local env
+__pycache__
+*.py[cod]
+*venv*
+.env
+.env.*
+!.env.example
+*.egg-info
+.pytest_cache
+.coverage
+htmlcov
+
+# IDE / OS
+.idea
+.vscode
+*.swp
+.DS_Store
+
+# Tests (not needed in image)
+tests

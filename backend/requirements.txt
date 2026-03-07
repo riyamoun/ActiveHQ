@@ -1,6 +1,7 @@
 # Core Framework
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
+gunicorn>=21.0.0
 python-multipart>=0.0.9
 
 # Database
@@ -11,6 +12,7 @@ alembic>=1.13.0
 # Authentication
 python-jose[cryptography]>=3.3.0
 bcrypt>=4.1.0
+slowapi>=0.1.9
 
 # Validation & Settings
 pydantic>=2.6.0
@@ -20,8 +22,9 @@ email-validator>=2.1.0
 # Date/Time
 python-dateutil>=2.8.2
 
-# HTTP Client (for notifications later)
+# HTTP Client + WhatsApp/SMS
 httpx>=0.26.0
+twilio>=9.0.0
 sentry-sdk[fastapi]>=2.0.0
 
 # Development

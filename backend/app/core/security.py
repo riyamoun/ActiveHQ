@@ -2,6 +2,7 @@
 Security utilities for authentication and authorization.
 """
 
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -9,6 +10,14 @@ import bcrypt
 from jose import jwt, JWTError
 
 from app.core.config import settings
+
+
+def hash_refresh_token(token: str) -> str:
+    """
+    Hash a refresh token for storage. We never store the raw token.
+    Uses SHA-256 so we can look up by hash on refresh.
+    """
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def hash_password(password: str) -> str:

@@ -16,8 +16,9 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_refresh_token,
 )
-from app.models import Gym, User
+from app.models import Gym, User, RefreshToken
 from app.models.enums import UserRole, SubscriptionStatus
 from app.auth.schemas import (
     LoginRequest,
@@ -66,16 +67,31 @@ class AuthService:
             "email": user.email,
             "role": user.role.value,
         }
-        
         access_token = create_access_token(token_data)
         refresh_token = create_refresh_token(token_data)
-        
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=settings.access_token_expire_minutes * 60,
         )
+
+    def _store_refresh_token(self, user_id: uuid.UUID, refresh_token: str) -> None:
+        """Store hashed refresh token in DB with expiry."""
+        payload = decode_token(refresh_token)
+        if not payload or "exp" not in payload:
+            return
+        from datetime import timezone
+        expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+        token_hash = hash_refresh_token(refresh_token)
+        row = RefreshToken(
+            user_id=user_id,
+            token_hash=token_hash,
+            expires_at=expires_at,
+            revoked=False,
+        )
+        self.db.add(row)
+        self.db.commit()
     
     def authenticate_user(
         self,
@@ -146,59 +162,64 @@ class AuthService:
     
     def login(self, request: LoginRequest) -> tuple[User, TokenResponse] | None:
         """
-        Login user and return tokens.
-        
-        Args:
-            request: Login request with email and password
-            
-        Returns:
-            Tuple of (User, TokenResponse) if successful, None otherwise
+        Login user and return tokens. Stores refresh token in DB for revocation/replay protection.
         """
         user = self.authenticate_by_email_only(request.email, request.password)
-        
         if not user:
             return None
-        
-        # Update last login
+
         user.last_login_at = datetime.now(timezone.utc)
         self.db.commit()
-        
+
         tokens = self._create_tokens(user)
+        self._store_refresh_token(user.id, tokens.refresh_token)
         return user, tokens
     
     def refresh_tokens(self, refresh_token: str) -> TokenResponse | None:
         """
-        Refresh access token using refresh token.
-        
-        Args:
-            refresh_token: Valid refresh token
-            
-        Returns:
-            New TokenResponse if valid, None otherwise
+        Refresh access token. Validates token via DB (hash match, not revoked, not expired),
+        revokes old token, issues new pair and stores new refresh token.
         """
         payload = decode_token(refresh_token)
-        
-        if not payload:
+        if not payload or payload.get("type") != "refresh":
             return None
-        
-        if payload.get("type") != "refresh":
+        user_id_str = payload.get("sub")
+        if not user_id_str:
             return None
-        
-        user_id = payload.get("sub")
-        if not user_id:
+        try:
+            user_uuid = uuid.UUID(user_id_str)
+        except ValueError:
             return None
-        
+
+        token_hash = hash_refresh_token(refresh_token)
+        now = datetime.now(timezone.utc)
+        row = self.db.execute(
+            select(RefreshToken).where(
+                RefreshToken.user_id == user_uuid,
+                RefreshToken.token_hash == token_hash,
+                RefreshToken.revoked == False,  # noqa: E712
+                RefreshToken.expires_at > now,
+            )
+        ).scalar_one_or_none()
+        if not row:
+            return None
+
         user = self.db.execute(
             select(User).where(
-                User.id == uuid.UUID(user_id),
+                User.id == user_uuid,
                 User.is_active == True,  # noqa: E712
             )
         ).scalar_one_or_none()
-        
         if not user:
             return None
-        
-        return self._create_tokens(user)
+
+        # Revoke old refresh token (rotation)
+        row.revoked = True
+        self.db.commit()
+
+        tokens = self._create_tokens(user)
+        self._store_refresh_token(user.id, tokens.refresh_token)
+        return tokens
     
     def register_gym(self, request: GymRegister) -> GymRegisterResponse:
         """
@@ -297,10 +318,19 @@ class AuthService:
             )
         ).scalar_one_or_none()
     
-    def get_users(self, gym_id: uuid.UUID) -> list[User]:
-        """Get all users for a gym."""
+    def get_users(
+        self,
+        gym_id: uuid.UUID,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[User]:
+        """Get users for a gym with pagination."""
         result = self.db.execute(
-            select(User).where(User.gym_id == gym_id).order_by(User.name)
+            select(User)
+            .where(User.gym_id == gym_id)
+            .order_by(User.name)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
         return list(result.scalars().all())
     
@@ -327,4 +357,22 @@ class AuthService:
         user.password_hash = hash_password(new_password)
         self.db.commit()
         
+        return True
+
+    def revoke_refresh_token(self, refresh_token: str) -> bool:
+        """
+        Revoke a refresh token (e.g. on logout). Marks the token as revoked in DB.
+        Returns True if a matching token was found and revoked.
+        """
+        token_hash = hash_refresh_token(refresh_token)
+        row = self.db.execute(
+            select(RefreshToken).where(
+                RefreshToken.token_hash == token_hash,
+                RefreshToken.revoked == False,  # noqa: E712
+            )
+        ).scalar_one_or_none()
+        if not row:
+            return False
+        row.revoked = True
+        self.db.commit()
         return True

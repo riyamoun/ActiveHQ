@@ -26,6 +26,16 @@ export const authService = {
     return response.data
   },
 
+  /** Revoke refresh token on backend (call before clearing local state). */
+  async logout(refreshToken: string | null): Promise<void> {
+    if (!refreshToken) return
+    try {
+      await api.post('/auth/logout', { refresh_token: refreshToken })
+    } catch {
+      // Best-effort; clear local state even if API fails
+    }
+  },
+
   async getCurrentUser(): Promise<User> {
     const response = await api.get<User>('/auth/me')
     return response.data

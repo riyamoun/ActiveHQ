@@ -4,11 +4,12 @@ Authentication API endpoints.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.auth.schemas import (
     LoginRequest,
     TokenResponse,
@@ -81,7 +82,9 @@ def register_gym(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("10/minute")
 def login(
+    http_request: Request,
     request: LoginRequest,
     db: DbDep,
 ):
@@ -89,6 +92,7 @@ def login(
     Login with email and password.
     
     Returns access and refresh tokens on success.
+    Rate limited per client IP.
     """
     service = AuthService(db)
     result = service.login(request)
@@ -111,18 +115,31 @@ def refresh_token(
 ):
     """
     Refresh access token using refresh token.
+    DB-backed: old token is revoked, new pair issued and stored.
     """
     service = AuthService(db)
     tokens = service.refresh_tokens(request.refresh_token)
-    
     if not tokens:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
     return tokens
+
+
+@router.post("/logout")
+def logout(
+    request: RefreshTokenRequest,
+    db: DbDep,
+):
+    """
+    Revoke the given refresh token (e.g. on logout).
+    Client should send the current refresh_token; it will be invalidated.
+    """
+    service = AuthService(db)
+    service.revoke_refresh_token(request.refresh_token)
+    return {"message": "Logged out"}
 
 
 @router.get("/me", response_model=UserResponse)
@@ -167,14 +184,15 @@ def list_users(
     tenant: TenantDep,
     db: DbDep,
     current_user: User = Depends(require_manager_or_above),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
 ):
     """
-    List all users (staff) for the current gym.
-    
+    List users (staff) for the current gym with pagination.
     Requires: Owner or Manager role
     """
     service = AuthService(db)
-    users = service.get_users(tenant.gym_id)
+    users = service.get_users(tenant.gym_id, page=page, page_size=page_size)
     return [UserResponse.model_validate(u) for u in users]
 
 
@@ -206,6 +224,12 @@ def create_user(
             detail="A user with this email already exists in this gym",
         )
     
+    # Only platform can create super_admin; gym owners cannot
+    if request.role == UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot create super_admin from gym context",
+        )
     # Owners cannot create other owners
     if request.role == UserRole.OWNER and current_user.role != UserRole.OWNER:
         raise HTTPException(

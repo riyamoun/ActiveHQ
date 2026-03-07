@@ -130,25 +130,27 @@ def get_expiring_members(
     tenant: TenantDep,
     db: DbDep,
     days: int = Query(7, ge=1, le=90, description="Days until expiry"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=500),
 ):
     """
-    Get members with memberships expiring soon.
-    
+    Get members with memberships expiring soon (paginated).
     Useful for renewal campaigns and reminders.
     """
     service = ReportsService(db)
-    return service.get_expiring_members_report(tenant.gym_id, days)
+    return service.get_expiring_members_report(tenant.gym_id, days, page=page, page_size=page_size)
 
 
 @router.get("/members-with-dues", response_model=list[DuesMemberInfo])
 def get_members_with_dues(
     tenant: TenantDep,
     db: DbDep,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=500),
 ):
     """
-    Get members with pending payment dues.
-    
+    Get members with pending payment dues (paginated).
     Sorted by due amount (highest first).
     """
     service = ReportsService(db)
-    return service.get_members_with_dues_report(tenant.gym_id)
+    return service.get_members_with_dues_report(tenant.gym_id, page=page, page_size=page_size)

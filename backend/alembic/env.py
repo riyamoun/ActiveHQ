@@ -21,6 +21,8 @@ from app.models import (  # noqa: F401 - imported for side effects (model regist
     Payment,
     Attendance,
     Notification,
+    RefreshToken,
+    AuditLog,
 )
 
 # this is the Alembic Config object

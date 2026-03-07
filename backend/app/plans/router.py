@@ -42,14 +42,20 @@ def list_plans(
     tenant: TenantDep,
     db: DbDep,
     include_inactive: bool = Query(False, description="Include inactive plans"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
 ):
     """
-    List all membership plans.
-    
+    List membership plans with pagination.
     By default, only active plans are returned.
     """
     service = PlanService(db)
-    plans = service.list_plans(tenant.gym_id, active_only=not include_inactive)
+    plans = service.list_plans(
+        tenant.gym_id,
+        active_only=not include_inactive,
+        page=page,
+        page_size=page_size,
+    )
     return [PlanResponse.model_validate(p) for p in plans]
 
 

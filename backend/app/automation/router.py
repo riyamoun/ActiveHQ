@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.core.config import settings
+from app.core.database import get_db
 from app.auth.dependencies import TenantDep, DbDep, require_manager_or_above
+from app.automation.cron_runner import run_renewal_and_payment_automation
+from app.automation.reminder_list import get_reminder_list
 from app.automation.schemas import (
     AiOptimizeRequest,
     AiOptimizeResponse,
@@ -67,3 +71,33 @@ def campaign_summary(
 ):
     service = AutomationService(db)
     return service.campaign_summary(tenant)
+
+
+@router.get("/reminder-list")
+def reminder_list(
+    tenant: TenantDep,
+    db: DbDep,
+    expiring_days: int = Query(7, ge=1, le=30),
+    _: object = Depends(require_manager_or_above),
+):
+    """
+    Get list of members to remind (expiring + dues) with pre-filled message text.
+    Zero cost: copy message and send from your own WhatsApp/SMS. No Twilio needed.
+    """
+    return get_reminder_list(db, tenant.gym_id, expiring_days=expiring_days)
+
+
+@router.get("/run-cron")
+def run_cron(
+    secret: str = Query(..., description="CRON_SECRET"),
+    db: DbDep = Depends(get_db),
+):
+    """
+    Run renewal + payment-due automation (WhatsApp/SMS).
+    Call from Render Cron or external scheduler (e.g. daily 9 AM).
+    Requires: ?secret=<CRON_SECRET>
+    """
+    if not settings.cron_secret or secret != settings.cron_secret:
+        raise HTTPException(status_code=403, detail="Invalid or missing cron secret")
+    result = run_renewal_and_payment_automation(db)
+    return result

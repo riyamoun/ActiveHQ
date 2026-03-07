@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { authService } from '@/services/authService'
 import {
   LayoutDashboard,
   Users,
@@ -31,10 +32,11 @@ const navigation = [
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const { user, gym, logout } = useAuthStore()
+  const { user, gym, refreshToken, logout } = useAuthStore()
   const navigate = useNavigate()
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout(refreshToken)
     logout()
     navigate('/login')
   }

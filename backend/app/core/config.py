@@ -72,8 +72,8 @@ class Settings(BaseSettings):
     # JWT Authentication
     jwt_secret_key: str = "CHANGE-THIS-IN-PRODUCTION-USE-STRONG-SECRET"
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24  # 24 hours
-    refresh_token_expire_days: int = 30
+    access_token_expire_minutes: int = 15  # Production: short-lived access
+    refresh_token_expire_days: int = 7
     
     # Security
     password_min_length: int = 8
@@ -82,6 +82,30 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     sentry_traces_sample_rate: float = 0.1
     lead_webhook_url: str = ""
+    
+    # WhatsApp: Interakt (India). Primary. https://app.interakt.ai/settings/developer-setting
+    interakt_api_key: str = ""
+    interakt_country_code: str = "+91"
+    # Template code names from Interakt dashboard (templates list → template/codename/view)
+    interakt_template_renewal: str = ""
+    interakt_template_payment_due: str = ""
+    
+    # SMS / fallback: Twilio (optional). Number 9958040484
+    messaging_phone_number: str = "9958040484"
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_whatsapp_from: str = ""
+    twilio_sms_from: str = ""
+    
+    # Cron: secret to call /api/v1/automation/run-cron (Render Cron or external scheduler)
+    cron_secret: str = ""
+    
+    # Email (free: GoDaddy SMTP / Gmail app password). Optional; no cost per message.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
     
     # CORS - stored as comma-separated string, accessed as list via property
     cors_origins_str: str = "http://localhost:3000,http://localhost:5173"

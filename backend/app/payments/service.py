@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Payment, Member, User, Membership
 from app.models.enums import PaymentMode
+from app.services.audit_service import log as audit_log
 from app.payments.schemas import (
     PaymentCreate,
     PaymentResponse,
@@ -115,11 +116,24 @@ class PaymentService:
             notes=data.notes,
             received_by=received_by,
         )
-        
         self.db.add(payment)
+        self.db.flush()
+        audit_log(
+            self.db,
+            gym_id=gym_id,
+            user_id=received_by,
+            action="create",
+            entity_type="payment",
+            entity_id=payment.id,
+            new_data={
+                "amount": float(payment.amount),
+                "payment_mode": payment.payment_mode.value,
+                "payment_date": str(payment.payment_date),
+                "member_id": str(payment.member_id),
+            },
+        )
         self.db.commit()
         self.db.refresh(payment)
-        
         return payment
     
     def get_payment(
