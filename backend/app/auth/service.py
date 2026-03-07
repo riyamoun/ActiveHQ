@@ -172,7 +172,12 @@ class AuthService:
         self.db.commit()
 
         tokens = self._create_tokens(user)
-        self._store_refresh_token(user.id, tokens.refresh_token)
+        try:
+            self._store_refresh_token(user.id, tokens.refresh_token)
+        except Exception as e:
+            # Don't fail login if refresh_tokens table missing or DB error (e.g. migrations not run)
+            import logging
+            logging.getLogger(__name__).warning("Could not store refresh token: %s", e)
         return user, tokens
     
     def refresh_tokens(self, refresh_token: str) -> TokenResponse | None:
@@ -218,7 +223,11 @@ class AuthService:
         self.db.commit()
 
         tokens = self._create_tokens(user)
-        self._store_refresh_token(user.id, tokens.refresh_token)
+        try:
+            self._store_refresh_token(user.id, tokens.refresh_token)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("Could not store refresh token on refresh: %s", e)
         return tokens
     
     def register_gym(self, request: GymRegister) -> GymRegisterResponse:

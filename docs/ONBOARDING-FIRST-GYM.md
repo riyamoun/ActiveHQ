@@ -84,3 +84,14 @@
 | Biometric ingest | `POST /api/v1/biometric/events/ingest` (auth required) |
 | WhatsApp | Interakt (INTERAKT_* env vars). Sender: 9958040484 |
 | Domain | activehq.fit → Vercel (+ optional api.activehq.fit → Render) |
+
+---
+
+## 6. Troubleshooting: "Network Error" / login not working
+
+If demo or live login shows **Network Error** or **CORS** / **500** in the browser console:
+
+- **See [FIX-LOGIN-NETWORK-ERROR.md](./FIX-LOGIN-NETWORK-ERROR.md)** for step-by-step fix:
+  1. Set **CORS_ORIGINS_STR** on Render to your Vercel (and custom) frontend URLs, then redeploy.
+  2. Run **alembic upgrade head** against the Render DB so `refresh_tokens` and other tables exist.
+  3. Retry login.

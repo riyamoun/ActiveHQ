@@ -4,7 +4,6 @@ Alembic migration environment configuration.
 
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
@@ -28,8 +27,8 @@ from app.models import (  # noqa: F401 - imported for side effects (model regist
 # this is the Alembic Config object
 config = context.config
 
-# Override sqlalchemy.url with our settings
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Override sqlalchemy.url with our settings (use same URL as app: postgresql+psycopg)
+config.set_main_option("sqlalchemy.url", settings.database_url_sqlalchemy)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
@@ -63,10 +62,11 @@ def run_migrations_online() -> None:
     Run migrations in 'online' mode.
     
     Create an Engine and associate a connection with the context.
+    Use settings.database_url_sqlalchemy so we use postgresql+psycopg (psycopg3), not psycopg2.
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    from sqlalchemy import create_engine
+    connectable = create_engine(
+        settings.database_url_sqlalchemy,
         poolclass=pool.NullPool,
     )
 
