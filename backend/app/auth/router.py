@@ -84,18 +84,18 @@ def register_gym(
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
 def login(
-    http_request: Request,
-    request: LoginRequest,
+    request: Request,
+    body: LoginRequest,
     db: DbDep,
 ):
     """
     Login with email and password.
-    
+
     Returns access and refresh tokens on success.
-    Rate limited per client IP.
+    Rate limited per client IP. SlowAPI requires the first param to be named `request`.
     """
     service = AuthService(db)
-    result = service.login(request)
+    result = service.login(body)
     
     if not result:
         raise HTTPException(
