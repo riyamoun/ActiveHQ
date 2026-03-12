@@ -19,6 +19,7 @@ class DashboardStats(BaseModel):
     today_collection: Decimal
     members_with_dues: int
     total_dues: Decimal
+    new_joins_this_month: int = 0  # New members added this month
 
 
 class MembershipStats(BaseModel):
@@ -65,3 +66,35 @@ class DuesMemberInfo(BaseModel):
     member_phone: str
     total_due: Decimal
     membership_end: date | None
+
+
+class ActionCenterSummary(BaseModel):
+    """Summary for Today's Action Center."""
+    expiring_count: int
+    dues_count: int
+    total_dues: Decimal
+    inactive_7d_count: int
+    inactive_14d_count: int
+
+
+class RevenueOpportunity(BaseModel):
+    """Potential renewal revenue this week."""
+    potential_renewals_count: int
+    potential_revenue: Decimal
+
+
+class ActivityFeedItem(BaseModel):
+    """Single item in the live activity feed."""
+    type: str  # check_in | payment | renewal | new_member
+    title: str
+    subtitle: str
+    time: str  # ISO datetime
+    link_id: str | None = None
+
+
+class InactiveMemberInfo(BaseModel):
+    """Member with no check-in in last N days."""
+    member_id: str
+    member_name: str
+    member_phone: str
+    days_inactive: int

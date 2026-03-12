@@ -1,5 +1,13 @@
 import { api } from '@/lib/api'
-import type { DashboardStats, MembershipStats, ExpiringMemberInfo } from '@/types'
+import type {
+  DashboardStats,
+  MembershipStats,
+  ExpiringMemberInfo,
+  ActionCenterSummary,
+  RevenueOpportunity,
+  ActivityFeedItem,
+  InactiveMemberInfo,
+} from '@/types'
 
 interface CollectionReport {
   from_date: string
@@ -60,6 +68,28 @@ export const reportService = {
 
   async getMembersWithDues(): Promise<DuesMemberInfo[]> {
     const response = await api.get<DuesMemberInfo[]>('/reports/members-with-dues')
+    return response.data
+  },
+
+  async getActionCenter(): Promise<ActionCenterSummary> {
+    const response = await api.get<ActionCenterSummary>('/reports/action-center')
+    return response.data
+  },
+
+  async getRevenueOpportunity(): Promise<RevenueOpportunity> {
+    const response = await api.get<RevenueOpportunity>('/reports/revenue-opportunity')
+    return response.data
+  },
+
+  async getActivityFeed(limit = 20): Promise<ActivityFeedItem[]> {
+    const response = await api.get<ActivityFeedItem[]>('/reports/activity-feed', { params: { limit } })
+    return response.data
+  },
+
+  async getInactiveMembers(days: number, page = 1, pageSize = 50): Promise<InactiveMemberInfo[]> {
+    const response = await api.get<InactiveMemberInfo[]>('/reports/inactive-members', {
+      params: { days, page, page_size: pageSize },
+    })
     return response.data
   },
 }

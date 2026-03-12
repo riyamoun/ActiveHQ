@@ -17,6 +17,10 @@ from app.reports.schemas import (
     CollectionReport,
     ExpiringMemberInfo,
     DuesMemberInfo,
+    ActionCenterSummary,
+    RevenueOpportunity,
+    ActivityFeedItem,
+    InactiveMemberInfo,
 )
 
 
@@ -104,6 +108,16 @@ class ReportsService:
         
         members_with_dues = dues_result[0] if dues_result else 0
         total_dues = dues_result[1] if dues_result else Decimal("0")
+
+        # New members this month
+        first_of_month = today.replace(day=1)
+        month_start = datetime.combine(first_of_month, datetime.min.time()).replace(tzinfo=timezone.utc)
+        new_joins_this_month = self.db.execute(
+            select(func.count()).where(
+                Member.gym_id == gym_id,
+                Member.created_at >= month_start,
+            )
+        ).scalar() or 0
         
         return DashboardStats(
             total_members=total_members,
@@ -114,6 +128,7 @@ class ReportsService:
             today_collection=today_collection,
             members_with_dues=members_with_dues,
             total_dues=total_dues,
+            new_joins_this_month=new_joins_this_month,
         )
     
     def get_membership_stats(self, gym_id: uuid.UUID) -> MembershipStats:
@@ -314,3 +329,204 @@ class ReportsService:
             )
             for row in result
         ]
+
+    def get_action_center_summary(self, gym_id: uuid.UUID) -> ActionCenterSummary:
+        """Summary for Today's Action Center: expiring, dues, inactive counts."""
+        stats = self.get_dashboard_stats(gym_id)
+        inactive_7d = self._count_inactive_members(gym_id, days=7)
+        inactive_14d = self._count_inactive_members(gym_id, days=14)
+        return ActionCenterSummary(
+            expiring_count=stats.expiring_soon,
+            dues_count=stats.members_with_dues,
+            total_dues=stats.total_dues,
+            inactive_7d_count=inactive_7d,
+            inactive_14d_count=inactive_14d,
+        )
+
+    def _count_inactive_members(self, gym_id: uuid.UUID, days: int) -> int:
+        """Members with active membership but no check-in in last N days."""
+        today = date.today()
+        cutoff = datetime.combine(today - timedelta(days=days), datetime.min.time()).replace(tzinfo=timezone.utc)
+        active_sub = (
+            select(Membership.member_id)
+            .where(
+                Membership.gym_id == gym_id,
+                Membership.status == MembershipStatus.ACTIVE,
+                Membership.end_date >= today,
+            )
+            .distinct()
+        ).subquery()
+        last_sub = (
+            select(
+                Attendance.member_id,
+                func.max(Attendance.check_in_time).label("last_in"),
+            )
+            .where(Attendance.gym_id == gym_id)
+            .group_by(Attendance.member_id)
+        ).subquery()
+        joined = active_sub.outerjoin(last_sub, active_sub.c.member_id == last_sub.c.member_id)
+        from sqlalchemy import or_
+        count = self.db.execute(
+            select(func.count()).select_from(joined).where(
+                or_(last_sub.c.last_in.is_(None), last_sub.c.last_in < cutoff)
+            )
+        ).scalar()
+        return count or 0
+
+    def get_revenue_opportunity(self, gym_id: uuid.UUID) -> RevenueOpportunity:
+        """Potential renewal revenue from memberships expiring this week."""
+        today = date.today()
+        week_end = today + timedelta(days=7)
+        q = (
+            select(func.count(Membership.id), func.coalesce(func.sum(Plan.price), 0))
+            .join(Plan, Membership.plan_id == Plan.id)
+            .where(
+                Membership.gym_id == gym_id,
+                Membership.status == MembershipStatus.ACTIVE,
+                Membership.end_date >= today,
+                Membership.end_date <= week_end,
+            )
+        )
+        row = self.db.execute(q).first()
+        count = row[0] or 0
+        amount = row[1] or Decimal("0")
+        return RevenueOpportunity(potential_renewals_count=count, potential_revenue=amount)
+
+    def get_activity_feed(self, gym_id: uuid.UUID, limit: int = 20) -> list[ActivityFeedItem]:
+        """Unified feed: recent check-ins, payments, new members (sorted by time)."""
+        today = date.today()
+        cutoff_date = today - timedelta(days=14)
+        cutoff_dt = datetime.combine(cutoff_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+        items: list[tuple[datetime, ActivityFeedItem]] = []
+
+        # Recent check-ins
+        check_ins = self.db.execute(
+            select(Attendance, Member.name)
+            .join(Member, Attendance.member_id == Member.id)
+            .where(
+                Attendance.gym_id == gym_id,
+                Attendance.check_in_time >= cutoff_dt,
+            )
+            .order_by(Attendance.check_in_time.desc())
+            .limit(limit)
+        ).all()
+        for att, name in check_ins:
+            items.append((
+                att.check_in_time,
+                ActivityFeedItem(
+                    type="check_in",
+                    title=f"{name} checked in",
+                    subtitle=att.check_in_time.strftime("%I:%M %p"),
+                    time=att.check_in_time.isoformat(),
+                    link_id=str(att.id),
+                ),
+            ))
+
+        # Recent payments
+        payments = self.db.execute(
+            select(Payment, Member.name)
+            .join(Member, Payment.member_id == Member.id)
+            .where(
+                Payment.gym_id == gym_id,
+                Payment.payment_date >= cutoff_date,
+            )
+            .order_by(Payment.payment_date.desc(), Payment.created_at.desc())
+            .limit(limit)
+        ).all()
+        for pay, name in payments:
+            pay_dt = datetime.combine(pay.payment_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+            items.append((
+                pay_dt,
+                ActivityFeedItem(
+                    type="payment",
+                    title=f"{name} paid ₹{pay.amount:,.0f}",
+                    subtitle=pay.payment_date.strftime("%d %b"),
+                    time=pay_dt.isoformat(),
+                    link_id=str(pay.id),
+                ),
+            ))
+
+        # New members (created in last 14 days)
+        new_members = self.db.execute(
+            select(Member).where(
+                Member.gym_id == gym_id,
+                Member.created_at >= cutoff_dt,
+            ).order_by(Member.created_at.desc()).limit(limit)
+        ).scalars().all()
+        for m in new_members:
+            items.append((
+                m.created_at,
+                ActivityFeedItem(
+                    type="new_member",
+                    title=f"{m.name} added as member",
+                    subtitle=m.phone or "",
+                    time=m.created_at.isoformat() if m.created_at else "",
+                    link_id=str(m.id),
+                ),
+            ))
+
+        items.sort(key=lambda x: x[0], reverse=True)
+        return [item for _, item in items[:limit]]
+
+    def get_inactive_members(
+        self, gym_id: uuid.UUID, days: int = 7, page: int = 1, page_size: int = 50
+    ) -> list[InactiveMemberInfo]:
+        """Members with active membership but no check-in in last N days."""
+        from sqlalchemy import or_
+        today = date.today()
+        cutoff = datetime.combine(today - timedelta(days=days), datetime.min.time()).replace(tzinfo=timezone.utc)
+        active_sub = (
+            select(Membership.member_id)
+            .where(
+                Membership.gym_id == gym_id,
+                Membership.status == MembershipStatus.ACTIVE,
+                Membership.end_date >= today,
+            )
+            .distinct()
+        ).subquery()
+        last_sub = (
+            select(
+                Attendance.member_id,
+                func.max(Attendance.check_in_time).label("last_in"),
+            )
+            .where(Attendance.gym_id == gym_id)
+            .group_by(Attendance.member_id)
+        ).subquery()
+        joined = active_sub.outerjoin(last_sub, active_sub.c.member_id == last_sub.c.member_id)
+        inactive_ids = (
+            select(active_sub.c.member_id)
+            .select_from(joined)
+            .where(or_(last_sub.c.last_in.is_(None), last_sub.c.last_in < cutoff))
+        ).subquery()
+        members = self.db.execute(
+            select(Member)
+            .where(
+                Member.gym_id == gym_id,
+                Member.id.in_(select(inactive_ids.c.member_id)),
+            )
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        ).scalars().all()
+        result = []
+        for m in members:
+            last_in_row = self.db.execute(
+                select(func.max(Attendance.check_in_time)).where(
+                    Attendance.gym_id == gym_id,
+                    Attendance.member_id == m.id,
+                )
+            ).first()
+            last_in = last_in_row[0] if last_in_row else None
+            if last_in is None:
+                days_inactive = days + 1
+            else:
+                last_utc = last_in if last_in.tzinfo else last_in.replace(tzinfo=timezone.utc)
+                days_inactive = (datetime.now(timezone.utc) - last_utc).days
+            result.append(
+                InactiveMemberInfo(
+                    member_id=str(m.id),
+                    member_name=m.name,
+                    member_phone=m.phone or "",
+                    days_inactive=days_inactive,
+                )
+            )
+        return result

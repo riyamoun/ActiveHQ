@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Package,
 } from 'lucide-react'
+import { format } from 'date-fns'
 import clsx from 'clsx'
 
 const navigation = [
@@ -118,10 +119,11 @@ export default function DashboardLayout() {
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          {/* Page title placeholder */}
+          {/* Welcome + today */}
           <div className="hidden lg:block">
-            <h1 className="text-xl font-light text-slate-900">
-              Welcome back, <span className="font-medium">{user?.name?.split(' ')[0]}</span>
+            <p className="text-sm text-slate-500">{format(new Date(), 'EEEE, d MMM')}</p>
+            <h1 className="text-lg font-semibold text-slate-900">
+              Welcome back, <span className="text-emerald-600">{user?.name?.split(' ')[0]}</span>
             </h1>
           </div>
 

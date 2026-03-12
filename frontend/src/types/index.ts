@@ -258,6 +258,35 @@ export interface DashboardStats {
   today_collection: number
   members_with_dues: number
   total_dues: number
+  new_joins_this_month?: number
+}
+
+export interface ActionCenterSummary {
+  expiring_count: number
+  dues_count: number
+  total_dues: number
+  inactive_7d_count: number
+  inactive_14d_count: number
+}
+
+export interface RevenueOpportunity {
+  potential_renewals_count: number
+  potential_revenue: number
+}
+
+export interface ActivityFeedItem {
+  type: 'check_in' | 'payment' | 'renewal' | 'new_member'
+  title: string
+  subtitle: string
+  time: string
+  link_id: string | null
+}
+
+export interface InactiveMemberInfo {
+  member_id: string
+  member_name: string
+  member_phone: string
+  days_inactive: number
 }
 
 export interface MembershipStats {

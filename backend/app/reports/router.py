@@ -13,6 +13,10 @@ from app.reports.schemas import (
     CollectionReport,
     ExpiringMemberInfo,
     DuesMemberInfo,
+    ActionCenterSummary,
+    RevenueOpportunity,
+    ActivityFeedItem,
+    InactiveMemberInfo,
 )
 from app.reports.service import ReportsService
 
@@ -154,3 +158,47 @@ def get_members_with_dues(
     """
     service = ReportsService(db)
     return service.get_members_with_dues_report(tenant.gym_id, page=page, page_size=page_size)
+
+
+@router.get("/action-center", response_model=ActionCenterSummary)
+def get_action_center(
+    tenant: TenantDep,
+    db: DbDep,
+):
+    """Summary for Today's Action Center: expiring, dues, inactive counts."""
+    service = ReportsService(db)
+    return service.get_action_center_summary(tenant.gym_id)
+
+
+@router.get("/revenue-opportunity", response_model=RevenueOpportunity)
+def get_revenue_opportunity(
+    tenant: TenantDep,
+    db: DbDep,
+):
+    """Potential renewal revenue from memberships expiring this week."""
+    service = ReportsService(db)
+    return service.get_revenue_opportunity(tenant.gym_id)
+
+
+@router.get("/activity-feed", response_model=list[ActivityFeedItem])
+def get_activity_feed(
+    tenant: TenantDep,
+    db: DbDep,
+    limit: int = Query(20, ge=1, le=50),
+):
+    """Unified feed: recent check-ins, payments, new members."""
+    service = ReportsService(db)
+    return service.get_activity_feed(tenant.gym_id, limit=limit)
+
+
+@router.get("/inactive-members", response_model=list[InactiveMemberInfo])
+def get_inactive_members(
+    tenant: TenantDep,
+    db: DbDep,
+    days: int = Query(7, ge=1, le=90),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+):
+    """Members with active membership but no check-in in last N days."""
+    service = ReportsService(db)
+    return service.get_inactive_members(tenant.gym_id, days=days, page=page, page_size=page_size)
