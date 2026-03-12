@@ -52,4 +52,18 @@ Login is now written so that if storing the refresh token fails (e.g. table miss
 
 ---
 
-**Summary:** CORS = add Vercel (and custom) URLs to **CORS_ORIGINS_STR** on Render and redeploy. 500 = run **alembic upgrade head** against the Render DB and check logs if it persists.
+---
+
+## 4. Demo login returns 401 (Invalid email or password)
+
+If you use the **Try demo** flow (owner@fitzonegym.com / Owner@123) and get **401**:
+
+- The backend creates the demo account only when the database has **no gyms**. On first deploy, that data may not exist yet.
+- **Automatic fix:** The frontend now calls **GET /api/v1/public/seed-demo** when demo login returns 401. That endpoint creates the demo gym + owner once if the DB is empty, then you can retry **Start Demo** (or the page will retry once for you).
+- **Manual option:** You can also call once in the browser:  
+  `https://activehq-api.onrender.com/api/v1/public/seed-demo`  
+  Then log in with owner@fitzonegym.com / Owner@123.
+
+---
+
+**Summary:** CORS = add Vercel (and custom) URLs to **CORS_ORIGINS_STR** on Render and redeploy. 500 = run **alembic upgrade head** against the Render DB. 401 on demo = seed-demo runs automatically on first failed demo login, or call **GET /api/v1/public/seed-demo** once.

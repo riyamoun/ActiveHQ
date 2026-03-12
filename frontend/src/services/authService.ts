@@ -14,6 +14,12 @@ export const authService = {
     return response.data
   },
 
+  /** Ensure demo account exists (creates it if DB has no gyms). Call before demo login if 401. */
+  async seedDemo(): Promise<{ status: string }> {
+    const response = await api.get<{ status: string }>('/public/seed-demo')
+    return response.data
+  },
+
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     const response = await api.post<RegisterResponse>('/auth/register', data)
     return response.data

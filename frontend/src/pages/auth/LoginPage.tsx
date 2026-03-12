@@ -59,7 +59,19 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      const tokens = await authService.login({ email, password })
+      let tokens: Awaited<ReturnType<typeof authService.login>>
+      try {
+        tokens = await authService.login({ email, password })
+      } catch (firstError: unknown) {
+        // Demo mode + 401: backend may not have demo data — seed once and retry
+        const is401 = (firstError as { response?: { status?: number } })?.response?.status === 401
+        if (isDemo && is401) {
+          await authService.seedDemo()
+          tokens = await authService.login({ email, password })
+        } else {
+          throw firstError
+        }
+      }
       useAuthStore.getState().setTokens(tokens.access_token, tokens.refresh_token)
       
       const [user, gym] = await Promise.all([

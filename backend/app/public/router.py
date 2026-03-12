@@ -4,10 +4,36 @@ import httpx
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.demo_seed import create_demo_data
+from app.models import Gym
 from app.public.schemas import DemoRequestCreate, DemoRequestResponse
 from app.models.demo_request import DemoRequest
 
 router = APIRouter()
+
+
+@router.get("/seed-demo")
+def seed_demo(db: Session = Depends(get_db)):
+    """
+    Create demo gym + owner (owner@fitzonegym.com / Owner@123) if no gym exists.
+    Safe to call multiple times; only seeds when the database has zero gyms.
+    Used so the "Try demo" flow works on first deploy without manual setup.
+    """
+    existing = db.query(Gym).first()
+    if existing:
+        return {
+            "status": "already_setup",
+            "message": "Demo data already exists",
+            "gym": existing.name,
+        }
+    created = create_demo_data(db)
+    if created:
+        return {
+            "status": "created",
+            "message": "Demo data created. You can log in with owner@fitzonegym.com / Owner@123",
+            "email": "owner@fitzonegym.com",
+        }
+    return {"status": "already_setup", "message": "Demo data already exists"}
 
 
 @router.post("/demo-request", response_model=DemoRequestResponse, status_code=status.HTTP_201_CREATED)
