@@ -101,23 +101,23 @@ export default function DashboardPage() {
             {(actionCenter?.expiring_count ?? 0) > 0 && (
               <div className="bg-white rounded-xl p-4 border border-amber-200">
                 <Clock className="w-5 h-5 text-amber-600 mb-2" />
-                <p className="text-2xl font-semibold text-slate-900">{actionCenter.expiring_count}</p>
+                <p className="text-2xl font-semibold text-slate-900">{actionCenter?.expiring_count ?? 0}</p>
                 <p className="text-sm text-slate-600">memberships expiring → Send reminder</p>
               </div>
             )}
             {(actionCenter?.dues_count ?? 0) > 0 && (
               <div className="bg-white rounded-xl p-4 border border-red-200">
                 <AlertTriangle className="w-5 h-5 text-red-600 mb-2" />
-                <p className="text-2xl font-semibold text-slate-900">{actionCenter.dues_count}</p>
+                <p className="text-2xl font-semibold text-slate-900">{actionCenter?.dues_count ?? 0}</p>
                 <p className="text-sm text-slate-600">
-                  {formatCurrency(Number(actionCenter.total_dues ?? 0))} pending → Follow up
+                  {formatCurrency(Number(actionCenter?.total_dues ?? 0))} pending → Follow up
                 </p>
               </div>
             )}
             {(actionCenter?.inactive_7d_count ?? 0) > 0 && (
               <div className="bg-white rounded-xl p-4 border border-slate-200">
                 <Users className="w-5 h-5 text-slate-600 mb-2" />
-                <p className="text-2xl font-semibold text-slate-900">{actionCenter.inactive_7d_count}</p>
+                <p className="text-2xl font-semibold text-slate-900">{actionCenter?.inactive_7d_count ?? 0}</p>
                 <p className="text-sm text-slate-600">members inactive 7+ days → Re-engage</p>
               </div>
             )}
@@ -150,11 +150,11 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-500 mt-1">Potential renewals this week</p>
           <div className="mt-4 flex items-baseline gap-3">
             <span className="text-3xl font-semibold text-emerald-600">
-              {formatCurrency(Number(revenueOpportunity.potential_revenue ?? 0))}
+              {formatCurrency(Number(revenueOpportunity?.potential_revenue ?? 0))}
             </span>
             <span className="text-slate-500">
-              from {revenueOpportunity.potential_renewals_count} membership
-              {revenueOpportunity.potential_renewals_count === 1 ? '' : 's'}
+              from {revenueOpportunity?.potential_renewals_count ?? 0} membership
+              {(revenueOpportunity?.potential_renewals_count ?? 0) === 1 ? '' : 's'}
             </span>
           </div>
           <button
