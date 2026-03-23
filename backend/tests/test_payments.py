@@ -3,23 +3,18 @@ Tests for payments endpoints and services.
 """
 
 import pytest
-from datetime import datetime, timedelta
-from decimal import Decimal
+from datetime import datetime
 
 
 class TestPaymentCreate:
     """Test create payment endpoint."""
-    
-    def test_create_payment_success(self, client, owner_token, test_member, db_session):
+
+    def test_create_payment_success(self, client, owner_token, test_member):
         """Create payment successfully."""
-        # First create a membership
-        from app.models import Membership
-        plan_id = db_session.query(object).first()  # Dummy - we'll use created
-        
         payload = {
-            "member_id": test_member.id,
-            "amount": 1000.0,
-            "payment_method": "cash",
+            "member_id": str(test_member.id),
+            "amount": "1000.00",
+            "payment_mode": "cash",
             "notes": "Monthly payment",
         }
         response = client.post(
@@ -29,15 +24,15 @@ class TestPaymentCreate:
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["amount"] == 1000.0
-        assert data["payment_method"] == "cash"
+        assert float(data["amount"]) == 1000.0
+        assert data["payment_mode"] == "cash"
 
     def test_create_payment_zero_amount(self, client, owner_token, test_member):
         """Reject zero amount."""
         payload = {
-            "member_id": test_member.id,
-            "amount": 0,
-            "payment_method": "cash",
+            "member_id": str(test_member.id),
+            "amount": "0",
+            "payment_mode": "cash",
         }
         response = client.post(
             "/api/v1/payments",
@@ -47,11 +42,11 @@ class TestPaymentCreate:
         assert response.status_code == 422
 
     def test_create_payment_invalid_method(self, client, owner_token, test_member):
-        """Invalid payment method."""
+        """Invalid payment mode."""
         payload = {
-            "member_id": test_member.id,
-            "amount": 1000.0,
-            "payment_method": "invalid_method",
+            "member_id": str(test_member.id),
+            "amount": "1000.00",
+            "payment_mode": "invalid_method",
         }
         response = client.post(
             "/api/v1/payments",
@@ -63,7 +58,7 @@ class TestPaymentCreate:
 
 class TestPaymentList:
     """Test list payments endpoint."""
-    
+
     def test_list_payments_success(self, client, owner_token):
         """List all payments."""
         response = client.get(
@@ -90,7 +85,7 @@ class TestPaymentList:
         """Filter payments by date."""
         today = datetime.now().date().isoformat()
         response = client.get(
-            f"/api/v1/payments?start_date={today}&end_date={today}",
+            f"/api/v1/payments?from_date={today}&to_date={today}",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert response.status_code == 200
@@ -106,23 +101,21 @@ class TestPaymentList:
 
 class TestPaymentDetail:
     """Test payment detail endpoint."""
-    
+
     def test_get_payment_detail_success(self, client, owner_token, test_member):
-        """Get payment detail - requires creating payment first."""
-        # Create payment
+        """Get payment detail."""
         create_response = client.post(
             "/api/v1/payments",
             json={
-                "member_id": test_member.id,
-                "amount": 1000.0,
-                "payment_method": "cash",
+                "member_id": str(test_member.id),
+                "amount": "1000.00",
+                "payment_mode": "cash",
             },
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert create_response.status_code == 201
         payment_id = create_response.json()["id"]
-        
-        # Get detail
+
         response = client.get(
             f"/api/v1/payments/{payment_id}",
             headers={"Authorization": f"Bearer {owner_token}"},
@@ -132,17 +125,17 @@ class TestPaymentDetail:
         assert data["id"] == payment_id
 
 
-class TestDailyReconciliation:
-    """Test daily reconciliation endpoint."""
-    
-    def test_daily_reconciliation_success(self, client, owner_token):
-        """Get daily reconciliation."""
+class TestDailyCollection:
+    """Daily collection summary."""
+
+    def test_daily_collection_success(self, client, owner_token):
+        """Get daily collection."""
         today = datetime.now().date().isoformat()
         response = client.get(
-            f"/api/v1/payments/reconciliation/{today}",
+            f"/api/v1/payments/daily?target_date={today}",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert response.status_code == 200
         data = response.json()
-        assert "total_collected" in data
-        assert "payment_methods" in data
+        assert "total_amount" in data
+        assert "by_mode" in data

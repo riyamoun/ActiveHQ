@@ -1,6 +1,7 @@
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
@@ -214,7 +215,7 @@ def test_plan(db_session, test_gym) -> Plan:
         gym_id=test_gym.id,
         name="Monthly",
         duration_days=30,
-        price=1000.0,
+        price=Decimal("1000.00"),
         is_active=True,
     )
     db_session.add(plan)
@@ -232,6 +233,7 @@ def test_member(db_session, test_gym) -> Member:
         phone="9999999966",
         email="member@test.com",
         date_of_birth=datetime(2000, 1, 1).date(),
+        joined_date=date.today(),
         is_active=True,
     )
     db_session.add(member)

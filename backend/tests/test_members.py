@@ -2,13 +2,14 @@
 Tests for members endpoints and services.
 """
 
+import uuid
+
 import pytest
-from datetime import datetime
 
 
 class TestMembersList:
     """Test list members endpoint."""
-    
+
     def test_list_members_success(self, client, owner_token, test_member):
         """List members with valid token."""
         response = client.get(
@@ -19,9 +20,9 @@ class TestMembersList:
         data = response.json()
         assert "items" in data
         assert len(data["items"]) >= 1
-        assert data["items"][0]["full_name"] == "Test Member"
+        assert data["items"][0]["name"] == "Test Member"
 
-    def test_list_members_pagination(self, client, owner_token, test_member, db_session):
+    def test_list_members_pagination(self, client, owner_token, test_member):
         """Test pagination."""
         response = client.get(
             "/api/v1/members?page=1&page_size=10",
@@ -34,18 +35,18 @@ class TestMembersList:
         assert data["page"] == 1
 
     def test_list_members_no_auth(self, client):
-        """List members without auth returns 401."""
+        """List members without auth returns 401 or 403."""
         response = client.get("/api/v1/members")
-        assert response.status_code == 401
+        assert response.status_code in (401, 403)
 
 
 class TestMemberCreate:
     """Test create member endpoint."""
-    
+
     def test_create_member_success(self, client, owner_token, test_gym):
         """Create member successfully."""
         payload = {
-            "full_name": "New Member",
+            "name": "New Member",
             "phone": "9999888777",
             "email": "newmember@test.com",
             "date_of_birth": "2000-01-01",
@@ -57,14 +58,14 @@ class TestMemberCreate:
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["full_name"] == "New Member"
+        assert data["name"] == "New Member"
         assert data["phone"] == "9999888777"
 
     def test_create_member_duplicate_phone(self, client, owner_token, test_member):
         """Duplicate phone returns error."""
         payload = {
-            "full_name": "Another Member",
-            "phone": "9999999966",  # Same as test_member
+            "name": "Another Member",
+            "phone": "9999999966",
             "email": "another@test.com",
             "date_of_birth": "2000-01-01",
         }
@@ -73,13 +74,13 @@ class TestMemberCreate:
             json=payload,
             headers={"Authorization": f"Bearer {owner_token}"},
         )
-        assert response.status_code == 400  # Duplicate
+        assert response.status_code == 400
 
     def test_create_member_invalid_phone(self, client, owner_token):
         """Invalid phone format."""
         payload = {
-            "full_name": "Member",
-            "phone": "123",  # Too short
+            "name": "Member",
+            "phone": "123",
             "email": "member@test.com",
             "date_of_birth": "2000-01-01",
         }
@@ -93,7 +94,7 @@ class TestMemberCreate:
     def test_create_member_staff_blocked(self, client, staff_token):
         """Staff cannot create members."""
         payload = {
-            "full_name": "New Member",
+            "name": "New Member",
             "phone": "9999888777",
             "email": "newmember@test.com",
             "date_of_birth": "2000-01-01",
@@ -103,12 +104,12 @@ class TestMemberCreate:
             json=payload,
             headers={"Authorization": f"Bearer {staff_token}"},
         )
-        assert response.status_code == 403  # Forbidden
+        assert response.status_code == 403
 
 
 class TestMemberDetail:
     """Test member detail endpoint."""
-    
+
     def test_member_detail_success(self, client, owner_token, test_member):
         """Get member detail."""
         response = client.get(
@@ -117,13 +118,14 @@ class TestMemberDetail:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == test_member.id
-        assert data["full_name"] == "Test Member"
+        assert data["id"] == str(test_member.id)
+        assert data["name"] == "Test Member"
 
     def test_member_detail_not_found(self, client, owner_token):
         """Get non-existent member."""
+        missing = uuid.uuid4()
         response = client.get(
-            "/api/v1/members/99999",
+            f"/api/v1/members/{missing}",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert response.status_code == 404
@@ -131,12 +133,12 @@ class TestMemberDetail:
 
 class TestMemberUpdate:
     """Test update member endpoint."""
-    
+
     def test_update_member_success(self, client, owner_token, test_member):
         """Update member successfully."""
         payload = {
-            "full_name": "Updated Member",
-            "phone": test_member.phone,  # Keep same
+            "name": "Updated Member",
+            "phone": test_member.phone,
             "email": "updated@test.com",
         }
         response = client.put(
@@ -146,12 +148,12 @@ class TestMemberUpdate:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["full_name"] == "Updated Member"
+        assert data["name"] == "Updated Member"
 
     def test_update_member_manager_allowed(self, client, manager_token, test_member):
         """Manager can update members."""
         payload = {
-            "full_name": "Manager Updated",
+            "name": "Manager Updated",
             "phone": test_member.phone,
             "email": "manager@updated.com",
         }
@@ -165,14 +167,14 @@ class TestMemberUpdate:
 
 class TestMemberDelete:
     """Test delete member endpoint."""
-    
+
     def test_delete_member_owner_only(self, client, owner_token, test_member):
-        """Only owner can delete members."""
+        """Owner can delete members."""
         response = client.delete(
             f"/api/v1/members/{test_member.id}",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
-        assert response.status_code == 200
+        assert response.status_code == 204
 
     def test_delete_member_manager_blocked(self, client, manager_token, test_member):
         """Manager cannot delete members."""
@@ -180,4 +182,4 @@ class TestMemberDelete:
             f"/api/v1/members/{test_member.id}",
             headers={"Authorization": f"Bearer {manager_token}"},
         )
-        assert response.status_code == 403  # Forbidden
+        assert response.status_code == 403

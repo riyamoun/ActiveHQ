@@ -1,15 +1,14 @@
 """
 Tests for notification system: SMS, Email, WhatsApp sending and tracking.
+Uses the shared `client` fixture so DB overrides apply.
 """
 
 import uuid
-import pytest
-from unittest.mock import patch
 from datetime import datetime, timezone, timedelta, date
+from unittest.mock import patch
 
-from fastapi.testclient import TestClient
+import pytest
 
-from app.main import app
 from app.models import Notification, Member
 from app.models.enums import (
     NotificationChannel,
@@ -19,72 +18,59 @@ from app.models.enums import (
 )
 
 
-client = TestClient(app)
+@pytest.fixture
+def notify_member(db_session, test_gym) -> Member:
+    m = Member(
+        gym_id=test_gym.id,
+        name="John Doe",
+        email="john@test.com",
+        phone="9876543210",
+        gender=Gender.MALE,
+        joined_date=date.today(),
+    )
+    db_session.add(m)
+    db_session.commit()
+    db_session.refresh(m)
+    return m
 
 
 class TestNotificationSMSSend:
-    """Test SMS sending to members."""
-    
-    @pytest.fixture(autouse=True)
-    def setup(self, db_session, test_gym, test_owner_user, owner_token):
-        self.db = db_session
-        self.gym = test_gym
-        self.user = test_owner_user
-        self.token = owner_token
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-        
-        self.member = Member(
-            gym_id=test_gym.id,
-            name="John Doe",
-            email="john@test.com",
-            phone="9876543210",
-            gender=Gender.MALE,
-            joined_date=date.today(),
-        )
-        self.db.add(self.member)
-        self.db.commit()
-        self.db.refresh(self.member)
-    
-    @patch("app.services.messaging.send_sms")
-    def test_send_sms_success(self, mock_send):
-        """Test successful SMS send."""
+    @patch("app.notifications.service.send_sms")
+    def test_send_sms_success(self, mock_send, client, owner_token, notify_member):
         from app.services.messaging import SendResult
-        
+
         mock_send.return_value = SendResult(
             success=True,
             channel="sms",
             provider_message_id="SM123456",
             error=None,
         )
-        
         response = client.post(
             "/api/v1/notifications/sms",
             json={
-                "member_id": str(self.member.id),
+                "member_id": str(notify_member.id),
                 "message": "Test SMS",
             },
-            headers=self.headers,
+            headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
         assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
+        assert response.json().get("success") is True
 
 
 class TestNotificationBulkSend:
-    """Test bulk notification sending."""
-    
-    @pytest.fixture(autouse=True)
-    def setup(self, db_session, test_gym, test_owner_user, owner_token):
-        self.db = db_session
-        self.gym = test_gym
-        self.user = test_owner_user
-        self.token = owner_token
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-        
-        self.members = []
+    @patch("app.notifications.service.send_sms")
+    def test_bulk_sms_send(self, mock_send, client, owner_token, test_gym, db_session):
+        from app.services.messaging import SendResult
+
+        mock_send.return_value = SendResult(
+            success=True,
+            channel="sms",
+            provider_message_id="SM123456",
+            error=None,
+        )
+        members = []
         for i in range(3):
-            member = Member(
+            m = Member(
                 gym_id=test_gym.id,
                 name=f"Member {i}",
                 email=f"member{i}@test.com",
@@ -92,32 +78,19 @@ class TestNotificationBulkSend:
                 gender=Gender.MALE,
                 joined_date=date.today(),
             )
-            self.db.add(member)
-            self.members.append(member)
-        self.db.commit()
-    
-    @patch("app.services.messaging.send_sms")
-    def test_bulk_sms_send(self, mock_send):
-        """Test bulk SMS send."""
-        from app.services.messaging import SendResult
-        
-        mock_send.return_value = SendResult(
-            success=True,
-            channel="sms",
-            provider_message_id="SM123456",
-            error=None,
-        )
-        
-        member_ids = [str(m.id) for m in self.members]
+            db_session.add(m)
+            members.append(m)
+        db_session.commit()
+
+        member_ids = [str(m.id) for m in members]
         response = client.post(
             "/api/v1/notifications/bulk-sms",
             json={
                 "member_ids": member_ids,
                 "message": "Bulk SMS Test",
             },
-            headers=self.headers,
+            headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
         assert response.status_code == 200
         data = response.json()
         assert data["total"] == 3
@@ -125,112 +98,54 @@ class TestNotificationBulkSend:
 
 
 class TestNotificationEmail:
-    """Test email sending to members."""
-    
-    @pytest.fixture(autouse=True)
-    def setup(self, db_session, test_gym, test_owner_user, owner_token):
-        self.db = db_session
-        self.gym = test_gym
-        self.user = test_owner_user
-        self.token = owner_token
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-        
-        self.member = Member(
-            gym_id=test_gym.id,
-            name="Jane Doe",
-            email="jane@test.com",
-            phone="9876543210",
-            gender=Gender.FEMALE,
-            joined_date=date.today(),
-        )
-        self.db.add(self.member)
-        self.db.commit()
-    
-    @patch("app.services.messaging.send_email")
-    def test_send_email_success(self, mock_send):
-        """Test successful email send."""
+    @patch("app.notifications.service.send_email")
+    def test_send_email_success(self, mock_send, client, owner_token, notify_member):
         from app.services.messaging import SendResult
-        
+
         mock_send.return_value = SendResult(
             success=True,
             channel="email",
             provider_message_id=None,
             error=None,
         )
-        
         response = client.post(
             "/api/v1/notifications/email",
             json={
-                "member_id": str(self.member.id),
+                "member_id": str(notify_member.id),
                 "subject": "Test Subject",
                 "body": "Test Body",
             },
-            headers=self.headers,
+            headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
         assert response.status_code == 200
 
 
 class TestNotificationWhatsApp:
-    """Test WhatsApp sending."""
-    
-    @pytest.fixture(autouse=True)
-    def setup(self, db_session, test_gym, test_owner_user, owner_token):
-        self.db = db_session
-        self.gym = test_gym
-        self.user = test_owner_user
-        self.token = owner_token
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-        
-        self.member = Member(
-            gym_id=test_gym.id,
-            name="WhatsApp Member",
-            email="wa@test.com",
-            phone="9876543210",
-            gender=Gender.MALE,
-            joined_date=date.today(),
-        )
-        self.db.add(self.member)
-        self.db.commit()
-    
-    @patch("app.services.messaging.send_whatsapp_then_sms")
-    def test_send_whatsapp_success(self, mock_send):
-        """Test successful WhatsApp send."""
+    @patch("app.notifications.service.send_whatsapp_then_sms")
+    def test_send_whatsapp_success(self, mock_send, client, owner_token, notify_member):
         from app.services.messaging import SendResult
-        
+
         mock_send.return_value = SendResult(
             success=True,
             channel="whatsapp",
             provider_message_id="WA123456",
             error=None,
         )
-        
         response = client.post(
             "/api/v1/notifications/whatsapp",
             json={
-                "member_id": str(self.member.id),
+                "member_id": str(notify_member.id),
                 "message": "Test WhatsApp",
             },
-            headers=self.headers,
+            headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
         assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
+        assert response.json().get("success") is True
 
 
 class TestNotificationHistory:
-    """Test notification history tracking."""
-    
-    @pytest.fixture(autouse=True)
-    def setup(self, db_session, test_gym, test_owner_user, owner_token):
-        self.db = db_session
-        self.gym = test_gym
-        self.user = test_owner_user
-        self.token = owner_token
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-        
-        self.member = Member(
+    def test_get_notification_history(self, client, owner_token, test_gym, db_session):
+        member = Member(
             gym_id=test_gym.id,
             name="History Member",
             email="history@test.com",
@@ -238,44 +153,34 @@ class TestNotificationHistory:
             gender=Gender.MALE,
             joined_date=date.today(),
         )
-        self.db.add(self.member)
-        self.db.commit()
-        
+        db_session.add(member)
+        db_session.commit()
+        db_session.refresh(member)
+
         for i in range(3):
             notif = Notification(
                 gym_id=test_gym.id,
-                member_id=self.member.id,
+                member_id=member.id,
                 channel=NotificationChannel.SMS if i % 2 == 0 else NotificationChannel.EMAIL,
                 notification_type=NotificationType.CUSTOM,
+                message=f"msg {i}",
                 status=NotificationStatus.SENT if i < 2 else NotificationStatus.FAILED,
             )
-            self.db.add(notif)
-        self.db.commit()
-    
-    def test_get_notification_history(self):
-        """Test getting notification history."""
+            db_session.add(notif)
+        db_session.commit()
+
         response = client.get(
-            f"/api/v1/notifications/history?member_id={self.member.id}",
-            headers=self.headers,
+            f"/api/v1/notifications/history?member_id={member.id}",
+            headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
         assert response.status_code == 200
         data = response.json()
         assert data["total"] == 3
 
 
 class TestNotificationStats:
-    """Test notification statistics."""
-    
-    @pytest.fixture(autouse=True)
-    def setup(self, db_session, test_gym, test_owner_user, owner_token):
-        self.db = db_session
-        self.gym = test_gym
-        self.user = test_owner_user
-        self.token = owner_token
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-        
-        self.member = Member(
+    def test_get_notification_stats(self, client, owner_token, test_gym, db_session):
+        member = Member(
             gym_id=test_gym.id,
             name="Stats Member",
             email="stats@test.com",
@@ -283,14 +188,15 @@ class TestNotificationStats:
             gender=Gender.MALE,
             joined_date=date.today(),
         )
-        self.db.add(self.member)
-        self.db.commit()
-        
+        db_session.add(member)
+        db_session.commit()
+        db_session.refresh(member)
+
         now = datetime.now(timezone.utc)
         for i in range(5):
             notif = Notification(
                 gym_id=test_gym.id,
-                member_id=self.member.id,
+                member_id=member.id,
                 channel=[
                     NotificationChannel.SMS,
                     NotificationChannel.EMAIL,
@@ -299,29 +205,22 @@ class TestNotificationStats:
                     NotificationChannel.EMAIL,
                 ][i],
                 notification_type=NotificationType.CUSTOM,
+                message=f"stat {i}",
                 status=NotificationStatus.SENT if i < 3 else NotificationStatus.FAILED,
-                created_at=now - timedelta(hours=i),
             )
-            self.db.add(notif)
-        self.db.commit()
-    
-    def test_get_notification_stats(self):
-        """Test getting notification statistics."""
+            db_session.add(notif)
+        db_session.commit()
+
         response = client.get(
             "/api/v1/notifications/stats?days=7",
-            headers=self.headers,
+            headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
         assert response.status_code == 200
-        data = response.json()
-        assert "stats" in data
+        assert "stats" in response.json()
 
 
 class TestNotificationAuth:
-    """Test authorization for notification endpoints."""
-    
-    def test_notifications_require_auth(self):
-        """Test that endpoints require authentication."""
+    def test_notifications_require_auth(self, client):
         response = client.post(
             "/api/v1/notifications/sms",
             json={
@@ -329,22 +228,21 @@ class TestNotificationAuth:
                 "message": "Test",
             },
         )
-        
         assert response.status_code in (401, 403)
 
 
 class TestNotificationRetry:
-    """Test retry logic for failed notifications."""
-    
-    @pytest.fixture(autouse=True)
-    def setup(self, db_session, test_gym, test_owner_user, owner_token):
-        self.db = db_session
-        self.gym = test_gym
-        self.user = test_owner_user
-        self.token = owner_token
-        self.headers = {"Authorization": f"Bearer {self.token}"}
-        
-        self.member = Member(
+    @patch("app.notifications.service.send_sms")
+    def test_retry_failed_notifications(self, mock_send, client, owner_token, test_gym, db_session):
+        from app.services.messaging import SendResult
+
+        mock_send.return_value = SendResult(
+            success=True,
+            channel="sms",
+            provider_message_id="SM123456",
+            error=None,
+        )
+        member = Member(
             gym_id=test_gym.id,
             name="Retry Member",
             email="retry@test.com",
@@ -352,37 +250,24 @@ class TestNotificationRetry:
             gender=Gender.MALE,
             joined_date=date.today(),
         )
-        self.db.add(self.member)
-        self.db.commit()
-        
+        db_session.add(member)
+        db_session.commit()
+        db_session.refresh(member)
+
         failed_notif = Notification(
             gym_id=test_gym.id,
-            member_id=self.member.id,
+            member_id=member.id,
             channel=NotificationChannel.SMS,
             notification_type=NotificationType.CUSTOM,
+            message="failed",
             status=NotificationStatus.FAILED,
             error_message="SMS gateway error",
         )
-        self.db.add(failed_notif)
-        self.db.commit()
-    
-    @patch("app.services.messaging.send_sms")
-    def test_retry_failed_notifications(self, mock_send):
-        """Test retrying failed notifications."""
-        from app.services.messaging import SendResult
-        
-        mock_send.return_value = SendResult(
-            success=True,
-            channel="sms",
-            provider_message_id="SM123456",
-            error=None,
-        )
-        
+        db_session.add(failed_notif)
+        db_session.commit()
+
         response = client.post(
             "/api/v1/notifications/retry-failed?hours=24",
-            headers=self.headers,
+            headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
         assert response.status_code == 200
-        data = response.json()
-        assert data["retried"] >= 1

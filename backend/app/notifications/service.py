@@ -71,9 +71,10 @@ class NotificationService:
             gym_id=gym_id,
             member_id=member_id,
             channel=NotificationChannel.SMS,
-            type=notification_type,
+            notification_type=notification_type,
+            message=message,
             status=NotificationStatus.SENT if result.success else NotificationStatus.FAILED,
-            provider_message_id=result.provider_message_id,
+            external_id=result.provider_message_id,
             error_message=result.error,
         )
         self.db.add(notification)
@@ -122,7 +123,8 @@ class NotificationService:
             gym_id=gym_id,
             member_id=member_id,
             channel=NotificationChannel.EMAIL,
-            type=notification_type,
+            notification_type=notification_type,
+            message=body or subject,
             status=NotificationStatus.SENT if result.success else NotificationStatus.FAILED,
             error_message=result.error,
         )
@@ -174,9 +176,10 @@ class NotificationService:
             gym_id=gym_id,
             member_id=member_id,
             channel=notification_channel,
-            type=notification_type,
+            notification_type=notification_type,
+            message=message,
             status=NotificationStatus.SENT if result.success else NotificationStatus.FAILED,
-            provider_message_id=result.provider_message_id,
+            external_id=result.provider_message_id,
             error_message=result.error,
         )
         self.db.add(notification)
@@ -317,9 +320,11 @@ class NotificationService:
             {
                 "id": str(n.id),
                 "member_id": str(n.member_id),
-                "channel": n.channel,
-                "type": n.type,
-                "status": n.status,
+                "channel": n.channel.value if hasattr(n.channel, "value") else n.channel,
+                "type": n.notification_type.value
+                if hasattr(n.notification_type, "value")
+                else n.notification_type,
+                "status": n.status.value if hasattr(n.status, "value") else n.status,
                 "error_message": n.error_message,
                 "created_at": n.created_at.isoformat(),
             }
@@ -398,15 +403,25 @@ class NotificationService:
             try:
                 if notif.channel == NotificationChannel.SMS:
                     result = self.send_sms_to_member(
-                        gym_id, notif.member_id, "Retry: " + str(notif.error_message), notif.type
+                        gym_id,
+                        notif.member_id,
+                        "Retry: " + str(notif.error_message),
+                        notif.notification_type,
                     )
                 elif notif.channel == NotificationChannel.EMAIL:
                     result = self.send_email_to_member(
-                        gym_id, notif.member_id, "Notification", str(notif.error_message), notif.type
+                        gym_id,
+                        notif.member_id,
+                        "Notification",
+                        str(notif.error_message),
+                        notif.notification_type,
                     )
                 else:  # WhatsApp
                     result = self.send_whatsapp_to_member(
-                        gym_id, notif.member_id, "Retry: " + str(notif.error_message), notif.type
+                        gym_id,
+                        notif.member_id,
+                        "Retry: " + str(notif.error_message),
+                        notif.notification_type,
                     )
                 
                 retried_count += 1

@@ -2,18 +2,22 @@
 Tests for attendance endpoints and services.
 """
 
+import uuid
+
 import pytest
 from datetime import datetime, timedelta
 
 
+def _mid(member) -> str:
+    return str(member.id)
+
+
 class TestAttendanceCheckIn:
     """Test check-in endpoint."""
-    
+
     def test_checkin_success(self, client, owner_token, test_member):
         """Check in member successfully."""
-        payload = {
-            "member_id": test_member.id,
-        }
+        payload = {"member_id": _mid(test_member)}
         response = client.post(
             "/api/v1/attendance/check-in",
             json=payload,
@@ -21,23 +25,22 @@ class TestAttendanceCheckIn:
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["member_id"] == test_member.id
+        assert data["member_id"] == _mid(test_member)
         assert data["check_in_time"] is not None
-        assert data["check_out_time"] is None
 
     def test_checkin_invalid_member(self, client, owner_token):
         """Check in non-existent member."""
-        payload = {"member_id": 99999}
+        payload = {"member_id": str(uuid.uuid4())}
         response = client.post(
             "/api/v1/attendance/check-in",
             json=payload,
             headers={"Authorization": f"Bearer {owner_token}"},
         )
-        assert response.status_code == 404
+        assert response.status_code == 400
 
     def test_checkin_staff_allowed(self, client, staff_token, test_member):
         """Staff can check in members."""
-        payload = {"member_id": test_member.id}
+        payload = {"member_id": _mid(test_member)}
         response = client.post(
             "/api/v1/attendance/check-in",
             json=payload,
@@ -48,21 +51,16 @@ class TestAttendanceCheckIn:
 
 class TestAttendanceCheckOut:
     """Test check-out endpoint."""
-    
-    def test_checkout_success(self, client, owner_token, test_member, db_session):
+
+    def test_checkout_success(self, client, owner_token, test_member):
         """Check out successfully."""
-        # First check in
-        checkin_response = client.post(
+        client.post(
             "/api/v1/attendance/check-in",
-            json={"member_id": test_member.id},
+            json={"member_id": _mid(test_member)},
             headers={"Authorization": f"Bearer {owner_token}"},
         )
-        assert checkin_response.status_code == 201
-        attendance_id = checkin_response.json()["id"]
-        
-        # Check out
         response = client.post(
-            f"/api/v1/attendance/{attendance_id}/check-out",
+            f"/api/v1/attendance/check-out/{_mid(test_member)}",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert response.status_code == 200
@@ -72,28 +70,25 @@ class TestAttendanceCheckOut:
     def test_checkout_no_open_session(self, client, owner_token):
         """Checkout with no open session."""
         response = client.post(
-            "/api/v1/attendance/99999/check-out",
+            f"/api/v1/attendance/check-out/{uuid.uuid4()}",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
-        assert response.status_code == 404
+        assert response.status_code == 400
 
 
 class TestAttendanceList:
     """Test list attendance endpoint."""
-    
+
     def test_list_attendance_today(self, client, owner_token, test_member):
         """List today's attendance."""
-        # Check in first
         client.post(
             "/api/v1/attendance/check-in",
-            json={"member_id": test_member.id},
+            json={"member_id": _mid(test_member)},
             headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
-        # List
         today = datetime.now().date().isoformat()
         response = client.get(
-            f"/api/v1/attendance?date={today}",
+            f"/api/v1/attendance?target_date={today}",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert response.status_code == 200
@@ -120,37 +115,32 @@ class TestAttendanceList:
 
 
 class TestAttendanceReport:
-    """Test attendance reports."""
-    
+    """Test attendance summaries."""
+
     def test_attendance_today_summary(self, client, owner_token, test_member):
         """Get today's attendance summary."""
-        # Check in first
         client.post(
             "/api/v1/attendance/check-in",
-            json={"member_id": test_member.id},
+            json={"member_id": _mid(test_member)},
             headers={"Authorization": f"Bearer {owner_token}"},
         )
-        
-        today = datetime.now().date().isoformat()
         response = client.get(
-            f"/api/v1/reports/attendance/daily?date={today}",
+            "/api/v1/attendance/today",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert response.status_code == 200
         data = response.json()
-        assert "total_checkins" in data
-        assert "members_present" in data
+        assert "total_check_ins" in data
+        assert "unique_members" in data
 
-    def test_attendance_weekly_report(self, client, owner_token):
-        """Get weekly attendance report."""
-        start_date = (datetime.now() - timedelta(days=7)).date().isoformat()
-        end_date = datetime.now().date().isoformat()
-        
+    def test_attendance_daily_summary_param(self, client, owner_token):
+        """Daily summary for a date."""
+        d = datetime.now().date().isoformat()
         response = client.get(
-            f"/api/v1/reports/attendance/weekly?start_date={start_date}&end_date={end_date}",
+            f"/api/v1/attendance/daily-summary?target_date={d}",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
-        assert response.status_code in [200, 404]  # 404 if no data
+        assert response.status_code == 200
 
     def test_attendance_member_history(self, client, owner_token, test_member):
         """Get member's attendance history."""

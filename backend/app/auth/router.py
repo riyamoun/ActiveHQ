@@ -37,11 +37,15 @@ from app.models.enums import UserRole
 router = APIRouter()
 
 
-@router.post("/register", response_model=GymRegisterResponse)
+@router.post(
+    "/register",
+    response_model=GymRegisterResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 @limiter.limit("5/minute")  # Rate limit: 5 registrations per minute
 def register_gym(
-    request_obj: Request,  # Required by slowapi for rate limiting
-    request: GymRegister,
+    request: Request,
+    body: GymRegister,
     db: DbDep,
 ):
     """
@@ -62,7 +66,7 @@ def register_gym(
     from app.models import Gym
     
     existing_gym = db.execute(
-        select(Gym).where(Gym.email == request.gym_email)
+        select(Gym).where(Gym.email == body.gym_email)
     ).scalar_one_or_none()
     
     if existing_gym:
@@ -73,7 +77,7 @@ def register_gym(
     
     # Check if user email already exists
     existing_user = db.execute(
-        select(User).where(User.email == request.owner_email)
+        select(User).where(User.email == body.owner_email)
     ).scalar_one_or_none()
     
     if existing_user:
@@ -82,7 +86,7 @@ def register_gym(
             detail="A user with this email already exists",
         )
     
-    return service.register_gym(request)
+    return service.register_gym(body)
 
 
 @router.post("/login", response_model=TokenResponse)
