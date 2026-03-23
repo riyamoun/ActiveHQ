@@ -19,7 +19,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini .
+COPY entrypoint.sh .
 
+RUN chmod +x /app/entrypoint.sh
 RUN chown -R appuser:appuser /app
 USER appuser
 
@@ -35,12 +37,4 @@ ENV GUNICORN_MAX_REQUESTS=1000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"PORT\", \"8000\")}/health')" || exit 1
 
-CMD gunicorn \
-  --worker-class uvicorn.workers.UvicornWorker \
-  --workers ${GUNICORN_WORKERS} \
-  --bind 0.0.0.0:${PORT} \
-  --timeout ${GUNICORN_TIMEOUT} \
-  --max-requests ${GUNICORN_MAX_REQUESTS} \
-  --access-logfile - \
-  --capture-output \
-  app.main:app
+ENTRYPOINT ["/app/entrypoint.sh"]

@@ -108,9 +108,15 @@ async def detailed_health_check():
 @app.get("/setup-database")
 async def setup_database(setup_key: str = Query(default="")):
     """
-    One-time database setup endpoint.
+    One-time database setup endpoint (development only).
     Creates tables and seeds demo data.
-    Call this once after deployment: GET /setup-database
+    
+    SECURITY:
+    - Only works in development or staging environment
+    - Requires SETUP_DATABASE_KEY environment variable
+    - Returns error if database already has data
+    
+    Usage: GET /setup-database?setup_key=YOUR_SECRET_KEY
     """
     from datetime import date, timedelta
     from decimal import Decimal
@@ -128,9 +134,28 @@ async def setup_database(setup_key: str = Query(default="")):
         MembershipStatus, PaymentMode
     )
     
+    # ⚠️ Block in production
+    if settings.environment == "production":
+        raise HTTPException(
+            status_code=403,
+            detail="Database setup endpoint disabled in production"
+        )
+    
+    # ⚠️ Require setup key
     if not settings.setup_database_key:
-        raise HTTPException(status_code=403, detail="Database setup endpoint is disabled")
+        raise HTTPException(
+            status_code=403,
+            detail="Setup endpoint disabled: SETUP_DATABASE_KEY not configured"
+        )
+    
+    # ⚠️ Validate setup key
+    if not setup_key:
+        raise HTTPException(status_code=401, detail="setup_key parameter required")
+    
     if setup_key != settings.setup_database_key:
+        # Log failed attempts
+        from app.core.logger import logger
+        logger.warning(f"Failed setup-database attempt with invalid key from request")
         raise HTTPException(status_code=403, detail="Invalid setup key")
 
     try:
@@ -142,10 +167,12 @@ async def setup_database(setup_key: str = Query(default="")):
         Session = sessionmaker(bind=engine)
         db = Session()
         
-        # Check if data exists
+        # Check if data exists - prevent re-seeding
         existing_gym = db.query(Gym).first()
         if existing_gym:
             db.close()
+            from app.core.logger import logger
+            logger.info(f"Setup endpoint called but database already initialized")
             return {"status": "already_setup", "gym": existing_gym.name}
         
         # Create Gym
@@ -257,6 +284,7 @@ async def setup_database(setup_key: str = Query(default="")):
 
 # API Routers
 from app.auth.router import router as auth_router
+from app.admin.router import router as admin_router
 from app.gyms.router import router as gyms_router
 from app.members.router import router as members_router
 from app.plans.router import router as plans_router
@@ -267,8 +295,10 @@ from app.reports.router import router as reports_router
 from app.public.router import router as public_router
 from app.biometric.router import router as biometric_router
 from app.automation.router import router as automation_router
+from app.notifications.router import router as notifications_router
 
 # Include all routers
+app.include_router(admin_router, tags=["Admin"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(gyms_router, prefix="/api/v1/gym", tags=["Gym Management"])
 app.include_router(members_router, prefix="/api/v1/members", tags=["Members"])
@@ -280,3 +310,4 @@ app.include_router(reports_router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(public_router, prefix="/api/v1/public", tags=["Public"])
 app.include_router(biometric_router, prefix="/api/v1/biometric", tags=["Biometric"])
 app.include_router(automation_router, prefix="/api/v1/automation", tags=["Automation"])
+app.include_router(notifications_router, prefix="/api/v1", tags=["Notifications"])

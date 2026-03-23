@@ -38,7 +38,9 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=GymRegisterResponse)
+@limiter.limit("5/minute")  # Rate limit: 5 registrations per minute
 def register_gym(
+    request_obj: Request,  # Required by slowapi for rate limiting
     request: GymRegister,
     db: DbDep,
 ):
@@ -50,6 +52,8 @@ def register_gym(
     - New gym (tenant)
     - Admin user account
     - Returns auth tokens
+    
+    Rate limited: 5 registrations per minute per IP
     """
     service = AuthService(db)
     

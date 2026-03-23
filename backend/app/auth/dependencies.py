@@ -166,7 +166,20 @@ async def get_tenant_context(
     return TenantContext(user=current_user, gym=gym)
 
 
+async def require_super_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """
+    Dependency to ensure user is a super_admin.
+    Super admins have platform-wide access, not scoped to a single gym.
+    """
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise permission_exception
+    return current_user
+
+
 # Type aliases for cleaner route signatures
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 TenantDep = Annotated[TenantContext, Depends(get_tenant_context)]
 DbDep = Annotated[Session, Depends(get_db)]
+SuperAdminDep = Annotated[User, Depends(require_super_admin)]
