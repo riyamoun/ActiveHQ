@@ -172,12 +172,12 @@ class PaymentService:
         if payment_mode:
             query = query.where(Payment.payment_mode == payment_mode)
         
-        # Count and sum
-        count_query = select(func.count()).select_from(query.subquery())
-        total = self.db.execute(count_query).scalar() or 0
-        
-        sum_query = select(func.coalesce(func.sum(Payment.amount), 0)).select_from(query.subquery())
-        total_amount = self.db.execute(sum_query).scalar() or Decimal("0")
+        # Count and sum from same filtered subquery (avoid cartesian product with Payment + subq)
+        filtered = query.subquery()
+        total = self.db.execute(select(func.count()).select_from(filtered)).scalar() or 0
+        total_amount = self.db.execute(
+            select(func.coalesce(func.sum(filtered.c.amount), 0)).select_from(filtered)
+        ).scalar() or Decimal("0")
         
         # Paginate
         offset = (page - 1) * page_size
