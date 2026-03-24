@@ -79,6 +79,11 @@ source venv/bin/activate  # Mac/Linux
 # or
 venv\Scripts\activate  # Windows
 
+### Observability (Production)
+
+- Set up Sentry + Render alerts using:
+  - `docs/OBSERVABILITY-ALERTS.md`
+
 # Install dependencies
 pip install -r requirements.txt
 

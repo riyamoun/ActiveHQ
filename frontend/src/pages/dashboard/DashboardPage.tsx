@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { reportService } from '@/services/reportService'
+import { automationService } from '@/services/automationService'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import {
   Users,
@@ -17,9 +18,67 @@ import {
   Send,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import toast from 'react-hot-toast'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  
+  const buildManualReminderText = (rows: Array<{ member_name: string; phone: string; messages: { message_text: string }[] }>) => {
+    return rows
+      .slice(0, 20)
+      .flatMap((row) =>
+        row.messages.map(
+          (m) => `${row.member_name} (${row.phone})\n${m.message_text}`
+        )
+      )
+      .join('\n\n---\n\n')
+  }
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const handleSendReminders = async () => {
+    try {
+      const list = await automationService.getReminderList(7)
+      if (!list.expiring.length) {
+        toast('No expiring members in next 7 days')
+        navigate('/members?status=expiring')
+        return
+      }
+      const reminderText = buildManualReminderText(list.expiring)
+      const copied = await copyToClipboard(reminderText)
+      if (copied) {
+        toast.success(`Prepared ${list.expiring.length} renewal follow-ups. Text copied.`)
+      } else {
+        toast.success(`Prepared ${list.expiring.length} renewal follow-ups.`)
+      }
+      navigate('/members?status=expiring')
+    } catch {
+      toast.error('Could not fetch reminders right now')
+      navigate('/members?status=expiring')
+    }
+  }
+
+  const handleOpenFollowUps = async () => {
+    try {
+      const list = await automationService.getReminderList(7)
+      if (!list.dues.length) {
+        toast('No pending dues follow-ups right now')
+      } else {
+        toast.success(`${list.dues.length} members need payment follow-up`)
+      }
+      navigate('/payments')
+    } catch {
+      toast.error('Could not load dues follow-ups')
+      navigate('/payments')
+    }
+  }
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
@@ -124,14 +183,14 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => navigate('/members?status=expiring')}
+              onClick={handleSendReminders}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
             >
               <MessageCircle className="w-4 h-4" />
               Send WhatsApp reminders
             </button>
             <button
-              onClick={() => navigate('/payments')}
+              onClick={handleOpenFollowUps}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors"
             >
               Open follow-ups

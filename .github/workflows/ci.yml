@@ -60,6 +60,10 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3002
         run: npm run test:e2e:smoke
+      - name: Run Playwright critical flow tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3002
+        run: npm run test:e2e:critical
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4

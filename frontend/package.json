@@ -9,7 +9,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test tests/public-smoke.spec.ts"
+    "test:e2e:smoke": "playwright test tests/public-smoke.spec.ts",
+    "test:e2e:critical": "playwright test tests/e2e-critical-flows.spec.ts"
   },
   "dependencies": {
     "@sentry/react": "^10.39.0",
