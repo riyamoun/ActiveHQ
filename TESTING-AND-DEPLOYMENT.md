@@ -117,7 +117,7 @@ npm install
 # Start dev server
 npm run dev
 
-# Frontend runs at: http://localhost:5173
+# Frontend runs at: http://localhost:3002
 ```
 
 ---
@@ -298,7 +298,7 @@ PASSWORD_MIN_LENGTH=8
 SETUP_DATABASE_KEY=your-setup-secret-key (leave empty in production)
 
 # CORS (comma-separated)
-CORS_ORIGINS_STR=https://active-hq.vercel.app,https://localhost:5173
+CORS_ORIGINS_STR=https://active-hq.vercel.app,https://localhost:3002,https://localhost:5173
 
 # WhatsApp (Interakt)
 INTERAKT_API_KEY=your-api-key

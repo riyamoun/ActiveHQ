@@ -97,7 +97,7 @@ npm install
 npm run dev
 ```
 
-Frontend runs at: `http://localhost:5173`
+Frontend runs at: `http://localhost:3002` (matches Playwright + CI; override with `npm run dev -- --port 5173` if needed)
 
 ---
 
@@ -218,7 +218,7 @@ ENVIRONMENT=development
 DEBUG=true
 
 # CORS (comma-separated, no spaces around commas)
-CORS_ORIGINS_STR=http://localhost:5173,http://localhost:3000
+CORS_ORIGINS_STR=http://localhost:3002,http://localhost:5173
 ```
 
 ### Frontend (.env)

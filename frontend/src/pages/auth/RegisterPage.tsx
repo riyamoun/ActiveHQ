@@ -105,8 +105,11 @@ export default function RegisterPage() {
           <p className="text-xs text-slate-400 uppercase tracking-[0.2em]">Gym Details</p>
           
           <div>
-            <label className="block text-sm text-slate-500 mb-2">Gym Name</label>
+            <label htmlFor="register-gym-name" className="block text-sm text-slate-500 mb-2">
+              Gym Name
+            </label>
             <input
+              id="register-gym-name"
               type="text"
               value={formData.gym_name}
               onChange={(e) => updateField('gym_name', e.target.value)}
@@ -118,8 +121,11 @@ export default function RegisterPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-500 mb-2">Gym Email</label>
+              <label htmlFor="register-gym-email" className="block text-sm text-slate-500 mb-2">
+                Gym Email
+              </label>
               <input
+                id="register-gym-email"
                 type="email"
                 value={formData.gym_email}
                 onChange={(e) => updateField('gym_email', e.target.value)}
@@ -129,8 +135,11 @@ export default function RegisterPage() {
               {errors.gym_email && <p className="text-red-500 text-sm mt-1">{errors.gym_email}</p>}
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-2">Phone</label>
+              <label htmlFor="register-gym-phone" className="block text-sm text-slate-500 mb-2">
+                Phone
+              </label>
               <input
+                id="register-gym-phone"
                 type="text"
                 value={formData.gym_phone}
                 onChange={(e) => updateField('gym_phone', e.target.value)}
@@ -143,8 +152,11 @@ export default function RegisterPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-500 mb-2">City</label>
+              <label htmlFor="register-city" className="block text-sm text-slate-500 mb-2">
+                City
+              </label>
               <input
+                id="register-city"
                 type="text"
                 value={formData.city}
                 onChange={(e) => updateField('city', e.target.value)}
@@ -153,8 +165,11 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-2">State</label>
+              <label htmlFor="register-state" className="block text-sm text-slate-500 mb-2">
+                State
+              </label>
               <input
+                id="register-state"
                 type="text"
                 value={formData.state}
                 onChange={(e) => updateField('state', e.target.value)}
@@ -170,8 +185,11 @@ export default function RegisterPage() {
           <p className="text-xs text-slate-400 uppercase tracking-[0.2em]">Your Details</p>
           
           <div>
-            <label className="block text-sm text-slate-500 mb-2">Your Name</label>
+            <label htmlFor="register-owner-name" className="block text-sm text-slate-500 mb-2">
+              Your Name
+            </label>
             <input
+              id="register-owner-name"
               type="text"
               value={formData.owner_name}
               onChange={(e) => updateField('owner_name', e.target.value)}
@@ -182,8 +200,11 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-slate-500 mb-2">Your Email</label>
+            <label htmlFor="register-owner-email" className="block text-sm text-slate-500 mb-2">
+              Your Email
+            </label>
             <input
+              id="register-owner-email"
               type="email"
               value={formData.owner_email}
               onChange={(e) => updateField('owner_email', e.target.value)}
@@ -194,8 +215,11 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-slate-500 mb-2">Password</label>
+            <label htmlFor="register-owner-password" className="block text-sm text-slate-500 mb-2">
+              Password
+            </label>
             <input
+              id="register-owner-password"
               type="password"
               value={formData.owner_password}
               onChange={(e) => updateField('owner_password', e.target.value)}
@@ -206,8 +230,11 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-slate-500 mb-2">Confirm Password</label>
+            <label htmlFor="register-confirm-password" className="block text-sm text-slate-500 mb-2">
+              Confirm Password
+            </label>
             <input
+              id="register-confirm-password"
               type="password"
               value={formData.confirm_password}
               onChange={(e) => updateField('confirm_password', e.target.value)}

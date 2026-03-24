@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 
+const gotoFast = async (page: Page, path: string) => {
+  // Avoid flaky `load` waits on marketing pages that pull large remote images.
+  await page.goto(path, { waitUntil: 'domcontentloaded' })
+}
+
 const mockApi = async (page: Page) => {
+  await page.unroute('**/api/v1/**').catch(() => {})
   await page.route('**/api/v1/**', async (route) => {
     const url = route.request().url()
     const method = route.request().method()
@@ -151,7 +157,8 @@ const mockApi = async (page: Page) => {
 }
 
 const loginWithMock = async (page: Page) => {
-  await page.goto('/login')
+  await gotoFast(page, '/login')
+  await expect(page.locator('#login-email')).toBeVisible()
   await page.getByLabel(/email/i).fill('owner@fitzonegym.com')
   await page.getByLabel(/password/i).fill('Owner@123')
   await page.getByRole('button', { name: /start demo|sign in|login/i }).click()
@@ -159,16 +166,27 @@ const loginWithMock = async (page: Page) => {
 }
 
 test.describe('ActiveHQ critical flows (CI-stable)', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, context }) => {
     await mockApi(page)
+    // Prevent flaky cross-test leakage from persisted Zustand auth (`activehq-auth`) in localStorage.
+    await context.clearCookies()
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.evaluate(() => {
+      try {
+        localStorage.clear()
+        sessionStorage.clear()
+      } catch {
+        // ignore
+      }
+    })
   })
 
   test('public pages load', async ({ page }) => {
-    await page.goto('/')
+    await gotoFast(page, '/')
     await expect(page).toHaveTitle(/ActiveHQ/i)
-    await page.goto('/for-gym-owners')
-    await expect(page.getByRole('heading', { name: /features|gym growth/i })).toBeVisible()
-    await page.goto('/contact')
+    await gotoFast(page, '/for-gym-owners')
+    await expect(page.getByRole('heading', { name: /features|gym growth|built for those who/i })).toBeVisible()
+    await gotoFast(page, '/contact')
     await expect(page.getByRole('button', { name: /request demo/i })).toBeVisible()
   })
 
@@ -182,14 +200,15 @@ test.describe('ActiveHQ critical flows (CI-stable)', () => {
     await loginWithMock(page)
     await page.getByRole('button', { name: /send whatsapp reminders/i }).click()
     await expect(page).toHaveURL(/\/members/i)
-    await page.goto('/dashboard')
+    await gotoFast(page, '/dashboard')
     await page.getByRole('button', { name: /open follow-ups/i }).click()
     await expect(page).toHaveURL(/\/payments/i)
   })
 
   test('sidebar navigation across core modules', async ({ page }) => {
     await loginWithMock(page)
-    await page.getByRole('link', { name: /members/i }).click()
+    // Avoid matching "Memberships" (also contains "members")
+    await page.getByRole('link', { name: 'Members', exact: true }).click()
     await expect(page).toHaveURL(/\/members/i)
     await page.getByRole('link', { name: /plans/i }).click()
     await expect(page).toHaveURL(/\/plans/i)

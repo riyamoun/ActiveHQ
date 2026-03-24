@@ -10,7 +10,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    // Keep aligned with Playwright + CI (see `.github/workflows/ci.yml` and `playwright.config.ts`)
+    port: 3002,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
