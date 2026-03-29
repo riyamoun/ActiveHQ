@@ -1,0 +1,23 @@
+# Local PostgreSQL only — matches backend/.env.example DATABASE_URL by default.
+# From repo root: docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: activehq-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: activehq
+    ports:
+      - "5432:5432"
+    volumes:
+      - activehq_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d activehq"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  activehq_pgdata:

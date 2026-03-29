@@ -42,7 +42,17 @@ ActiveHQ is a complete SaaS platform for gym and fitness center management. Buil
 
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL 14+
+- PostgreSQL 14+ (or Docker Desktop for the optional database below)
+
+### 0. (Optional) PostgreSQL with Docker
+
+From the **repository root** (matches `backend/.env.example`):
+
+```bash
+docker compose up -d
+```
+
+Wait until the container is healthy, then continue with the backend. To stop: `docker compose down` (add `-v` to drop data).
 
 ### 1. Clone the repository
 
@@ -68,9 +78,9 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy environment file
+# Copy environment file (Windows: copy .env.example .env)
 cp .env.example .env
-# Edit .env with your database credentials
+# Edit .env if your database user/password/db name differ from .env.example
 
 # Run migrations
 alembic upgrade head
@@ -98,6 +108,10 @@ npm run dev
 ```
 
 Frontend runs at: `http://localhost:3002` (matches Playwright + CI; override with `npm run dev -- --port 5173` if needed)
+
+Leave **`VITE_API_URL` unset** for local dev so the Vite dev server proxies `/api` to `http://localhost:8000` (see `frontend/vite.config.ts`). Set it only when pointing at a remote API.
+
+**Order to run:** backend (`uvicorn` on :8000) first, then frontend (`npm run dev` on :3002). Sign in at `/login` using the seeded demo users below.
 
 ---
 
