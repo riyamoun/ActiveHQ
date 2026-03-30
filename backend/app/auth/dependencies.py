@@ -6,15 +6,15 @@ Use these with Depends() to protect routes.
 import uuid
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Header, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.core.exceptions import credentials_exception, permission_exception
-from app.models import User, Gym
+from app.models import User, Gym, BiometricDevice
 from app.models.enums import UserRole
 from app.auth.schemas import CurrentUser
 
@@ -143,6 +143,20 @@ class TenantContext:
         self.role = user.role
 
 
+class BiometricDeviceTenantContext:
+    """
+    Tenant context for biometric agents that authenticate with a device token (no user JWT).
+    """
+
+    def __init__(self, gym: Gym, device: BiometricDevice):
+        self.user = None
+        self.gym = gym
+        self.gym_id = gym.id
+        self.user_id = None
+        self.role = None
+        self.device = device
+
+
 async def get_tenant_context(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
@@ -166,6 +180,46 @@ async def get_tenant_context(
     return TenantContext(user=current_user, gym=gym)
 
 
+async def get_biometric_device_tenant_context(
+    db: Annotated[Session, Depends(get_db)],
+    x_biometric_token: Annotated[str | None, Header(alias="X-Biometric-Token")] = None,
+) -> BiometricDeviceTenantContext:
+    """
+    Authenticate a local biometric agent using a device token.
+    Header: X-Biometric-Token: <token>
+    Token is stored as sha256 hex in biometric_devices.ingest_token_hash.
+    """
+    if not x_biometric_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing X-Biometric-Token")
+
+    import hashlib
+
+    token_hash = hashlib.sha256(x_biometric_token.encode("utf-8")).hexdigest()
+    device = db.execute(
+        select(BiometricDevice).where(
+            and_(
+                BiometricDevice.ingest_token_hash == token_hash,
+                BiometricDevice.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalar_one_or_none()
+    if not device:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid biometric token")
+
+    gym = db.execute(
+        select(Gym).where(
+            and_(
+                Gym.id == device.gym_id,
+                Gym.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalar_one_or_none()
+    if not gym:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Gym inactive")
+
+    return BiometricDeviceTenantContext(gym=gym, device=device)
+
+
 async def require_super_admin(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
@@ -183,3 +237,4 @@ CurrentUserDep = Annotated[User, Depends(get_current_user)]
 TenantDep = Annotated[TenantContext, Depends(get_tenant_context)]
 DbDep = Annotated[Session, Depends(get_db)]
 SuperAdminDep = Annotated[User, Depends(require_super_admin)]
+BiometricDeviceTenantDep = Annotated[BiometricDeviceTenantContext, Depends(get_biometric_device_tenant_context)]

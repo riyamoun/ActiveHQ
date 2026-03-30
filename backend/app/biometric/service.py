@@ -1,4 +1,6 @@
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
+import hashlib
+import secrets
 
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
@@ -41,6 +43,26 @@ class BiometricService:
         self.db.commit()
         self.db.refresh(device)
         return device
+
+    def rotate_ingest_token(self, tenant: TenantContext, device_id) -> tuple[BiometricDevice, str]:
+        device = self.db.execute(
+            select(BiometricDevice).where(
+                and_(
+                    BiometricDevice.gym_id == tenant.gym_id,
+                    BiometricDevice.id == device_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not device:
+            raise ValueError("Device not found")
+
+        token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        device.ingest_token_hash = token_hash
+        device.ingest_token_rotated_at = datetime.now(timezone.utc)
+        self.db.commit()
+        self.db.refresh(device)
+        return device, token
 
     def ingest_events(self, tenant: TenantContext, payload: BiometricEventIngestRequest) -> BiometricIngestSummary:
         device = self.db.execute(

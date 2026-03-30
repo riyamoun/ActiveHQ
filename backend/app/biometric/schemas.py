@@ -23,6 +23,12 @@ class BiometricDeviceResponse(BaseModel):
     location_label: str | None
     is_active: bool
     last_seen_at: datetime | None
+    has_ingest_token: bool = False
+
+
+class BiometricDeviceTokenResponse(BaseModel):
+    device_id: UUID
+    ingest_token: str
 
 
 class BiometricEventIngestItem(BaseModel):

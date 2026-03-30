@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.config import settings
 from app.auth.dependencies import TenantDep, DbDep, require_manager_or_above
-from app.automation.cron_runner import run_renewal_and_payment_automation
+from app.automation.cron_runner import run_all_automation, run_renewal_and_payment_automation
 from app.automation.reminder_list import get_reminder_list
 from app.automation.schemas import (
     AiOptimizeRequest,
@@ -98,5 +98,5 @@ def run_cron(
     """
     if not settings.cron_secret or secret != settings.cron_secret:
         raise HTTPException(status_code=403, detail="Invalid or missing cron secret")
-    result = run_renewal_and_payment_automation(db)
-    return result
+    # Run all automation types (renewal/payment + inactivity nudges)
+    return run_all_automation(db)

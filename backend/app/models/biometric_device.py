@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, Enum, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,6 +32,16 @@ class BiometricDevice(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
+    # Token used by local biometric agent to push logs securely (stored as SHA-256 hex).
+    ingest_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    ingest_token_rotated_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
     __table_args__ = (
         UniqueConstraint("gym_id", "external_device_id", name="uq_biometric_device_per_gym"),
+        Index(
+            "uq_biometric_device_ingest_token_hash",
+            "ingest_token_hash",
+            unique=True,
+            postgresql_where=(ingest_token_hash.isnot(None)),
+        ),
     )

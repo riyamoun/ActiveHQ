@@ -147,3 +147,98 @@ def run_renewal_and_payment_automation(db: Session) -> dict[str, Any]:
                     else:
                         failed += 1
     return {"gyms_processed": len(gyms), "messages_sent": sent, "messages_failed": failed}
+
+
+def run_inactivity_automation(db: Session, *, inactive_days: int = 7) -> dict[str, Any]:
+    """
+    For each gym: run INACTIVITY_NUDGE campaigns for members who haven't checked in recently.
+    Uses latest Attendance.check_in_time.
+    """
+    from app.models import Attendance, AutomationCampaign, Gym, Member, Membership
+    from sqlalchemy import func
+
+    gyms = db.execute(select(Gym).where(Gym.is_active == True)).scalars().all()  # noqa: E712
+    cutoff = datetime.now(timezone.utc) - timedelta(days=inactive_days)
+    sent = 0
+    failed = 0
+
+    for gym in gyms:
+        campaign = db.execute(
+            select(AutomationCampaign).where(
+                and_(
+                    AutomationCampaign.gym_id == gym.id,
+                    AutomationCampaign.is_active == True,  # noqa: E712
+                    AutomationCampaign.trigger_type == CampaignTriggerType.INACTIVITY_NUDGE,
+                )
+            )
+        ).scalar_one_or_none()
+        if not campaign:
+            continue
+
+        # Latest check-in per member
+        latest_rows = db.execute(
+            select(Attendance.member_id, func.max(Attendance.check_in_time).label("last_seen"))
+            .where(Attendance.gym_id == gym.id)
+            .group_by(Attendance.member_id)
+        ).all()
+        last_seen_by_member = {mid: last_seen for mid, last_seen in latest_rows if last_seen}
+
+        # Active members with active membership only
+        active_members = db.execute(
+            select(Member).where(
+                and_(
+                    Member.gym_id == gym.id,
+                    Member.is_active == True,  # noqa: E712
+                )
+            )
+        ).scalars().all()
+
+        for member in active_members:
+            last_seen = last_seen_by_member.get(member.id)
+            if not last_seen:
+                continue
+            if last_seen >= cutoff:
+                continue
+
+            # Skip if no active membership (optional safety)
+            active_membership = db.execute(
+                select(Membership).where(
+                    and_(
+                        Membership.gym_id == gym.id,
+                        Membership.member_id == member.id,
+                        Membership.status == MembershipStatus.ACTIVE,
+                    )
+                ).order_by(Membership.end_date.desc())
+            ).scalar_one_or_none()
+            if not active_membership:
+                continue
+
+            days_inactive = int((datetime.now(timezone.utc) - last_seen).total_seconds() // 86400)
+            context = {
+                "member_name": member.name or "Member",
+                "days_inactive": days_inactive,
+                "last_seen": last_seen.date().isoformat(),
+            }
+            result = send_campaign_message(
+                db,
+                gym_id=gym.id,
+                campaign_id=campaign.id,
+                campaign_name=campaign.name,
+                trigger_type=campaign.trigger_type,
+                template_en=campaign.template_en,
+                template_hi=campaign.template_hi,
+                member=member,
+                context=context,
+            )
+            if result.success:
+                sent += 1
+            else:
+                failed += 1
+
+    return {"gyms_processed": len(gyms), "inactive_days": inactive_days, "messages_sent": sent, "messages_failed": failed}
+
+
+def run_all_automation(db: Session) -> dict[str, Any]:
+    base = run_renewal_and_payment_automation(db)
+    inactivity = run_inactivity_automation(db, inactive_days=7)
+    return {"renewal_payment": base, "inactivity": inactivity}
