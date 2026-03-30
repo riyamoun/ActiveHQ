@@ -1,7 +1,7 @@
 """
 Send automated WhatsApp/SMS from campaigns.
 Uses templates with {{member_name}}, {{days_until_expiry}}, {{amount_due}}, etc.
-Primary: WhatsApp. Fallback: SMS. Sender: config messaging_phone_number (9958040484).
+Delivery: Picky Assist Push API (WhatsApp then SMS fallback).
 """
 
 import uuid
@@ -17,13 +17,7 @@ from app.models.enums import (
     NotificationStatus,
     NotificationType,
 )
-from app.core.config import settings
-from app.services.messaging import (
-    send_email,
-    send_whatsapp_interakt,
-    send_whatsapp_then_sms,
-    SendResult,
-)
+from app.services.messaging import send_email, send_whatsapp_then_sms, SendResult
 
 
 # Map campaign trigger to notification type for DB
@@ -57,7 +51,7 @@ def send_campaign_message(
     prefer_hindi: bool = False,
 ) -> SendResult:
     """
-    Render template (EN or HI), send via WhatsApp then SMS fallback,
+    Render template (EN or HI), send via Picky Assist (WhatsApp then SMS),
     create Notification and CampaignDeliveryLog.
     context: e.g. {"member_name": member.name, "days_until_expiry": 3, "amount_due": 500}
     """
@@ -73,33 +67,7 @@ def send_campaign_message(
             provider_message_id=None,
             error="Member has no phone",
         )
-    # Interakt (WhatsApp template): use when API key + template name set
-    result = None
-    if settings.interakt_api_key.strip():
-        if trigger_type == CampaignTriggerType.RENEWAL_REMINDER and settings.interakt_template_renewal.strip():
-            body_values = [
-                context.get("member_name", "Member"),
-                str(context.get("days_until_expiry", "")),
-                str(context.get("end_date", "")),
-            ]
-            result = send_whatsapp_interakt(
-                to_phone,
-                settings.interakt_template_renewal.strip(),
-                body_values,
-            )
-        elif trigger_type == CampaignTriggerType.PAYMENT_FOLLOWUP and settings.interakt_template_payment_due.strip():
-            body_values = [
-                context.get("member_name", "Member"),
-                str(context.get("amount_due", "")),
-                str(context.get("end_date", "")),
-            ]
-            result = send_whatsapp_interakt(
-                to_phone,
-                settings.interakt_template_payment_due.strip(),
-                body_values,
-            )
-    if result is None or not result.success:
-        result = send_whatsapp_then_sms(to_phone, message)
+    result = send_whatsapp_then_sms(to_phone, message)
     notif_type = TRIGGER_TO_NOTIFICATION_TYPE.get(trigger_type, NotificationType.CUSTOM)
     channel_enum = (
         NotificationChannel.WHATSAPP
@@ -147,8 +115,8 @@ def send_campaign_message_email(
     subject_prefix: str = "Reminder",
 ) -> SendResult:
     """
-    Send reminder by email (free: GoDaddy/Gmail SMTP). Use when Twilio not configured.
-    Member must have email. Logs Notification + CampaignDeliveryLog with channel=email.
+    Send reminder by email (SMTP). Member must have email.
+    Logs Notification + CampaignDeliveryLog with channel=email.
     """
     context.setdefault("member_name", member.name or "Member")
     message = render_template(template_en, context)

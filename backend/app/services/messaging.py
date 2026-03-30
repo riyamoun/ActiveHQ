@@ -1,6 +1,6 @@
 """
-WhatsApp (Interakt) + SMS (Twilio fallback).
-Primary: Interakt WhatsApp. Fallback: Twilio SMS if configured.
+WhatsApp + SMS via Picky Assist Push API only.
+https://help.pickyassist.com/api-documentation-v2/push-api/sending-single-message-push
 """
 
 import re
@@ -28,6 +28,14 @@ def normalize_phone_to_e164(phone: str, default_country_code: str = "91") -> str
     return f"+{digits}" if not digits.startswith("+") else digits
 
 
+def normalize_phone_pickyassist(phone: str, default_country_code: str = "91") -> str:
+    """
+    Picky Assist: full country code, no + or leading 0 (e.g. 919958040484).
+    """
+    e164 = normalize_phone_to_e164(phone, default_country_code)
+    return re.sub(r"\D", "", e164)
+
+
 @dataclass
 class SendResult:
     success: bool
@@ -36,182 +44,116 @@ class SendResult:
     error: str | None
 
 
-def _phone_digits_only(phone: str, default_country_code: str = "91") -> str:
-    """Return digits only for Interakt (no country code in number)."""
-    digits = re.sub(r"\D", "", phone)
-    if len(digits) == 10 and digits.startswith(("6", "7", "8", "9")):
-        return digits
-    if len(digits) == 12 and digits.startswith("91"):
-        return digits[2:]
-    if len(digits) == 11 and digits.startswith("0"):
-        return digits[1:]
-    return digits[-10:] if len(digits) >= 10 else digits
+def _pickyassist_configured() -> bool:
+    return bool((settings.pickyassist_api_token or "").strip())
 
 
-def _interakt_configured() -> bool:
-    return bool(settings.interakt_api_key.strip())
-
-
-def send_whatsapp_interakt(
+def send_pickyassist_push(
     to_phone: str,
-    template_name: str,
-    body_values: list[str],
+    body: str,
     *,
-    language_code: str = "en",
+    channel: str,
+    application: str | None = None,
 ) -> SendResult:
     """
-    Send WhatsApp via Interakt Template API.
-    body_values: list of strings for {{1}}, {{2}}, ... in template body (in order).
-    Phone: digits only, no country code (Interakt expects countryCode separate).
+    POST https://app.pickyassist.com/api/v2/push
+    channel: "whatsapp" | "sms" — used for SendResult only; application selects channel in Picky.
     """
-    if not _interakt_configured():
+    if not _pickyassist_configured():
         return SendResult(
             success=False,
-            channel="whatsapp",
+            channel=channel,
             provider_message_id=None,
-            error="Interakt not configured",
+            error="Picky Assist not configured (set PICKYASSIST_API_TOKEN)",
         )
-    phone_digits = _phone_digits_only(to_phone)
-    if len(phone_digits) < 10:
+    number = normalize_phone_pickyassist(to_phone)
+    if len(number) < 10:
+        return SendResult(success=False, channel=channel, provider_message_id=None, error="Invalid phone")
+    app_id = (application or "").strip()
+    if not app_id:
+        app_id = (
+            settings.pickyassist_application_whatsapp.strip()
+            if channel == "whatsapp"
+            else settings.pickyassist_application_sms.strip()
+        )
+    if not app_id:
         return SendResult(
             success=False,
-            channel="whatsapp",
+            channel=channel,
             provider_message_id=None,
-            error="Invalid phone",
+            error=f"Picky Assist application id not set for {channel}",
         )
+    msg = (body or "").strip()
+    if not msg:
+        return SendResult(success=False, channel=channel, provider_message_id=None, error="Message empty")
+    url = (settings.pickyassist_push_url or "").strip() or "https://app.pickyassist.com/api/v2/push"
     payload = {
-        "countryCode": settings.interakt_country_code.strip() or "+91",
-        "phoneNumber": phone_digits,
-        "type": "Template",
-        "template": {
-            "name": template_name,
-            "languageCode": language_code,
-            "bodyValues": [str(v) for v in body_values],
-        },
-    }
-    # Interakt: "Authorization: Basic <API Key>". Dashboard may give raw key or base64; we send as-is.
-    api_key = settings.interakt_api_key.strip()
-    if not api_key:
-        return SendResult(success=False, channel="whatsapp", provider_message_id=None, error="Interakt API key empty")
-    headers = {
-        "Authorization": f"Basic {api_key}",
-        "Content-Type": "application/json",
+        "token": settings.pickyassist_api_token.strip(),
+        "application": app_id,
+        "globalmessage": msg,
+        "data": [{"number": number, "message": msg}],
     }
     try:
-        with httpx.Client(timeout=15.0) as client:
-            r = client.post(
-                "https://api.interakt.ai/v1/public/message/",
-                json=payload,
-                headers=headers,
+        with httpx.Client(timeout=25.0) as client:
+            r = client.post(url, json=payload, headers={"Content-Type": "application/json"})
+        if r.status_code not in (200, 201):
+            return SendResult(
+                success=False,
+                channel=channel,
+                provider_message_id=None,
+                error=f"Picky Assist HTTP {r.status_code}: {r.text[:400]}",
             )
-        if r.status_code in (200, 201):
-            data = r.json()
-            msg_id = data.get("id") if isinstance(data, dict) else None
+        data = r.json() if r.content else {}
+        if not isinstance(data, dict):
+            return SendResult(
+                success=False,
+                channel=channel,
+                provider_message_id=None,
+                error="Picky Assist: invalid response",
+            )
+        status = data.get("status")
+        if status == 100:
+            msg_id = data.get("push_id")
+            inner = data.get("data")
+            if isinstance(inner, list) and inner and isinstance(inner[0], dict):
+                msg_id = inner[0].get("msg_id") or msg_id
             return SendResult(
                 success=True,
-                channel="whatsapp",
-                provider_message_id=msg_id,
+                channel=channel,
+                provider_message_id=str(msg_id) if msg_id is not None else None,
                 error=None,
             )
+        err_text = data.get("message") or data.get("error") or str(data)[:300]
         return SendResult(
             success=False,
-            channel="whatsapp",
+            channel=channel,
             provider_message_id=None,
-            error=f"Interakt API {r.status_code}: {r.text[:200]}",
+            error=f"Picky Assist: {err_text}",
         )
     except Exception as e:
-        return SendResult(
-            success=False,
-            channel="whatsapp",
-            provider_message_id=None,
-            error=str(e),
-        )
-
-
-def _twilio_client():
-    """Lazy Twilio client; returns None if credentials missing."""
-    if not settings.twilio_account_sid or not settings.twilio_auth_token:
-        return None
-    try:
-        from twilio.rest import Client
-        return Client(settings.twilio_account_sid, settings.twilio_auth_token)
-    except Exception:
-        return None
-
-
-def _from_sms_e164() -> str:
-    """Twilio SMS 'from' number in E.164. Must be a Twilio number."""
-    raw = (settings.twilio_sms_from or settings.messaging_phone_number).strip()
-    return normalize_phone_to_e164(raw)
+        return SendResult(success=False, channel=channel, provider_message_id=None, error=str(e))
 
 
 def send_sms(to_phone: str, body: str) -> SendResult:
-    """
-    Send SMS via Twilio.
-    to_phone: Indian number e.g. 9876543210 → +919876543210
-    """
-    client = _twilio_client()
-    if not client:
-        return SendResult(success=False, channel="sms", provider_message_id=None, error="Twilio not configured")
-    to_e164 = normalize_phone_to_e164(to_phone)
-    if not to_e164:
-        return SendResult(success=False, channel="sms", provider_message_id=None, error="Invalid phone")
-    from_num = _from_sms_e164()
-    try:
-        msg = client.messages.create(body=body, from_=from_num, to=to_e164)
-        return SendResult(
-            success=True,
-            channel="sms",
-            provider_message_id=msg.sid,
-            error=None,
-        )
-    except Exception as e:
-        return SendResult(success=False, channel="sms", provider_message_id=None, error=str(e))
+    """SMS via Picky Assist (application 3 = SMS Phone Automation by default)."""
+    return send_pickyassist_push(to_phone, body, channel="sms", application=None)
 
 
 def send_whatsapp(to_phone: str, body: str) -> SendResult:
-    """
-    Send WhatsApp: not used for template flows. Use send_whatsapp_interakt for Interakt.
-    Fallback: Twilio if configured.
-    """
-    client = _twilio_client()
-    if not client:
-        return SendResult(success=False, channel="whatsapp", provider_message_id=None, error="Twilio not configured")
-    if not settings.twilio_whatsapp_from:
-        return SendResult(
-            success=False,
-            channel="whatsapp",
-            provider_message_id=None,
-            error="Twilio WhatsApp from not configured",
-        )
-    to_e164 = normalize_phone_to_e164(to_phone)
-    if not to_e164:
-        return SendResult(success=False, channel="whatsapp", provider_message_id=None, error="Invalid phone")
-    from_wa = settings.twilio_whatsapp_from.strip()
-    if not from_wa.startswith("whatsapp:"):
-        from_wa = f"whatsapp:{from_wa}" if from_wa.startswith("+") else f"whatsapp:+{from_wa}"
-    to_wa = f"whatsapp:{to_e164}"
-    try:
-        msg = client.messages.create(body=body, from_=from_wa, to=to_wa)
-        return SendResult(
-            success=True,
-            channel="whatsapp",
-            provider_message_id=msg.sid,
-            error=None,
-        )
-    except Exception as e:
-        return SendResult(success=False, channel="whatsapp", provider_message_id=None, error=str(e))
+    """WhatsApp via Picky Assist (channel id from dashboard)."""
+    return send_pickyassist_push(to_phone, body, channel="whatsapp", application=None)
 
 
 def send_whatsapp_then_sms(to_phone: str, body: str) -> SendResult:
-    """
-    Try WhatsApp (Twilio) then SMS. Use when sending free-form text.
-    For Interakt use send_whatsapp_interakt with template + bodyValues.
-    """
-    result = send_whatsapp(to_phone, body)
-    if result.success:
-        return result
-    return send_sms(to_phone, body)
+    """Try WhatsApp first, then SMS on failure (both Picky Assist)."""
+    wa = send_whatsapp(to_phone, body)
+    if wa.success:
+        return wa
+    sms = send_sms(to_phone, body)
+    if sms.success:
+        return sms
+    err = (wa.error or "") + ("; " if wa.error and sms.error else "") + (sms.error or "")
+    return SendResult(success=False, channel="sms", provider_message_id=None, error=err or "Send failed")
 
 
 def send_email(to_email: str, subject: str, body: str) -> SendResult:

@@ -28,7 +28,7 @@ services:
         value: "15"
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: "7"
-      # Set in Dashboard: INTERAKT_API_KEY, INTERAKT_TEMPLATE_RENEWAL, INTERAKT_TEMPLATE_PAYMENT_DUE, CRON_SECRET
+      # Set in Dashboard: PICKYASSIST_API_TOKEN, PICKYASSIST_APPLICATION_WHATSAPP, CRON_SECRET
 
     # Health check (uses GET /health)
     healthCheckPath: /health

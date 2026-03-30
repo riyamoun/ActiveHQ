@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Phone, Mail, MapPin, Check } from 'lucide-react';
-import { api } from '@/lib/api';
+import axios from 'axios';
+import { api, getErrorMessage } from '@/lib/api';
 import { SeoMeta } from '@/components/seo/SeoMeta';
 import { buildLeadSource, trackEvent } from '@/lib/analytics';
 
@@ -35,7 +36,14 @@ export function ContactPage() {
       trackEvent('demo_request_submit_success', { city: form.city });
     } catch (err) {
       setStatus('error');
-      setErrorMsg('Something went wrong. Please try again or call us directly.');
+      const detail = getErrorMessage(err);
+      const isNetwork =
+        axios.isAxiosError(err) && !err.response;
+      setErrorMsg(
+        isNetwork
+          ? 'Cannot reach the server. Set VITE_API_URL to your backend base URL (e.g. https://api.activehq.fit) in the frontend build, and add your site origin to CORS_ORIGINS_STR on the API. Or email info@activehq.fit.'
+          : `${detail} You can also email info@activehq.fit.`
+      );
       trackEvent('demo_request_submit_failed', { city: form.city });
     }
   };
@@ -214,12 +222,12 @@ export function ContactPage() {
                   </div>
                 </a>
 
-                <a href="mailto:hello@activehq.in" className="flex items-start gap-4 group">
+                <a href="mailto:info@activehq.fit" className="flex items-start gap-4 group">
                   <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
                     <Mail className="w-5 h-5 text-slate-600 group-hover:text-emerald-600" />
                   </div>
                   <div>
-                    <div className="font-medium text-slate-900">hello@activehq.in</div>
+                    <div className="font-medium text-slate-900">info@activehq.fit</div>
                     <div className="text-slate-500 text-sm">Email us anytime</div>
                   </div>
                 </a>

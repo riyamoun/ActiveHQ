@@ -63,7 +63,6 @@ class NotificationService:
         if not member.phone:
             return {"success": False, "message_id": None, "error": "Member has no phone"}
         
-        # Send SMS via Twilio
         result = send_sms(member.phone, message)
         
         # Log notification
@@ -149,7 +148,7 @@ class NotificationService:
         notification_type: NotificationType = NotificationType.CUSTOM,
     ) -> dict:
         """
-        Send WhatsApp (Twilio) or SMS fallback to a member.
+        Send WhatsApp then SMS fallback via Picky Assist.
         Returns: {"success": bool, "channel": str, "error": str or None}
         """
         member = self.db.execute(

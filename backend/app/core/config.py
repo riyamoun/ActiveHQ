@@ -83,19 +83,16 @@ class Settings(BaseSettings):
     sentry_traces_sample_rate: float = 0.1
     lead_webhook_url: str = ""
     
-    # WhatsApp: Interakt (India). Primary. https://app.interakt.ai/settings/developer-setting
-    interakt_api_key: str = ""
-    interakt_country_code: str = "+91"
-    # Template code names from Interakt dashboard (templates list → template/codename/view)
-    interakt_template_renewal: str = ""
-    interakt_template_payment_due: str = ""
-    
-    # SMS / fallback: Twilio (optional). Number 9958040484
+    # Picky Assist Push API — WhatsApp + SMS (single provider).
+    # Token: Picky Assist → Project → API. Channel IDs: Settings → Channels.
+    # https://help.pickyassist.com/api-documentation-v2/push-api/sending-single-message-push
+    pickyassist_api_token: str = ""
+    pickyassist_push_url: str = "https://app.pickyassist.com/api/v2/push"
+    # WhatsApp: use your channel id (e.g. 8 Official, 101 Cloud API, 121 Official Managed)
+    pickyassist_application_whatsapp: str = ""
+    # SMS: 3 = SMS Phone Automation (unless your project uses another channel id)
+    pickyassist_application_sms: str = "3"
     messaging_phone_number: str = "9958040484"
-    twilio_account_sid: str = ""
-    twilio_auth_token: str = ""
-    twilio_whatsapp_from: str = ""
-    twilio_sms_from: str = ""
     
     # Cron: secret to call /api/v1/automation/run-cron (Render Cron or external scheduler)
     cron_secret: str = ""

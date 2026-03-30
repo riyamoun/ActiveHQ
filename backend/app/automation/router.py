@@ -81,7 +81,7 @@ def reminder_list(
 ):
     """
     Get list of members to remind (expiring + dues) with pre-filled message text.
-    Zero cost: copy message and send from your own WhatsApp/SMS. No Twilio needed.
+    Zero cost: copy message and send from your own WhatsApp/SMS. No API needed.
     """
     return get_reminder_list(db, tenant.gym_id, expiring_days=expiring_days)
 

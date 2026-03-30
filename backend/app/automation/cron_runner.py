@@ -17,13 +17,6 @@ from app.models.enums import CampaignTriggerType, MembershipStatus
 from app.automation.send_service import send_campaign_message, send_campaign_message_email
 
 
-def _interakt_configured() -> bool:
-    return bool(settings.interakt_api_key and settings.interakt_template_renewal and settings.interakt_template_payment_due)
-
-def _twilio_configured() -> bool:
-    return bool(settings.twilio_account_sid and settings.twilio_auth_token)
-
-
 def _smtp_configured() -> bool:
     return bool(settings.smtp_host and settings.smtp_user and settings.smtp_password)
 
@@ -32,7 +25,7 @@ def run_renewal_and_payment_automation(db: Session) -> dict[str, Any]:
     """
     For each gym: find active campaigns (renewal_reminder, payment_followup),
     get expiring members / members with dues.
-    - If Twilio configured: send WhatsApp then SMS.
+    - If Picky Assist configured: send WhatsApp then SMS (see messaging).
     - Else if SMTP configured: send email (members with email only). Free.
     - Else: skip send (use GET /automation/reminder-list for manual copy-paste).
     Returns counts: gyms_processed, messages_sent, messages_failed.

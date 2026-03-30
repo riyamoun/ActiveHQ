@@ -24,7 +24,6 @@ python-dateutil>=2.8.2
 
 # HTTP Client + WhatsApp/SMS
 httpx>=0.26.0
-twilio>=9.0.0
 sentry-sdk[fastapi]>=2.0.0
 
 # Development
