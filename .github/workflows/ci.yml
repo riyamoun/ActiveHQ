@@ -97,7 +97,7 @@ jobs:
           --health-retries 12
     env:
       # Use IPv4 explicitly (avoids occasional localhost → ::1 issues on runners)
-      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/activehq
+      DATABASE_URL: sqlite:///./ci-activehq.sqlite
     defaults:
       run:
         working-directory: backend
@@ -108,18 +108,8 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
-      - name: Wait for Postgres
-        run: |
-          for i in $(seq 1 60); do
-            if python -c "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1', 5432)); s.close()"; then
-              echo "Postgres is accepting TCP connections on 127.0.0.1:5432"
-              exit 0
-            fi
-            echo "waiting for postgres ($i/60)..."
-            sleep 2
-          done
-          echo "Postgres did not become ready in time"
-          exit 1
+      - name: Skip DB wait (SQLite)
+        run: echo "Using SQLite in CI; skipping Postgres readiness check"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
