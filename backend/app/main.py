@@ -296,6 +296,7 @@ from app.public.router import router as public_router
 from app.biometric.router import router as biometric_router
 from app.automation.router import router as automation_router
 from app.notifications.router import router as notifications_router
+from app.migration.router import router as migration_router
 
 # Include all routers
 app.include_router(admin_router, tags=["Admin"])
@@ -311,3 +312,4 @@ app.include_router(public_router, prefix="/api/v1/public", tags=["Public"])
 app.include_router(biometric_router, prefix="/api/v1/biometric", tags=["Biometric"])
 app.include_router(automation_router, prefix="/api/v1/automation", tags=["Automation"])
 app.include_router(notifications_router, prefix="/api/v1", tags=["Notifications"])
+app.include_router(migration_router, prefix="/api/v1/migration", tags=["Migration"])

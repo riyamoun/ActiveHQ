@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { reportService } from '@/services/reportService'
 import { automationService } from '@/services/automationService'
+import { migrationService } from '@/services/migrationService'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import {
   Users,
@@ -16,6 +17,8 @@ import {
   Activity,
   UserPlus,
   Send,
+  Wifi,
+  WifiOff,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -98,6 +101,12 @@ export default function DashboardPage() {
   const { data: activityFeed } = useQuery({
     queryKey: ['activity-feed'],
     queryFn: () => reportService.getActivityFeed(15),
+  })
+
+  const { data: biometricSync } = useQuery({
+    queryKey: ['biometric-sync'],
+    queryFn: () => migrationService.getBiometricSync(),
+    refetchInterval: 60_000,
   })
 
   if (statsLoading) {
@@ -279,6 +288,50 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* 6. Biometric sync status */}
+      {biometricSync && biometricSync.total_devices > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2 mb-4">
+            <Wifi className="w-5 h-5 text-emerald-600" />
+            Biometric Sync Status
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-emerald-600">{biometricSync.active_devices}</p>
+              <p className="text-xs text-slate-500">Active Devices</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-slate-900">{biometricSync.total_mapped_members}</p>
+              <p className="text-xs text-slate-500">Members Synced</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-slate-900">
+                {biometricSync.last_event_at
+                  ? format(new Date(biometricSync.last_event_at), 'h:mm a')
+                  : '--'}
+              </p>
+              <p className="text-xs text-slate-500">Last Sync</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-slate-900">{biometricSync.total_devices}</p>
+              <p className="text-xs text-slate-500">Total Devices</p>
+            </div>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {biometricSync.devices.map(dev => (
+              <div key={dev.device_id} className="py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {dev.is_active ? <Wifi className="w-3.5 h-3.5 text-emerald-500" /> : <WifiOff className="w-3.5 h-3.5 text-slate-400" />}
+                  <span className="text-sm font-medium text-slate-800">{dev.device_name}</span>
+                  <span className="text-xs text-slate-400">{dev.vendor}</span>
+                </div>
+                <span className="text-xs text-slate-500">{dev.events_last_24h} events (24h)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Short differentiator strip */}
       <div className="rounded-xl bg-slate-900 px-5 py-3 flex flex-wrap items-center gap-4 text-white/90 text-sm">

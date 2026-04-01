@@ -35,6 +35,7 @@ from app.models.biometric_event import BiometricEvent
 from app.models.automation_campaign import AutomationCampaign, CampaignDeliveryLog
 from app.models.refresh_token import RefreshToken
 from app.models.audit_log import AuditLog
+from app.models.device_user_mapping import DeviceUserMapping
 
 __all__ = [
     # Enums
@@ -67,4 +68,5 @@ __all__ = [
     "CampaignDeliveryLog",
     "RefreshToken",
     "AuditLog",
+    "DeviceUserMapping",
 ]

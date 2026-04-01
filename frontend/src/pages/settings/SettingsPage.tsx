@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { gymService, authService } from '@/services/authService'
 import { getErrorMessage } from '@/lib/api'
@@ -8,8 +9,10 @@ import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
+import { Upload } from 'lucide-react'
 
 export default function SettingsPage() {
+  const navigate = useNavigate()
   const { gym, user, setGym } = useAuthStore()
 
   // Gym form state
@@ -77,6 +80,23 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-500">Manage your gym and account settings</p>
       </div>
+
+      {/* Data Import */}
+      <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Data Import &amp; Migration</h3>
+            <p className="text-sm text-gray-500">Import members, plans, memberships, payments, and attendance from your old system</p>
+          </div>
+          <button
+            onClick={() => navigate('/settings/import')}
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Import Data
+          </button>
+        </div>
+      </Card>
 
       {/* Subscription Status */}
       <Card>
