@@ -1,19 +1,39 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/store/authStore'
+import { API_CONSTANTS } from '@/constants'
 
-// Use environment variable for production, fallback to proxy for local dev
-const API_BASE_URL = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL}/api/v1`
-  : '/api/v1'
+const API_BASE_URL = API_CONSTANTS.BASE_URL
+const TIMEOUT_MS = API_CONSTANTS.TIMEOUT
 
-export const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+function createBaseClient() {
+  return axios.create({
+    baseURL: API_BASE_URL,
+    timeout: TIMEOUT_MS,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+}
 
-// Request interceptor - add auth token
+/**
+ * Unauthenticated API calls only: no Bearer header, no 401 refresh.
+ * Use for /public/*, /auth/login, /auth/register so stale tokens cannot break these flows.
+ */
+export const publicApi = createBaseClient()
+
+/**
+ * Authenticated app API: attaches Bearer token and refreshes on 401 when appropriate.
+ */
+export const api = createBaseClient()
+
+function shouldSkipTokenRefresh(config: InternalAxiosRequestConfig | undefined): boolean {
+  if (!config?.url) return false
+  const u = config.url
+  if (u.includes('/public/')) return true
+  if (u.includes('/auth/login') || u.includes('/auth/register') || u.includes('/auth/refresh')) return true
+  return false
+}
+
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = useAuthStore.getState().accessToken
@@ -25,44 +45,48 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor - handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
-    
-    // If 401 and not already retrying, try to refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
-      
-      const refreshToken = useAuthStore.getState().refreshToken
-      if (refreshToken) {
-        try {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refresh_token: refreshToken,
-          })
-          
-          const { access_token, refresh_token } = response.data
-          useAuthStore.getState().setTokens(access_token, refresh_token)
-          
-          // Retry original request
-          originalRequest.headers.Authorization = `Bearer ${access_token}`
-          return api(originalRequest)
-        } catch {
-          // Refresh failed, logout
-          useAuthStore.getState().logout()
-        }
-      }
+
+    if (error.response?.status !== 401 || originalRequest._retry || shouldSkipTokenRefresh(originalRequest)) {
+      return Promise.reject(error)
     }
-    
-    return Promise.reject(error)
+
+    originalRequest._retry = true
+
+    const refreshToken = useAuthStore.getState().refreshToken
+    if (!refreshToken) {
+      return Promise.reject(error)
+    }
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+        refresh_token: refreshToken,
+      })
+
+      const { access_token, refresh_token } = response.data
+      useAuthStore.getState().setTokens(access_token, refresh_token)
+
+      originalRequest.headers.Authorization = `Bearer ${access_token}`
+      return api(originalRequest)
+    } catch {
+      useAuthStore.getState().logout()
+      return Promise.reject(error)
+    }
   }
 )
 
-// Error helper
+const SERVER_UNAVAILABLE =
+  'We could not reach the server. Check your connection. If you use a custom domain, set VITE_API_URL to your API base URL and add your site to CORS_ORIGINS_STR on the backend.'
+
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data
+    if (!error.response) {
+      return SERVER_UNAVAILABLE
+    }
+    const data = error.response.data as { detail?: unknown } | undefined
     if (data?.detail) {
       if (typeof data.detail === 'string') {
         return data.detail
@@ -70,6 +94,9 @@ export function getErrorMessage(error: unknown): string {
       if (Array.isArray(data.detail)) {
         return data.detail.map((d: { msg: string }) => d.msg).join(', ')
       }
+    }
+    if (error.response.status >= 500) {
+      return 'Something went wrong on the server. Please try again in a moment.'
     }
     return error.message
   }

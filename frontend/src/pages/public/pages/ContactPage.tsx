@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Phone, Mail, MapPin, Check } from 'lucide-react';
-import axios from 'axios';
-import { api, getErrorMessage } from '@/lib/api';
+import { publicApi, getErrorMessage } from '@/lib/api';
 import { SeoMeta } from '@/components/seo/SeoMeta';
 import { buildLeadSource, trackEvent } from '@/lib/analytics';
 
@@ -28,7 +27,7 @@ export function ContactPage() {
     trackEvent('demo_request_submit_attempt', { city: form.city });
 
     try {
-      await api.post('/public/demo-request', {
+      await publicApi.post('/public/demo-request', {
         ...form,
         source: buildLeadSource('public_site'),
       });
@@ -36,14 +35,7 @@ export function ContactPage() {
       trackEvent('demo_request_submit_success', { city: form.city });
     } catch (err) {
       setStatus('error');
-      const detail = getErrorMessage(err);
-      const isNetwork =
-        axios.isAxiosError(err) && !err.response;
-      setErrorMsg(
-        isNetwork
-          ? 'Cannot reach the server. Set VITE_API_URL to your backend base URL (e.g. https://api.activehq.fit) in the frontend build, and add your site origin to CORS_ORIGINS_STR on the API. Or email info@activehq.fit.'
-          : `${detail} You can also email info@activehq.fit.`
-      );
+      setErrorMsg(`${getErrorMessage(err)} Email info@activehq.fit if you need help.`);
       trackEvent('demo_request_submit_failed', { city: form.city });
     }
   };

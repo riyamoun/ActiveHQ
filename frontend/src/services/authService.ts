@@ -1,4 +1,4 @@
-import { api } from '@/lib/api'
+import { api, publicApi } from '@/lib/api'
 import type { User, TokenResponse, LoginRequest, RegisterRequest, Gym } from '@/types'
 
 interface RegisterResponse {
@@ -10,23 +10,23 @@ interface RegisterResponse {
 
 export const authService = {
   async login(data: LoginRequest): Promise<TokenResponse> {
-    const response = await api.post<TokenResponse>('/auth/login', data)
+    const response = await publicApi.post<TokenResponse>('/auth/login', data)
     return response.data
   },
 
   /** Ensure demo account exists (creates it if DB has no gyms). Call before demo login if 401. */
   async seedDemo(): Promise<{ status: string }> {
-    const response = await api.get<{ status: string }>('/public/seed-demo')
+    const response = await publicApi.get<{ status: string }>('/public/seed-demo')
     return response.data
   },
 
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    const response = await api.post<RegisterResponse>('/auth/register', data)
+    const response = await publicApi.post<RegisterResponse>('/auth/register', data)
     return response.data
   },
 
   async refreshToken(refreshToken: string): Promise<TokenResponse> {
-    const response = await api.post<TokenResponse>('/auth/refresh', {
+    const response = await publicApi.post<TokenResponse>('/auth/refresh', {
       refresh_token: refreshToken,
     })
     return response.data
