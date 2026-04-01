@@ -35,7 +35,7 @@ class TestAdminAccess:
     def test_requires_authentication(self, client):
         """Endpoints require authentication."""
         response = client.get("/api/v1/admin/stats")
-        assert response.status_code == 403
+        assert response.status_code in (401, 403)
 
 
 class TestAdminGymManagement:

@@ -1,16 +1,22 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { attendanceService } from '@/services/attendanceService'
 import { memberService } from '@/services/memberService'
 import { getErrorMessage } from '@/lib/api'
-import Card, { CardHeader } from '@/components/ui/Card'
+import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
-import StatCard from '@/components/ui/StatCard'
-import Modal from '@/components/ui/Modal'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { UserCheck, Users, Clock, Search, LogOut } from 'lucide-react'
+import {
+  UserCheck,
+  Users,
+  Clock,
+  Search,
+  LogOut,
+  Calendar,
+  X,
+} from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
@@ -53,57 +59,84 @@ export default function AttendancePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-          <p className="text-gray-500">Track member check-ins and check-outs</p>
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10">
+            <Calendar className="h-5 w-5 text-sky-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Attendance</h1>
+            <p className="text-slate-400">Track member check-ins and check-outs</p>
+          </div>
         </div>
         <Button
           variant="primary"
           leftIcon={<UserCheck className="w-4 h-4" />}
           onClick={() => setShowCheckInModal(true)}
+          className="!bg-emerald-600 !text-white hover:!bg-emerald-500 rounded-xl shadow-lg shadow-emerald-500/20 focus:ring-emerald-500"
         >
           Check In Member
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          title="Today's Check-ins"
-          value={todaySummary?.total_check_ins || 0}
-          icon={<UserCheck className="w-6 h-6" />}
-          variant="primary"
-        />
-        <StatCard
-          title="Unique Members"
-          value={todaySummary?.unique_members || 0}
-          icon={<Users className="w-6 h-6" />}
-          variant="success"
-        />
-        <StatCard
-          title="Currently In Gym"
-          value={currentlyIn?.length || 0}
-          icon={<Clock className="w-6 h-6" />}
-          variant="warning"
-        />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-400">Today&apos;s Check-ins</p>
+              <p className="mt-1 text-2xl font-bold text-white">
+                {todaySummary?.total_check_ins || 0}
+              </p>
+            </div>
+            <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-400">
+              <UserCheck className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-400">Unique Members</p>
+              <p className="mt-1 text-2xl font-bold text-white">
+                {todaySummary?.unique_members || 0}
+              </p>
+            </div>
+            <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-400">
+              <Users className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-400">Currently In Gym</p>
+              <p className="mt-1 text-2xl font-bold text-white">{currentlyIn?.length || 0}</p>
+            </div>
+            <div className="rounded-xl bg-amber-500/10 p-3 text-amber-400">
+              <Clock className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Currently In Gym */}
       {currentlyIn && currentlyIn.length > 0 && (
-        <Card>
-          <CardHeader
-            title="Currently in Gym"
-            subtitle="Members who haven't checked out yet"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="rounded-2xl !border-slate-800/60 !bg-slate-900/60 shadow-none">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-white">Currently in Gym</h3>
+            <p className="mt-0.5 text-sm text-slate-400">
+              Members who haven&apos;t checked out yet
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {currentlyIn.map((record) => (
               <div
                 key={record.id}
-                className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-100"
+                className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{record.member_name}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-white">{record.member_name}</p>
+                  <p className="text-sm text-slate-400">
                     In since {format(new Date(record.check_in_time), 'hh:mm a')}
                   </p>
                 </div>
@@ -113,6 +146,7 @@ export default function AttendancePage() {
                   leftIcon={<LogOut className="w-4 h-4" />}
                   onClick={() => checkOutMutation.mutate(record.member_id)}
                   isLoading={checkOutMutation.isPending}
+                  className="!border-slate-800/60 !bg-slate-800/60 !text-white hover:!bg-slate-800/30"
                 >
                   Check Out
                 </Button>
@@ -123,14 +157,14 @@ export default function AttendancePage() {
       )}
 
       {/* Date Filter */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <Input
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="w-auto"
+          className="w-auto !border-slate-800/60 !bg-slate-900/60 text-white placeholder-slate-500"
         />
-        <span className="text-gray-500">
+        <span className="text-slate-400">
           {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
         </span>
       </div>
@@ -139,29 +173,32 @@ export default function AttendancePage() {
       {isLoading ? (
         <PageLoader />
       ) : (
-        <Card padding="none">
+        <Card
+          padding="none"
+          className="overflow-hidden rounded-2xl !border-slate-800/60 !bg-slate-900/60 shadow-none"
+        >
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                <tr className="border-b border-slate-800/60 bg-slate-800/60">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-slate-400">
                     Member
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-slate-400">
                     Check In
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-slate-400">
                     Check Out
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-slate-400">
                     Duration
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-slate-800/40">
                 {attendance?.items.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
                       No check-ins for this date
                     </td>
                   </tr>
@@ -176,21 +213,24 @@ export default function AttendancePage() {
                       : null
 
                     return (
-                      <tr key={record.id} className="hover:bg-gray-50">
+                      <tr key={record.id} className="hover:bg-slate-800/30">
                         <td className="px-6 py-4">
-                          <p className="font-medium text-gray-900">{record.member_name}</p>
+                          <p className="font-medium text-white">{record.member_name}</p>
                         </td>
-                        <td className="px-6 py-4 text-gray-600">
-                          {format(checkIn, 'hh:mm a')}
-                        </td>
+                        <td className="px-6 py-4 text-slate-400">{format(checkIn, 'hh:mm a')}</td>
                         <td className="px-6 py-4">
                           {checkOut ? (
-                            <span className="text-gray-600">{format(checkOut, 'hh:mm a')}</span>
+                            <span className="text-slate-400">{format(checkOut, 'hh:mm a')}</span>
                           ) : (
-                            <Badge variant="success">Still In</Badge>
+                            <Badge
+                              variant="success"
+                              className="border border-emerald-500/20 bg-emerald-500/10 !text-emerald-400"
+                            >
+                              Still In
+                            </Badge>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-gray-500">
+                        <td className="px-6 py-4 text-slate-400">
                           {duration ? `${duration} mins` : '-'}
                         </td>
                       </tr>
@@ -203,11 +243,7 @@ export default function AttendancePage() {
         </Card>
       )}
 
-      {/* Check In Modal */}
-      <CheckInModal
-        isOpen={showCheckInModal}
-        onClose={() => setShowCheckInModal(false)}
-      />
+      <CheckInModal isOpen={showCheckInModal} onClose={() => setShowCheckInModal(false)} />
     </div>
   )
 }
@@ -235,45 +271,71 @@ function CheckInModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     onError: (error) => toast.error(getErrorMessage(error)),
   })
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Check In Member">
-      <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by name or phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input pl-10"
-            autoFocus
-          />
-        </div>
+  if (!isOpen) return null
 
-        <div className="max-h-64 overflow-y-auto">
-          {search.length < 2 ? (
-            <p className="text-center text-gray-500 py-4">
-              Type at least 2 characters to search
-            </p>
-          ) : members?.items.length === 0 ? (
-            <p className="text-center text-gray-500 py-4">No members found</p>
-          ) : (
-            <div className="space-y-2">
-              {members?.items.map((member) => (
-                <button
-                  key={member.id}
-                  onClick={() => checkInMutation.mutate(member.id)}
-                  disabled={checkInMutation.isPending}
-                  className="w-full p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                >
-                  <p className="font-medium text-gray-900">{member.name}</p>
-                  <p className="text-sm text-gray-500">{member.phone}</p>
-                </button>
-              ))}
+  return (
+    <Fragment>
+      <div
+        className="fixed inset-0 z-50 bg-black/50 transition-opacity"
+        onClick={onClose}
+      />
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex min-h-full items-center justify-center p-4">
+          <div
+            className="relative w-full max-w-lg rounded-2xl border border-slate-800/60 bg-slate-900/60 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800/60 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">Check In Member</h2>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg p-1 transition-colors hover:bg-slate-800/30"
+              >
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
             </div>
-          )}
+            <div className="space-y-4 p-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or phone..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="input w-full rounded-xl border-slate-800/60 bg-slate-900/60 pl-10 text-white placeholder-slate-500"
+                  autoFocus
+                />
+              </div>
+
+              <div className="max-h-64 overflow-y-auto">
+                {search.length < 2 ? (
+                  <p className="py-4 text-center text-slate-400">
+                    Type at least 2 characters to search
+                  </p>
+                ) : members?.items.length === 0 ? (
+                  <p className="py-4 text-center text-slate-400">No members found</p>
+                ) : (
+                  <div className="space-y-2">
+                    {members?.items.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => checkInMutation.mutate(member.id)}
+                        disabled={checkInMutation.isPending}
+                        className="w-full rounded-xl border border-slate-800/60 bg-slate-900/60 p-4 text-left transition-colors hover:bg-slate-800/30"
+                      >
+                        <p className="font-medium text-white">{member.name}</p>
+                        <p className="text-sm text-slate-400">{member.phone}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </Modal>
+    </Fragment>
   )
 }

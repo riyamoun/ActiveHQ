@@ -101,8 +101,8 @@ export default function AddMemberPage() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add Member</h1>
-          <p className="text-gray-500">Create a new gym member</p>
+          <h1 className="text-2xl font-bold text-white">Add Member</h1>
+          <p className="text-slate-400">Create a new gym member</p>
         </div>
       </div>
 
@@ -111,7 +111,7 @@ export default function AddMemberPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
               Basic Information
             </h3>
 
@@ -178,8 +178,8 @@ export default function AddMemberPage() {
           </div>
 
           {/* Address */}
-          <div className="space-y-4 pt-4 border-t border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+          <div className="space-y-4 pt-4 border-t border-slate-800/60">
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
               Address
             </h3>
 
@@ -192,8 +192,8 @@ export default function AddMemberPage() {
           </div>
 
           {/* Emergency Contact */}
-          <div className="space-y-4 pt-4 border-t border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+          <div className="space-y-4 pt-4 border-t border-slate-800/60">
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
               Emergency Contact
             </h3>
 
@@ -214,8 +214,8 @@ export default function AddMemberPage() {
           </div>
 
           {/* Notes */}
-          <div className="space-y-4 pt-4 border-t border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+          <div className="space-y-4 pt-4 border-t border-slate-800/60">
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
               Notes
             </h3>
 
@@ -228,7 +228,7 @@ export default function AddMemberPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800/60">
             <Button variant="secondary" onClick={() => navigate('/members')}>
               Cancel
             </Button>

@@ -8,9 +8,23 @@ import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Layers } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Plan, PlanCreate } from '@/types'
+
+const cardDark =
+  '!bg-slate-900/60 !rounded-2xl !border-slate-800/60 !shadow-none border'
+
+const primaryBtn =
+  '!rounded-xl !bg-emerald-600 !text-white hover:!bg-emerald-500 focus:!ring-emerald-500 shadow-lg shadow-emerald-500/20'
+
+const secondaryBtn =
+  '!rounded-xl !bg-slate-800/60 !text-slate-200 hover:!bg-slate-800/30 focus:!ring-slate-600'
+
+const ghostBtn =
+  '!rounded-xl !text-slate-400 hover:!bg-slate-800/30 focus:!ring-slate-600'
+
+const inputDark = '!bg-slate-900/60 !border-slate-800/60 !text-white placeholder:!text-slate-500'
 
 export default function PlansPage() {
   const queryClient = useQueryClient()
@@ -55,12 +69,18 @@ export default function PlansPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Plans</h1>
-          <p className="text-gray-500">Manage your membership plans</p>
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+            <Layers className="w-5 h-5 text-violet-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Plans</h1>
+            <p className="text-slate-400">Manage your membership plans</p>
+          </div>
         </div>
         <Button
           variant="primary"
+          className={primaryBtn}
           leftIcon={<Plus className="w-4 h-4" />}
           onClick={() => {
             setEditingPlan(null)
@@ -74,32 +94,38 @@ export default function PlansPage() {
       {/* Plans Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {plans?.map((plan) => (
-          <Card key={plan.id} className="relative">
+          <Card key={plan.id} className={`relative ${cardDark}`}>
             {!plan.is_active && (
               <div className="absolute top-4 right-4">
-                <Badge variant="gray">Inactive</Badge>
+                <Badge
+                  variant="gray"
+                  className="!rounded-xl bg-slate-800/60 text-slate-400 border border-slate-800/60"
+                >
+                  Inactive
+                </Badge>
               </div>
             )}
-            
+
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
                 {plan.description && (
-                  <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+                  <p className="text-sm text-slate-400 mt-1">{plan.description}</p>
                 )}
               </div>
 
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-gray-900">
+                <span className="text-3xl font-bold text-white">
                   {formatCurrency(plan.price)}
                 </span>
-                <span className="text-gray-500">/ {formatDuration(plan.duration_days)}</span>
+                <span className="text-slate-400">/ {formatDuration(plan.duration_days)}</span>
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex gap-2">
+              <div className="pt-4 border-t border-slate-800/60 flex gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
+                  className={secondaryBtn}
                   leftIcon={<Edit className="w-4 h-4" />}
                   onClick={() => {
                     setEditingPlan(plan)
@@ -112,6 +138,7 @@ export default function PlansPage() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className={ghostBtn}
                     leftIcon={<Trash2 className="w-4 h-4" />}
                     onClick={() => {
                       if (confirm('Are you sure you want to deactivate this plan?')) {
@@ -129,12 +156,9 @@ export default function PlansPage() {
       </div>
 
       {plans?.length === 0 && (
-        <Card className="text-center py-12">
-          <p className="text-gray-500 mb-4">No plans created yet</p>
-          <Button
-            variant="primary"
-            onClick={() => setShowModal(true)}
-          >
+        <Card className={`text-center py-12 ${cardDark}`}>
+          <p className="text-slate-400 mb-4">No plans created yet</p>
+          <Button variant="primary" className={primaryBtn} onClick={() => setShowModal(true)}>
             Create your first plan
           </Button>
         </Card>
@@ -212,7 +236,7 @@ function PlanModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name) {
       toast.error('Plan name is required')
       return
@@ -235,6 +259,7 @@ function PlanModal({
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="e.g., Monthly, Quarterly"
+          className={inputDark}
         />
 
         <Input
@@ -242,6 +267,7 @@ function PlanModal({
           value={formData.description || ''}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Optional description"
+          className={inputDark}
         />
 
         <div className="grid grid-cols-2 gap-4">
@@ -253,6 +279,7 @@ function PlanModal({
               setFormData({ ...formData, duration_days: parseInt(e.target.value) || 0 })
             }
             placeholder="30"
+            className={inputDark}
           />
 
           <Input
@@ -263,14 +290,15 @@ function PlanModal({
               setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
             }
             placeholder="1000"
+            className={inputDark}
           />
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" className={secondaryBtn} onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" isLoading={isLoading}>
+          <Button type="submit" variant="primary" className={primaryBtn} isLoading={isLoading}>
             {plan ? 'Update Plan' : 'Create Plan'}
           </Button>
         </div>

@@ -24,11 +24,11 @@ export default function Table<T extends { id: string }>({
 }: TableProps<T>) {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 overflow-hidden">
         <div className="p-8 text-center">
           <div className="animate-pulse flex flex-col items-center">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-4 bg-slate-800 rounded w-1/4 mb-4"></div>
+            <div className="h-4 bg-slate-800 rounded w-1/2"></div>
           </div>
         </div>
       </div>
@@ -37,23 +37,23 @@ export default function Table<T extends { id: string }>({
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-8 text-center text-gray-500">{emptyMessage}</div>
+      <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 overflow-hidden">
+        <div className="p-8 text-center text-slate-500">{emptyMessage}</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
+            <tr className="border-b border-slate-800/60">
               {columns.map((column) => (
                 <th
                   key={column.key}
                   className={clsx(
-                    'px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider',
+                    'px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider',
                     column.className
                   )}
                 >
@@ -62,20 +62,20 @@ export default function Table<T extends { id: string }>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-slate-800/40">
             {data.map((item) => (
               <tr
                 key={item.id}
                 onClick={() => onRowClick?.(item)}
                 className={clsx(
-                  'hover:bg-gray-50 transition-colors',
+                  'hover:bg-slate-800/30 transition-colors',
                   onRowClick && 'cursor-pointer'
                 )}
               >
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className={clsx('px-6 py-4 whitespace-nowrap', column.className)}
+                    className={clsx('px-6 py-4 whitespace-nowrap text-slate-300', column.className)}
                   >
                     {column.render
                       ? column.render(item)

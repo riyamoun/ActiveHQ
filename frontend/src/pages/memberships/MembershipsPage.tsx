@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { ClipboardList } from 'lucide-react'
 import { membershipService } from '@/services/membershipService'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -48,13 +49,18 @@ export default function MembershipsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Memberships</h1>
-        <p className="text-gray-500">Track all membership subscriptions</p>
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+          <ClipboardList className="w-5 h-5 text-violet-400" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Memberships</h1>
+          <p className="text-slate-400">Track all membership subscriptions</p>
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['', 'active', 'expired', 'paused', 'cancelled'] as const).map((status) => (
           <button
             key={status}
@@ -62,10 +68,10 @@ export default function MembershipsPage() {
               setStatusFilter(status)
               setPage(1)
             }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               statusFilter === status
-                ? 'bg-primary-100 text-primary-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-500/20'
+                : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800/30'
             }`}
           >
             {status === '' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
@@ -81,28 +87,28 @@ export default function MembershipsPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                <tr className="bg-slate-800/60 border-b border-slate-800/60">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase">
                     Member
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase">
                     Plan
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase">
                     Duration
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase">
                     Amount Due
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-slate-800/40">
                 {data?.items.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
                       No memberships found
                     </td>
                   </tr>
@@ -110,25 +116,25 @@ export default function MembershipsPage() {
                   data?.items.map((membership) => (
                     <tr
                       key={membership.id}
-                      className="hover:bg-gray-50 cursor-pointer"
+                      className="hover:bg-slate-800/30 cursor-pointer"
                       onClick={() => navigate(`/members/${membership.member_id}`)}
                     >
                       <td className="px-6 py-4">
-                        <p className="font-medium text-gray-900">{membership.member_name}</p>
+                        <p className="font-medium text-white">{membership.member_name}</p>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">{membership.plan_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="px-6 py-4 text-slate-400">{membership.plan_name}</td>
+                      <td className="px-6 py-4 text-sm text-slate-400">
                         {format(new Date(membership.start_date), 'dd MMM')} -{' '}
                         {format(new Date(membership.end_date), 'dd MMM yyyy')}
                       </td>
                       <td className="px-6 py-4">{getStatusBadge(membership.status)}</td>
                       <td className="px-6 py-4">
                         {membership.amount_due > 0 ? (
-                          <span className="font-medium text-red-600">
+                          <span className="font-medium text-red-400">
                             {formatCurrency(membership.amount_due)}
                           </span>
                         ) : (
-                          <span className="text-green-600">Paid</span>
+                          <span className="text-emerald-400">Paid</span>
                         )}
                       </td>
                     </tr>
@@ -143,7 +149,7 @@ export default function MembershipsPage() {
       {/* Pagination */}
       {data && data.total > 20 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-400">
             Showing {(page - 1) * 20 + 1} to {Math.min(page * 20, data.total)} of{' '}
             {data.total} memberships
           </p>

@@ -12,11 +12,11 @@ interface StatCardProps {
 }
 
 const iconVariants = {
-  default: 'bg-gray-100 text-gray-600',
-  primary: 'bg-primary-100 text-primary-600',
-  success: 'bg-green-100 text-green-600',
-  warning: 'bg-yellow-100 text-yellow-600',
-  danger: 'bg-red-100 text-red-600',
+  default: 'bg-slate-800/60 text-slate-400',
+  primary: 'bg-emerald-500/10 text-emerald-400',
+  success: 'bg-emerald-500/10 text-emerald-400',
+  warning: 'bg-amber-500/10 text-amber-400',
+  danger: 'bg-red-500/10 text-red-400',
 }
 
 export default function StatCard({
@@ -27,16 +27,16 @@ export default function StatCard({
   variant = 'default',
 }: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 p-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+          <p className="text-sm font-medium text-slate-400">{title}</p>
+          <p className="text-2xl font-bold text-white mt-1">{value}</p>
           {change && (
             <p
               className={clsx(
                 'text-sm mt-2',
-                change.value >= 0 ? 'text-green-600' : 'text-red-600'
+                change.value >= 0 ? 'text-emerald-400' : 'text-red-400'
               )}
             >
               {change.value >= 0 ? '+' : ''}

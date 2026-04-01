@@ -107,8 +107,8 @@ export default function MemberDetailPage() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{member.name}</h1>
-            <p className="text-gray-500">{member.member_code || 'No member code'}</p>
+            <h1 className="text-2xl font-bold text-white">{member.name}</h1>
+            <p className="text-slate-400">{member.member_code || 'No member code'}</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -134,52 +134,52 @@ export default function MemberDetailPage() {
         {/* Member Info */}
         <Card>
           <CardHeader title="Member Details" />
-          
+
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary-700">
+              <div className="w-16 h-16 bg-slate-800/60 rounded-full flex items-center justify-center">
+                <span className="text-2xl font-bold text-emerald-400">
                   {member.name.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div>
                 {getStatusBadge(member.current_membership_status)}
                 {member.current_plan_name && (
-                  <p className="text-sm text-gray-500 mt-1">{member.current_plan_name}</p>
+                  <p className="text-sm text-slate-400 mt-1">{member.current_plan_name}</p>
                 )}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-100 space-y-3">
-              <div className="flex items-center gap-3 text-gray-600">
+            <div className="pt-4 border-t border-slate-800/60 space-y-3">
+              <div className="flex items-center gap-3 text-slate-400">
                 <Phone className="w-4 h-4" />
                 <span>{member.phone}</span>
               </div>
               {member.email && (
-                <div className="flex items-center gap-3 text-gray-600">
+                <div className="flex items-center gap-3 text-slate-400">
                   <Mail className="w-4 h-4" />
                   <span>{member.email}</span>
                 </div>
               )}
-              <div className="flex items-center gap-3 text-gray-600">
+              <div className="flex items-center gap-3 text-slate-400">
                 <Calendar className="w-4 h-4" />
                 <span>Joined {format(new Date(member.joined_date), 'dd MMM yyyy')}</span>
               </div>
             </div>
 
             {member.current_membership_end && (
-              <div className="pt-4 border-t border-gray-100">
-                <p className="text-sm text-gray-500">Membership expires</p>
-                <p className="font-semibold text-gray-900">
+              <div className="pt-4 border-t border-slate-800/60">
+                <p className="text-sm text-slate-400">Membership expires</p>
+                <p className="font-semibold text-white">
                   {format(new Date(member.current_membership_end), 'dd MMM yyyy')}
                 </p>
               </div>
             )}
 
             {member.amount_due !== null && member.amount_due > 0 && (
-              <div className="pt-4 border-t border-gray-100">
-                <p className="text-sm text-gray-500">Amount Due</p>
-                <p className="font-semibold text-red-600">
+              <div className="pt-4 border-t border-slate-800/60">
+                <p className="text-sm text-slate-400">Amount Due</p>
+                <p className="font-semibold text-red-400">
                   {formatCurrency(member.amount_due)}
                 </p>
                 <Button
@@ -201,19 +201,19 @@ export default function MemberDetailPage() {
             title="Membership History"
             subtitle={`${memberships?.length || 0} memberships`}
           />
-          
+
           <div className="space-y-3">
             {memberships?.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No memberships yet</p>
+              <p className="text-slate-400 text-center py-4">No memberships yet</p>
             ) : (
               memberships?.map((membership) => (
                 <div
                   key={membership.id}
-                  className="p-4 bg-gray-50 rounded-lg flex items-center justify-between"
+                  className="p-4 bg-slate-800/60 rounded-lg flex items-center justify-between hover:bg-slate-800/30 transition-colors"
                 >
                   <div>
-                    <p className="font-medium text-gray-900">{membership.plan_name}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-white">{membership.plan_name}</p>
+                    <p className="text-sm text-slate-400">
                       {format(new Date(membership.start_date), 'dd MMM yyyy')} -{' '}
                       {format(new Date(membership.end_date), 'dd MMM yyyy')}
                     </p>
@@ -221,7 +221,7 @@ export default function MemberDetailPage() {
                   <div className="text-right">
                     {getStatusBadge(membership.status)}
                     {membership.amount_due > 0 && (
-                      <p className="text-sm text-red-600 mt-1">
+                      <p className="text-sm text-red-400 mt-1">
                         Due: {formatCurrency(membership.amount_due)}
                       </p>
                     )}
@@ -249,45 +249,45 @@ export default function MemberDetailPage() {
             </Button>
           }
         />
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase">
+              <tr className="border-b border-slate-800/60">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">
                   Date
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">
                   Amount
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">
                   Mode
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase">
                   Reference
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-800/40">
               {payments?.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-4 text-center text-gray-500">
+                  <td colSpan={4} className="py-4 text-center text-slate-400">
                     No payments yet
                   </td>
                 </tr>
               ) : (
                 payments?.map((payment) => (
                   <tr key={payment.id}>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 text-white">
                       {format(new Date(payment.payment_date), 'dd MMM yyyy')}
                     </td>
-                    <td className="py-3 px-4 font-medium">
+                    <td className="py-3 px-4 font-medium text-white">
                       {formatCurrency(payment.amount)}
                     </td>
                     <td className="py-3 px-4">
                       <Badge variant="info">{payment.payment_mode.toUpperCase()}</Badge>
                     </td>
-                    <td className="py-3 px-4 text-gray-500">
+                    <td className="py-3 px-4 text-slate-400">
                       {payment.reference_number || '-'}
                     </td>
                   </tr>
@@ -377,9 +377,9 @@ function AddMembershipModal({
         />
 
         {selectedPlan && (
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">Plan Price</p>
-            <p className="text-xl font-bold text-gray-900">₹{selectedPlan.price}</p>
+          <div className="p-4 bg-slate-800/60 rounded-lg border border-slate-800/60">
+            <p className="text-sm text-slate-400">Plan Price</p>
+            <p className="text-xl font-bold text-white">₹{selectedPlan.price}</p>
           </div>
         )}
 

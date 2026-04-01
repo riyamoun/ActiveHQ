@@ -34,32 +34,32 @@ function parseCSV(text: string): Record<string, string>[] {
 
 function ResultCard({ result, label }: { result: ImportResult; label: string }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-      <h3 className="text-lg font-semibold text-slate-900">{label} Import Result</h3>
+    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-6 space-y-4">
+      <h3 className="text-lg font-semibold text-white">{label} Import Result</h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Stat label="Received" value={result.total_received} />
-        <Stat label="Created" value={result.created} color="text-emerald-600" />
-        <Stat label="Skipped" value={(result.skipped_duplicates ?? 0) + (result.skipped_unknown_member ?? 0) + (result.skipped_duplicate ?? 0) + (result.skipped ?? 0) + (result.updated ?? 0)} color="text-amber-600" />
-        <Stat label="Errors" value={result.errors.length} color={result.errors.length > 0 ? 'text-red-600' : 'text-slate-500'} />
+        <Stat label="Created" value={result.created} color="text-emerald-400" />
+        <Stat label="Skipped" value={(result.skipped_duplicates ?? 0) + (result.skipped_unknown_member ?? 0) + (result.skipped_duplicate ?? 0) + (result.skipped ?? 0) + (result.updated ?? 0)} color="text-amber-400" />
+        <Stat label="Errors" value={result.errors.length} color={result.errors.length > 0 ? 'text-red-400' : 'text-slate-400'} />
       </div>
       {result.errors.length > 0 && (
-        <div className="bg-red-50 rounded-lg p-4 max-h-40 overflow-y-auto">
-          <p className="text-sm font-medium text-red-700 mb-2">Errors:</p>
+        <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-4 max-h-40 overflow-y-auto">
+          <p className="text-sm font-medium text-red-400 mb-2">Errors:</p>
           {result.errors.slice(0, 20).map((e, i) => (
-            <p key={i} className="text-xs text-red-600">{e}</p>
+            <p key={i} className="text-xs text-red-400">{e}</p>
           ))}
-          {result.errors.length > 20 && <p className="text-xs text-red-500 mt-1">...and {result.errors.length - 20} more</p>}
+          {result.errors.length > 20 && <p className="text-xs text-red-400 mt-1">...and {result.errors.length - 20} more</p>}
         </div>
       )}
     </div>
   )
 }
 
-function Stat({ label, value, color = 'text-slate-900' }: { label: string; value: number; color?: string }) {
+function Stat({ label, value, color = 'text-white' }: { label: string; value: number; color?: string }) {
   return (
     <div className="text-center">
       <p className={`text-2xl font-bold ${color}`}>{value.toLocaleString()}</p>
-      <p className="text-xs text-slate-500 mt-1">{label}</p>
+      <p className="text-xs text-slate-400 mt-1">{label}</p>
     </div>
   )
 }
@@ -91,7 +91,7 @@ function CSVUploadArea({ onData, sampleHeaders, sampleRow }: {
     <div className="space-y-3">
       <div
         className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
-          dragActive ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:border-emerald-400'
+          dragActive ? 'border-emerald-400 bg-emerald-500/10' : 'border-slate-800/60 hover:border-emerald-400'
         }`}
         onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
         onDragLeave={() => setDragActive(false)}
@@ -108,13 +108,13 @@ function CSVUploadArea({ onData, sampleHeaders, sampleRow }: {
         }}
       >
         <FileSpreadsheet className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-        <p className="text-sm font-medium text-slate-700">Drop a CSV file here, or click to browse</p>
+        <p className="text-sm font-medium text-white">Drop a CSV file here, or click to browse</p>
         <p className="text-xs text-slate-400 mt-1">UTF-8 encoded, comma-separated</p>
       </div>
 
-      <div className="bg-slate-50 rounded-lg p-4">
-        <p className="text-xs font-medium text-slate-500 mb-2">Expected CSV format:</p>
-        <pre className="text-xs text-slate-600 overflow-x-auto whitespace-pre">
+      <div className="bg-slate-800/40 rounded-lg p-4">
+        <p className="text-xs font-medium text-slate-400 mb-2">Expected CSV format:</p>
+        <pre className="text-xs text-slate-400 overflow-x-auto whitespace-pre">
 {sampleHeaders}
 {sampleRow}
         </pre>
@@ -141,14 +141,14 @@ function ReconciliationView() {
         <select
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+          className="border border-slate-800/60 bg-slate-900/60 text-white rounded-lg px-3 py-2 text-sm"
         >
           <option value={7}>Last 7 days</option>
           <option value={30}>Last 30 days</option>
           <option value={90}>Last 90 days</option>
           <option value={365}>Last 365 days</option>
         </select>
-        <button onClick={() => refetch()} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 transition-colors">
+        <button onClick={() => refetch()} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm hover:bg-emerald-500 transition-colors">
           <RefreshCw className="w-4 h-4" /> Refresh
         </button>
       </div>
@@ -158,36 +158,36 @@ function ReconciliationView() {
       ) : data ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <ReconCard label="Total Members" value={data.total_members} />
-          <ReconCard label="Active Members" value={data.active_members} color="text-emerald-600" />
-          <ReconCard label="Active Memberships" value={data.active_memberships} color="text-emerald-600" />
+          <ReconCard label="Active Members" value={data.active_members} color="text-emerald-400" />
+          <ReconCard label="Active Memberships" value={data.active_memberships} color="text-emerald-400" />
           <ReconCard label="Attendance Punches" value={data.total_attendance_punches} sub={`last ${data.period_days}d`} />
           <ReconCard label="Payments" value={data.total_payments} sub={`last ${data.period_days}d`} />
           <ReconCard label="Revenue" value={data.total_revenue} prefix="₹" />
-          <ReconCard label="Unmapped Device Users" value={data.unmapped_device_users} color={data.unmapped_device_users > 0 ? 'text-amber-600' : 'text-emerald-600'} />
-          <ReconCard label="Biometric Conflicts" value={data.biometric_conflicts} color={data.biometric_conflicts > 0 ? 'text-red-600' : 'text-emerald-600'} />
+          <ReconCard label="Unmapped Device Users" value={data.unmapped_device_users} color={data.unmapped_device_users > 0 ? 'text-amber-400' : 'text-emerald-400'} />
+          <ReconCard label="Biometric Conflicts" value={data.biometric_conflicts} color={data.biometric_conflicts > 0 ? 'text-red-400' : 'text-emerald-400'} />
         </div>
       ) : null}
 
       {syncData && syncData.total_devices > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-emerald-600" /> Biometric Devices
+        <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Activity className="w-5 h-5 text-emerald-400" /> Biometric Devices
           </h3>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-800/60">
             {syncData.devices.map(dev => (
               <div key={dev.device_id} className="py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {dev.is_active ? <Wifi className="w-4 h-4 text-emerald-500" /> : <WifiOff className="w-4 h-4 text-slate-400" />}
+                  {dev.is_active ? <Wifi className="w-4 h-4 text-emerald-400" /> : <WifiOff className="w-4 h-4 text-slate-400" />}
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{dev.device_name}</p>
+                    <p className="text-sm font-medium text-white">{dev.device_name}</p>
                     <p className="text-xs text-slate-400">{dev.vendor} &middot; {dev.mapped_members} mapped members</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-slate-700">{dev.events_last_24h} events (24h)</p>
+                  <p className="text-sm text-slate-400">{dev.events_last_24h} events (24h)</p>
                   <p className="text-xs text-slate-400">{dev.total_events.toLocaleString()} total</p>
                   {dev.conflict_events > 0 && (
-                    <p className="text-xs text-amber-600">{dev.conflict_events} conflicts</p>
+                    <p className="text-xs text-amber-400">{dev.conflict_events} conflicts</p>
                   )}
                 </div>
               </div>
@@ -199,13 +199,13 @@ function ReconciliationView() {
   )
 }
 
-function ReconCard({ label, value, prefix, sub, color = 'text-slate-900' }: {
+function ReconCard({ label, value, prefix, sub, color = 'text-white' }: {
   label: string; value: number; prefix?: string; sub?: string; color?: string
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
+    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-4">
       <p className={`text-2xl font-bold ${color}`}>{prefix}{typeof value === 'number' ? value.toLocaleString() : value}</p>
-      <p className="text-xs text-slate-500 mt-1">{label}</p>
+      <p className="text-xs text-slate-400 mt-1">{label}</p>
       {sub && <p className="text-[10px] text-slate-400">{sub}</p>}
     </div>
   )
@@ -324,12 +324,12 @@ export default function ImportDataPage() {
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/settings')} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        <button onClick={() => navigate('/settings')} className="p-2 hover:bg-slate-800/30 rounded-lg transition-colors">
+          <ArrowLeft className="w-5 h-5 text-slate-400" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Import Data</h1>
-          <p className="text-sm text-slate-500">Migrate your gym data from old software — zero data loss</p>
+          <h1 className="text-2xl font-bold text-white">Import Data</h1>
+          <p className="text-sm text-slate-400">Migrate your gym data from old software — zero data loss</p>
         </div>
       </div>
 
@@ -343,7 +343,7 @@ export default function ImportDataPage() {
               key={step.key}
               onClick={() => { setCsvRows([]); setLastResult(null); setError(''); setCurrentStep(step.key) }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
-                isCurrent ? 'bg-emerald-600 text-white' : isPast ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                isCurrent ? 'bg-emerald-600 text-white' : isPast ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800/30'
               }`}
             >
               <step.icon className="w-4 h-4" />
@@ -354,12 +354,12 @@ export default function ImportDataPage() {
       </div>
 
       {/* Step Content */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+      <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 p-6 space-y-6">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-            {(() => { const S = STEPS[currentIdx]; return <><S.icon className="w-5 h-5 text-emerald-600" /> {S.label}</> })()}
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            {(() => { const S = STEPS[currentIdx]; return <><S.icon className="w-5 h-5 text-emerald-400" /> {S.label}</> })()}
           </h2>
-          <p className="text-sm text-slate-500 mt-1">{STEPS[currentIdx].description}</p>
+          <p className="text-sm text-slate-400 mt-1">{STEPS[currentIdx].description}</p>
         </div>
 
         {currentStep === 'reconciliation' ? (
@@ -375,11 +375,11 @@ export default function ImportDataPage() {
             {csvRows.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-slate-600">{csvRows.length} rows loaded from CSV</p>
+                  <p className="text-sm text-slate-400">{csvRows.length} rows loaded from CSV</p>
                   <button
                     onClick={() => importMutation.mutate()}
                     disabled={importMutation.isPending}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-500 disabled:opacity-50 transition-colors"
                   >
                     <Upload className="w-4 h-4" />
                     {importMutation.isPending ? 'Importing...' : `Import ${csvRows.length} records`}
@@ -387,10 +387,10 @@ export default function ImportDataPage() {
                 </div>
 
                 {/* Preview */}
-                <div className="bg-slate-50 rounded-lg p-4 overflow-x-auto max-h-48">
-                  <table className="text-xs text-slate-600 w-full">
+                <div className="bg-slate-800/40 rounded-lg p-4 overflow-x-auto max-h-48">
+                  <table className="text-xs text-slate-400 w-full">
                     <thead>
-                      <tr>{Object.keys(csvRows[0]).map(h => <th key={h} className="text-left px-2 py-1 font-medium text-slate-500">{h}</th>)}</tr>
+                      <tr>{Object.keys(csvRows[0]).map(h => <th key={h} className="text-left px-2 py-1 font-medium text-slate-400">{h}</th>)}</tr>
                     </thead>
                     <tbody>
                       {csvRows.slice(0, 5).map((row, i) => (
@@ -404,9 +404,9 @@ export default function ImportDataPage() {
             )}
 
             {error && (
-              <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
-                <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="flex items-start gap-3 bg-red-950/30 border border-red-900/50 rounded-lg p-4">
+                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
@@ -420,14 +420,14 @@ export default function ImportDataPage() {
         <button
           onClick={() => { if (currentIdx > 0) { setCurrentStep(STEPS[currentIdx - 1].key); setCsvRows([]); setLastResult(null); setError('') } }}
           disabled={currentIdx === 0}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:text-slate-900 disabled:opacity-30 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Previous
         </button>
         <button
           onClick={() => { if (currentIdx < STEPS.length - 1) { setCurrentStep(STEPS[currentIdx + 1].key); setCsvRows([]); setLastResult(null); setError('') } }}
           disabled={currentIdx === STEPS.length - 1}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-600 hover:text-emerald-700 disabled:opacity-30 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 hover:text-emerald-300 disabled:opacity-30 transition-colors"
         >
           Next <ArrowRight className="w-4 h-4" />
         </button>

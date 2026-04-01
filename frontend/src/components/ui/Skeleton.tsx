@@ -1,49 +1,22 @@
 import React from 'react'
 import clsx from 'clsx'
 
-/**
- * Skeleton Loader Component
- * Displays placeholder skeleton while content is loading.
- * Useful for lists, cards, charts, and other content.
- */
-
 interface SkeletonProps {
-  /**
-   * Type of skeleton to display
-   */
   type?: 'line' | 'circle' | 'card' | 'table-row' | 'chart'
-  /**
-   * Number of skeleton items to display (for list skeletons)
-   */
   count?: number
-  /**
-   * Additional CSS classes
-   */
   className?: string
-  /**
-   * Width of the skeleton
-   */
   width?: string
-  /**
-   * Height of the skeleton
-   */
   height?: string
 }
 
-/**
- * Basic line skeleton loader
- */
 export const SkeletonLine: React.FC<{ width?: string; height?: string; className?: string }> = ({
   width = 'w-full',
   height = 'h-4',
   className,
 }) => (
-  <div className={clsx('bg-gray-200 rounded animate-pulse', width, height, className)} />
+  <div className={clsx('bg-slate-800 rounded animate-pulse', width, height, className)} />
 )
 
-/**
- * Circle skeleton loader (for avatars)
- */
 export const SkeletonCircle: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: string }> = ({
   size = 'md',
   className,
@@ -54,14 +27,11 @@ export const SkeletonCircle: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: s
     lg: 'w-16 h-16',
   }[size]
 
-  return <div className={clsx('bg-gray-200 rounded-full animate-pulse', sizeClass, className)} />
+  return <div className={clsx('bg-slate-800 rounded-full animate-pulse', sizeClass, className)} />
 }
 
-/**
- * Card skeleton loader
- */
 export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={clsx('bg-white rounded-lg border border-gray-200 p-4', className)}>
+  <div className={clsx('bg-slate-900/60 rounded-2xl border border-slate-800/60 p-4', className)}>
     <SkeletonLine className="mb-4" width="w-1/2" height="h-6" />
     <SkeletonLine className="mb-2" />
     <SkeletonLine className="mb-4" width="w-3/4" />
@@ -70,9 +40,6 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) =>
   </div>
 )
 
-/**
- * Table row skeleton loader
- */
 export const SkeletonTableRow: React.FC<{ columns?: number; className?: string }> = ({
   columns = 5,
   className,
@@ -86,11 +53,8 @@ export const SkeletonTableRow: React.FC<{ columns?: number; className?: string }
   </tr>
 )
 
-/**
- * Chart skeleton loader
- */
 export const SkeletonChart: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={clsx('bg-white rounded-lg border border-gray-200 p-6', className)}>
+  <div className={clsx('bg-slate-900/60 rounded-2xl border border-slate-800/60 p-6', className)}>
     <SkeletonLine className="mb-6" width="w-1/3" height="h-6" />
     <div className="space-y-4">
       {Array.from({ length: 4 }).map((_, i) => (
@@ -98,7 +62,7 @@ export const SkeletonChart: React.FC<{ className?: string }> = ({ className }) =
           {Array.from({ length: 7 }).map((_, j) => (
             <div
               key={j}
-              className="flex-1 bg-gray-200 rounded-t animate-pulse"
+              className="flex-1 bg-slate-800 rounded-t animate-pulse"
               style={{ height: `${Math.random() * 100 + 20}%` }}
             />
           ))}
@@ -108,9 +72,6 @@ export const SkeletonChart: React.FC<{ className?: string }> = ({ className }) =
   </div>
 )
 
-/**
- * Generic Skeleton Component
- */
 const Skeleton: React.FC<SkeletonProps> = ({
   type = 'line',
   count = 1,

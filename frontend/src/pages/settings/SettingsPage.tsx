@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { gymService, authService } from '@/services/authService'
 import { getErrorMessage } from '@/lib/api'
-import Card, { CardHeader } from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
-import { Upload } from 'lucide-react'
+import { Upload, Settings } from 'lucide-react'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
@@ -73,61 +72,86 @@ export default function SettingsPage() {
     changePasswordMutation.mutate()
   }
 
+  const cardClass = 'rounded-2xl border border-slate-800/60 bg-slate-900/60 p-6'
+  const primaryBtnClass =
+    'bg-emerald-600 text-white hover:bg-emerald-500 rounded-xl shadow-lg shadow-emerald-500/20 focus:ring-emerald-500'
+  const inputClass = 'bg-slate-900/60 border-slate-800/60 text-white placeholder-slate-500'
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500">Manage your gym and account settings</p>
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 rounded-xl bg-slate-700/60 flex items-center justify-center shrink-0">
+          <Settings className="w-5 h-5 text-slate-300" aria-hidden />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Settings</h1>
+          <p className="text-slate-400">Manage your gym and account settings</p>
+        </div>
       </div>
 
       {/* Data Import */}
-      <Card>
-        <div className="flex items-center justify-between">
+      <div className={cardClass}>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Data Import &amp; Migration</h3>
-            <p className="text-sm text-gray-500">Import members, plans, memberships, payments, and attendance from your old system</p>
+            <h3 className="text-lg font-semibold text-white">Data Import &amp; Migration</h3>
+            <p className="text-sm text-slate-400">
+              Import members, plans, memberships, payments, and attendance from your old system
+            </p>
           </div>
           <button
+            type="button"
             onClick={() => navigate('/settings/import')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+            className={`flex items-center gap-2 px-5 py-2.5 ${primaryBtnClass} text-sm font-medium transition-colors`}
           >
             <Upload className="w-4 h-4" />
             Import Data
           </button>
         </div>
-      </Card>
+      </div>
 
       {/* Subscription Status */}
-      <Card>
-        <CardHeader title="Subscription" subtitle="Your current plan status" />
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div className={cardClass}>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-white">Subscription</h3>
+          <p className="text-sm text-slate-400 mt-0.5">Your current plan status</p>
+        </div>
+        <div className="flex items-center justify-between p-4 bg-slate-800/60 rounded-lg gap-4 flex-wrap">
           <div>
-            <p className="font-medium text-gray-900">
+            <p className="font-medium text-white">
               {gym?.subscription_status === 'trial' ? 'Free Trial' : 'Active Subscription'}
             </p>
             {gym?.subscription_end && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-slate-400">
                 Expires: {new Date(gym.subscription_end).toLocaleDateString()}
               </p>
             )}
           </div>
           <Badge
             variant={gym?.subscription_status === 'active' ? 'success' : 'warning'}
+            className={
+              gym?.subscription_status === 'active'
+                ? '!bg-emerald-500/10 !text-emerald-400'
+                : '!bg-amber-500/10 !text-amber-400'
+            }
           >
             {gym?.subscription_status?.toUpperCase()}
           </Badge>
         </div>
-      </Card>
+      </div>
 
       {/* Gym Details */}
-      <Card>
-        <CardHeader title="Gym Details" subtitle="Update your gym information" />
+      <div className={cardClass}>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-white">Gym Details</h3>
+          <p className="text-sm text-slate-400 mt-0.5">Update your gym information</p>
+        </div>
         <form onSubmit={handleGymSubmit} className="space-y-4">
           <Input
             label="Gym Name"
             value={gymForm.name}
             onChange={(e) => setGymForm({ ...gymForm, name: e.target.value })}
+            className={inputClass}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,12 +159,14 @@ export default function SettingsPage() {
               label="Phone"
               value={gymForm.phone}
               onChange={(e) => setGymForm({ ...gymForm, phone: e.target.value })}
+              className={inputClass}
             />
             <Input
               label="GST Number"
               value={gymForm.gst_number}
               onChange={(e) => setGymForm({ ...gymForm, gst_number: e.target.value })}
               placeholder="Optional"
+              className={inputClass}
             />
           </div>
 
@@ -148,6 +174,7 @@ export default function SettingsPage() {
             label="Address"
             value={gymForm.address}
             onChange={(e) => setGymForm({ ...gymForm, address: e.target.value })}
+            className={inputClass}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -155,16 +182,19 @@ export default function SettingsPage() {
               label="City"
               value={gymForm.city}
               onChange={(e) => setGymForm({ ...gymForm, city: e.target.value })}
+              className={inputClass}
             />
             <Input
               label="State"
               value={gymForm.state}
               onChange={(e) => setGymForm({ ...gymForm, state: e.target.value })}
+              className={inputClass}
             />
             <Input
               label="Pincode"
               value={gymForm.pincode}
               onChange={(e) => setGymForm({ ...gymForm, pincode: e.target.value })}
+              className={inputClass}
             />
           </div>
 
@@ -173,16 +203,20 @@ export default function SettingsPage() {
               type="submit"
               variant="primary"
               isLoading={updateGymMutation.isPending}
+              className={primaryBtnClass}
             >
               Save Changes
             </Button>
           </div>
         </form>
-      </Card>
+      </div>
 
       {/* Change Password */}
-      <Card>
-        <CardHeader title="Change Password" subtitle="Update your account password" />
+      <div className={cardClass}>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-white">Change Password</h3>
+          <p className="text-sm text-slate-400 mt-0.5">Update your account password</p>
+        </div>
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
           <Input
             label="Current Password"
@@ -191,6 +225,7 @@ export default function SettingsPage() {
             onChange={(e) =>
               setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
             }
+            className={inputClass}
           />
 
           <Input
@@ -201,6 +236,7 @@ export default function SettingsPage() {
               setPasswordForm({ ...passwordForm, newPassword: e.target.value })
             }
             helperText="Minimum 8 characters with at least one number"
+            className={inputClass}
           />
 
           <Input
@@ -210,6 +246,7 @@ export default function SettingsPage() {
             onChange={(e) =>
               setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
             }
+            className={inputClass}
           />
 
           <div className="flex justify-end pt-4">
@@ -217,31 +254,37 @@ export default function SettingsPage() {
               type="submit"
               variant="primary"
               isLoading={changePasswordMutation.isPending}
+              className={primaryBtnClass}
             >
               Change Password
             </Button>
           </div>
         </form>
-      </Card>
+      </div>
 
       {/* Account Info */}
-      <Card>
-        <CardHeader title="Account" subtitle="Your account information" />
+      <div className={cardClass}>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-white">Account</h3>
+          <p className="text-sm text-slate-400 mt-0.5">Your account information</p>
+        </div>
         <div className="space-y-3">
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-500">Name</span>
-            <span className="font-medium text-gray-900">{user?.name}</span>
+          <div className="flex justify-between py-2 border-b border-slate-800/60">
+            <span className="text-slate-400">Name</span>
+            <span className="font-medium text-white">{user?.name}</span>
           </div>
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-500">Email</span>
-            <span className="font-medium text-gray-900">{user?.email}</span>
+          <div className="flex justify-between py-2 border-b border-slate-800/60">
+            <span className="text-slate-400">Email</span>
+            <span className="font-medium text-white">{user?.email}</span>
           </div>
           <div className="flex justify-between py-2">
-            <span className="text-gray-500">Role</span>
-            <Badge variant="info">{user?.role?.toUpperCase()}</Badge>
+            <span className="text-slate-400">Role</span>
+            <Badge variant="info" className="!bg-sky-500/10 !text-sky-400">
+              {user?.role?.toUpperCase()}
+            </Badge>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
