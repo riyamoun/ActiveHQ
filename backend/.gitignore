@@ -34,4 +34,5 @@ logs/
 
 # Local development
 *.db
+*.sqlite
 *.sqlite3
