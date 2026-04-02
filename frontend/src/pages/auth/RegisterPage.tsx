@@ -42,6 +42,8 @@ export default function RegisterPage() {
       newErrors.owner_password = 'Password must be at least 8 characters'
     } else if (!/\d/.test(formData.owner_password)) {
       newErrors.owner_password = 'Password must contain at least one number'
+    } else if (!/[a-zA-Z]/.test(formData.owner_password)) {
+      newErrors.owner_password = 'Password must contain at least one letter'
     }
     if (formData.owner_password !== formData.confirm_password) {
       newErrors.confirm_password = 'Passwords do not match'

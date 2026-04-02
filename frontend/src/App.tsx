@@ -12,6 +12,8 @@ import {
   ForGymOwnersPage,
   GymsOnActiveHQPage,
   ContactPage,
+  PrivacyPage,
+  TermsPage,
 } from '@/pages/public'
 
 // Operational Landing (internal preview)
@@ -68,6 +70,8 @@ export default function App() {
         <Route path="/for-gym-owners" element={<ForGymOwnersPage />} />
         <Route path="/gyms" element={<GymsOnActiveHQPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════

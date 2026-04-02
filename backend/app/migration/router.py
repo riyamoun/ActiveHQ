@@ -130,6 +130,7 @@ def reconciliation_report(
 def biometric_sync_overview(
     tenant: TenantDep,
     db: DbDep,
+    _: object = Depends(require_manager_or_above),
 ):
     """Biometric sync dashboard: device status, event counts, mapped members."""
     svc = MigrationService(db)

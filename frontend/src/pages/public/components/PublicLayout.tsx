@@ -230,8 +230,8 @@ export function PublicLayout() {
           <div className="max-w-7xl mx-auto px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm text-white/40">
             <div>© 2026 ActiveHQ. All rights reserved.</div>
             <div className="flex gap-8">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
+              <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
             </div>
           </div>
         </div>

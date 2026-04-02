@@ -74,7 +74,7 @@ export default function MembersPage() {
           />
         </div>
         <div className="flex gap-2">
-          {['', 'active', 'expired'].map((status) => (
+          {['', 'active', 'expiring', 'expired'].map((status) => (
             <button
               key={status}
               onClick={() => handleStatusFilter(status)}
@@ -84,7 +84,7 @@ export default function MembersPage() {
                   : 'bg-slate-800/60 text-slate-400 hover:bg-slate-700/60 border border-slate-700/40'
               }`}
             >
-              {status === '' ? 'All' : status === 'active' ? 'Active' : 'Expired'}
+              {status === '' ? 'All' : status === 'active' ? 'Active' : status === 'expiring' ? 'Expiring' : 'Expired'}
             </button>
           ))}
         </div>

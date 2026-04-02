@@ -138,6 +138,7 @@ def update_member(
     request: MemberUpdate,
     tenant: TenantDep,
     db: DbDep,
+    _: None = Depends(require_manager_or_above),
 ):
     """
     Update member details.

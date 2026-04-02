@@ -135,8 +135,8 @@ class AuthService:
         Authenticate user by email only (no gym_id required).
         Used when user doesn't know their gym_id (e.g., login page).
         
-        Note: This assumes email is globally unique. If a user works
-        at multiple gyms, they should use gym-specific login.
+        If the same email exists across multiple gyms, we try each
+        matching user until one passes the password check.
         
         Args:
             email: User email
@@ -145,20 +145,21 @@ class AuthService:
         Returns:
             User if authentication successful, None otherwise
         """
-        user = self.db.execute(
+        users = self.db.execute(
             select(User).where(
                 User.email == email,
                 User.is_active == True,  # noqa: E712
             )
-        ).scalar_one_or_none()
+        ).scalars().all()
         
-        if not user:
+        if not users:
             return None
         
-        if not verify_password(password, user.password_hash):
-            return None
+        for user in users:
+            if verify_password(password, user.password_hash):
+                return user
         
-        return user
+        return None
     
     def login(self, request: LoginRequest) -> tuple[User, TokenResponse] | None:
         """

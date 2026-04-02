@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Dumbbell, Mail, Phone, MapPin } from 'lucide-react';
 
 export function SimpleFooter() {
@@ -41,9 +42,8 @@ export function SimpleFooter() {
           <div>
             <h4 className="text-white text-sm font-medium mb-4">Quick Links</h4>
             <div className="space-y-2 text-sm">
-              <a href="#" className="block text-slate-400 hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="block text-slate-400 hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="block text-slate-400 hover:text-white transition-colors">Refund Policy</a>
+              <Link to="/privacy" className="block text-slate-400 hover:text-white transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="block text-slate-400 hover:text-white transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>

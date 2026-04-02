@@ -149,7 +149,6 @@ class MemberService:
         today = date.today()
         
         if status == "active":
-            # Members with active, non-expired membership
             subquery = (
                 select(Membership.member_id)
                 .where(
@@ -160,8 +159,21 @@ class MemberService:
                 .distinct()
             )
             base_query = base_query.where(Member.id.in_(subquery))
+        elif status == "expiring":
+            from datetime import timedelta
+            expiry_window = today + timedelta(days=7)
+            subquery = (
+                select(Membership.member_id)
+                .where(
+                    Membership.gym_id == gym_id,
+                    Membership.status == MembershipStatus.ACTIVE,
+                    Membership.end_date >= today,
+                    Membership.end_date <= expiry_window,
+                )
+                .distinct()
+            )
+            base_query = base_query.where(Member.id.in_(subquery))
         elif status == "expired":
-            # Members with no active membership
             active_subquery = (
                 select(Membership.member_id)
                 .where(

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Dumbbell } from 'lucide-react';
 
 export function Footer() {
@@ -36,13 +37,9 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Product</h4>
             <ul className="space-y-3">
-              {['Features', 'Pricing', 'Demo', 'Updates'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">
-                    {item}
-                  </a>
-                </li>
-              ))}
+              <li><Link to="/for-gym-owners" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Features</Link></li>
+              <li><Link to="/contact" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Demo</Link></li>
+              <li><Link to="/login?demo=true" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Try Demo</Link></li>
             </ul>
           </div>
 
@@ -50,13 +47,8 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Legal</h4>
             <ul className="space-y-3">
-              {['Privacy Policy', 'Terms of Service', 'Refund Policy'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">
-                    {item}
-                  </a>
-                </li>
-              ))}
+              <li><Link to="/privacy" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
         </div>

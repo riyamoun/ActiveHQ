@@ -6,3 +6,5 @@ export { HomePage } from './pages/HomePage';
 export { ForGymOwnersPage } from './pages/ForGymOwnersPage';
 export { GymsOnActiveHQPage } from './pages/GymsOnActiveHQPage';
 export { ContactPage } from './pages/ContactPage';
+export { PrivacyPage } from './pages/PrivacyPage';
+export { TermsPage } from './pages/TermsPage';
