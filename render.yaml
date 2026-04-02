@@ -23,7 +23,9 @@ services:
         value: false
       - key: CORS_ORIGINS_STR
         sync: false
-        # Set in Dashboard: your frontend URL(s), e.g. https://activehq.onrender.com
+        # Set in Dashboard: your frontend URL(s), e.g. https://active-hq.vercel.app
+      - key: CORS_ALLOW_ORIGIN_REGEX
+        value: ^https://.*\.vercel\.app$
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "15"
       - key: REFRESH_TOKEN_EXPIRE_DAYS

@@ -324,7 +324,7 @@ export default function DashboardPage() {
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
                   <Target className="w-4 h-4 text-amber-400" />
                 </div>
-                Action Center
+                Action needed today
               </h2>
               <p className="text-sm text-slate-400 mt-1">
                 {actionCount === 0
@@ -441,7 +441,7 @@ export default function DashboardPage() {
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                   <TrendingUp className="w-4 h-4 text-emerald-400" />
                 </div>
-                Revenue Intelligence
+                Revenue opportunity
               </h2>
             </div>
             <div className="p-6 space-y-6">

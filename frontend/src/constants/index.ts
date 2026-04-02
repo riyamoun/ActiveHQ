@@ -38,9 +38,24 @@ export const ERROR_MESSAGES = {
 
 // API
 export const API_CONSTANTS = {
-  BASE_URL: import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/api/v1`
-    : '/api/v1',
+  BASE_URL: (() => {
+    const envBaseUrl = import.meta.env.VITE_API_URL?.trim()
+    if (envBaseUrl) {
+      return `${envBaseUrl.replace(/\/+$/, '')}/api/v1`
+    }
+
+    // Production safety fallback:
+    // if VITE_API_URL is not configured on Vercel, default to Render API
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname
+      if (host === 'active-hq.vercel.app' || host.endsWith('.vercel.app')) {
+        return 'https://activehq-api.onrender.com/api/v1'
+      }
+    }
+
+    // Local dev path (proxied by Vite to backend :8000)
+    return '/api/v1'
+  })(),
   TIMEOUT: 30000,
 } as const
 

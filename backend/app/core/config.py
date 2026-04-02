@@ -106,6 +106,9 @@ class Settings(BaseSettings):
     
     # CORS - stored as comma-separated string, accessed as list via property
     cors_origins_str: str = "http://localhost:3000,http://localhost:5173"
+    # Allows Vercel preview deployments in addition to allow_origins list.
+    # Example: https://active-hq-git-feature-abc-hp.vercel.app
+    cors_allow_origin_regex: str = r"^https://.*\.vercel\.app$"
     
     @computed_field
     @property
