@@ -36,3 +36,6 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+
+# Uploaded member photos (local/runtime)
+storage/member_photos/

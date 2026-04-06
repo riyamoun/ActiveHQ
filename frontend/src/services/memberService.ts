@@ -52,4 +52,25 @@ export const memberService = {
     const response = await api.get<MemberWithMembership[]>('/members/with-dues')
     return response.data
   },
+
+  async uploadMemberPhoto(id: string, file: File): Promise<Member> {
+    const formData = new FormData()
+    formData.append('photo', file)
+    const response = await api.post<Member>(`/members/${id}/photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  async deleteMemberPhoto(id: string): Promise<Member> {
+    const response = await api.delete<Member>(`/members/${id}/photo`)
+    return response.data
+  },
+
+  async getMemberPhotoBlob(id: string): Promise<Blob> {
+    const response = await api.get(`/members/${id}/photo`, {
+      responseType: 'blob',
+    })
+    return response.data as Blob
+  },
 }

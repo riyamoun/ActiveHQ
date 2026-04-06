@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { memberService } from '@/services/memberService'
@@ -21,6 +21,8 @@ import {
   Calendar,
   UserCheck,
   Plus,
+  Camera,
+  Trash2,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -33,6 +35,11 @@ export default function MemberDetailPage() {
 
   const [showMembershipModal, setShowMembershipModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [photoBlobUrl, setPhotoBlobUrl] = useState<string | null>(null)
+  const photoUrlRef = useRef<string | null>(null)
+  const [isPhotoLoading, setIsPhotoLoading] = useState(false)
+  const [isPhotoUploading, setIsPhotoUploading] = useState(false)
+  const [isPhotoDeleting, setIsPhotoDeleting] = useState(false)
 
   // Fetch member details
   const { data: member, isLoading: memberLoading } = useQuery({
@@ -70,6 +77,81 @@ export default function MemberDetailPage() {
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
+
+  useEffect(() => {
+    let mounted = true
+    const loadPhoto = async () => {
+      if (!id || !member?.photo_url) {
+        if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current)
+        photoUrlRef.current = null
+        setPhotoBlobUrl(null)
+        return
+      }
+      setIsPhotoLoading(true)
+      try {
+        const blob = await memberService.getMemberPhotoBlob(id)
+        const objectUrl = URL.createObjectURL(blob)
+        if (!mounted) {
+          URL.revokeObjectURL(objectUrl)
+          return
+        }
+        if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current)
+        photoUrlRef.current = objectUrl
+        setPhotoBlobUrl(objectUrl)
+      } catch {
+        if (mounted) {
+          if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current)
+          photoUrlRef.current = null
+          setPhotoBlobUrl(null)
+        }
+      } finally {
+        if (mounted) setIsPhotoLoading(false)
+      }
+    }
+    loadPhoto()
+    return () => {
+      mounted = false
+      if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current)
+      photoUrlRef.current = null
+    }
+  }, [id, member?.photo_url])
+
+  const handleMemberPhotoUpload = async (file: File | null) => {
+    if (!file || !id) return
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      toast.error('Only JPG, PNG, or WEBP files are allowed')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Photo size must be less than 5MB')
+      return
+    }
+    setIsPhotoUploading(true)
+    try {
+      await memberService.uploadMemberPhoto(id, file)
+      queryClient.invalidateQueries({ queryKey: ['member', id] })
+      toast.success('Member photo updated')
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setIsPhotoUploading(false)
+    }
+  }
+
+  const handleMemberPhotoDelete = async () => {
+    if (!id) return
+    setIsPhotoDeleting(true)
+    try {
+      await memberService.deleteMemberPhoto(id)
+      queryClient.invalidateQueries({ queryKey: ['member', id] })
+      toast.success('Member photo removed')
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setIsPhotoDeleting(false)
+    }
+  }
 
   if (memberLoading || !member) {
     return <PageLoader />
@@ -137,10 +219,14 @@ export default function MemberDetailPage() {
 
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 bg-slate-800/60 rounded-full flex items-center justify-center">
-                <span className="text-2xl font-bold text-emerald-400">
-                  {member.name.charAt(0).toUpperCase()}
-                </span>
+              <div className="w-20 h-20 bg-slate-800/60 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-700">
+                {photoBlobUrl ? (
+                  <img src={photoBlobUrl} alt={member.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-bold text-emerald-400">
+                    {member.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
               </div>
               <div>
                 {getStatusBadge(member.current_membership_status)}
@@ -148,6 +234,36 @@ export default function MemberDetailPage() {
                   <p className="text-sm text-slate-400 mt-1">{member.current_plan_name}</p>
                 )}
               </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <label className="btn-secondary cursor-pointer text-sm">
+                <span className="inline-flex items-center gap-2">
+                  <Camera className="w-4 h-4" />
+                  {isPhotoUploading ? 'Uploading...' : 'Upload Photo'}
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={isPhotoUploading}
+                  onChange={(e) => handleMemberPhotoUpload(e.target.files?.[0] || null)}
+                />
+              </label>
+              {(member.photo_url || photoBlobUrl) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  isLoading={isPhotoDeleting}
+                  onClick={handleMemberPhotoDelete}
+                  leftIcon={<Trash2 className="w-4 h-4" />}
+                >
+                  Remove
+                </Button>
+              )}
+              {isPhotoLoading && (
+                <span className="text-xs text-slate-500 self-center">Loading photo...</span>
+              )}
             </div>
 
             <div className="pt-4 border-t border-slate-800/60 space-y-3">

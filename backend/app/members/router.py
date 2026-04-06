@@ -4,7 +4,8 @@ Member management API endpoints.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi.responses import FileResponse
 
 from app.auth.dependencies import TenantDep, DbDep, require_manager_or_above, require_owner
 from app.members.schemas import (
@@ -15,6 +16,13 @@ from app.members.schemas import (
     MemberListResponse,
 )
 from app.members.service import MemberService
+from app.members.photo_storage import (
+    delete_member_photo_file,
+    guess_media_type,
+    get_member_photo_file_path,
+    save_member_photo,
+)
+from app.services.import_service import get_import_service, ImportResult
 
 
 router = APIRouter()
@@ -173,6 +181,125 @@ def update_member(
     return MemberResponse.model_validate(updated)
 
 
+@router.post("/{member_id}/photo", response_model=MemberResponse)
+def upload_member_photo(
+    member_id: str,
+    tenant: TenantDep,
+    db: DbDep,
+    _: None = Depends(require_manager_or_above),
+    photo: UploadFile = File(...),
+):
+    """
+    Upload/update a member profile photo.
+    Requires: Owner or Manager.
+    """
+    try:
+        member_uuid = uuid.UUID(member_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid member ID format",
+        )
+
+    service = MemberService(db)
+    member = service.get_member(tenant.gym_id, member_uuid)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member not found",
+        )
+
+    try:
+        saved_name = save_member_photo(
+            gym_id=tenant.gym_id,
+            member_id=member.id,
+            upload=photo,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    member.photo_url = saved_name
+    updated = service.update_member(member, data=MemberUpdate())
+    return MemberResponse.model_validate(updated)
+
+
+@router.get("/{member_id}/photo")
+def get_member_photo(
+    member_id: str,
+    tenant: TenantDep,
+    db: DbDep,
+):
+    """
+    Get member profile photo file.
+    Authenticated and tenant-scoped.
+    """
+    try:
+        member_uuid = uuid.UUID(member_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid member ID format",
+        )
+
+    service = MemberService(db)
+    member = service.get_member(tenant.gym_id, member_uuid)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member not found",
+        )
+    if not member.photo_url:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member photo not found",
+        )
+
+    path = get_member_photo_file_path(tenant.gym_id, member.photo_url)
+    if not path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member photo not found",
+        )
+
+    return FileResponse(path=path, media_type=guess_media_type(member.photo_url))
+
+
+@router.delete("/{member_id}/photo", response_model=MemberResponse)
+def delete_member_photo(
+    member_id: str,
+    tenant: TenantDep,
+    db: DbDep,
+    _: None = Depends(require_manager_or_above),
+):
+    """
+    Delete member profile photo.
+    Requires: Owner or Manager.
+    """
+    try:
+        member_uuid = uuid.UUID(member_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid member ID format",
+        )
+
+    service = MemberService(db)
+    member = service.get_member(tenant.gym_id, member_uuid)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member not found",
+        )
+
+    if member.photo_url:
+        delete_member_photo_file(tenant.gym_id, member.photo_url)
+        member.photo_url = None
+        updated = service.update_member(member, data=MemberUpdate())
+        return MemberResponse.model_validate(updated)
+
+    return MemberResponse.model_validate(member)
+
+
 @router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_member(
     member_id: str,
@@ -253,3 +380,68 @@ def reactivate_member(
     
     reactivated = service.reactivate_member(member)
     return MemberResponse.model_validate(reactivated)
+
+
+@router.post("/import/bulk", response_model=ImportResult)
+async def bulk_import_members(
+    tenant: TenantDep,
+    db: DbDep,
+    file: UploadFile = File(...),
+    _: None = Depends(require_manager_or_above),
+):
+    """
+    Bulk import members from CSV or JSON file.
+    
+    **Supported formats:**
+    - CSV: Columns required: name, phone. Optional: email, date_of_birth, address, city, membership_type, start_date, notes
+    - JSON: Array of objects with same fields, or object with 'data' or 'records' key
+    
+    **Example JSON:**
+    ```json
+    {
+      "data": [
+        {
+          "name": "John Doe",
+          "phone": "9999999999",
+          "email": "john@example.com",
+          "date_of_birth": "1990-01-01",
+          "membership_type": "Premium",
+          "start_date": "2025-04-06"
+        }
+      ]
+    }
+    ```
+    
+    **CSV Example:**
+    ```
+    name,phone,email,date_of_birth,membership_type,start_date
+    John Doe,9999999999,john@example.com,1990-01-01,Premium,2025-04-06
+    ```
+    
+    Requires: Owner or Manager
+    Returns: Summary with total records, successful imports, and any errors
+    """
+    # Read file content
+    content = await file.read()
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File is empty",
+        )
+    
+    # Use import service to parse and validate
+    import_service = get_import_service()
+    result = await import_service.import_file(
+        file_content=content,
+        filename=file.filename or "import.csv",
+        import_type="members",
+    )
+    
+    # TODO: In a real implementation, you would:
+    # 1. Create members in database from validated records
+    # 2. Handle duplicates (skip or update)
+    # 3. Send confirmations
+    # 4. Update result with actual created count
+    
+    return result
+

@@ -53,6 +53,13 @@ export interface AttendanceImportRow {
   punch_type?: 'check_in' | 'check_out' | 'unknown'
 }
 
+export interface DeviceUserMappingRow {
+  device_external_id: string
+  device_user_id: string
+  member_phone?: string
+  member_code?: string
+}
+
 // ── Response types ─────────────────────────────────────────────────
 
 export interface ImportResult {
@@ -124,6 +131,11 @@ export const migrationService = {
 
   async importAttendance(data: { records: AttendanceImportRow[]; source_label?: string }): Promise<ImportResult> {
     const res = await api.post<ImportResult>('/migration/attendance', data)
+    return res.data
+  },
+
+  async importDeviceUserMappings(data: { mappings: DeviceUserMappingRow[] }): Promise<ImportResult> {
+    const res = await api.post<ImportResult>('/migration/device-mappings', data)
     return res.data
   },
 

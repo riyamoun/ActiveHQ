@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { memberService } from '@/services/memberService'
@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ImagePlus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { MemberCreate } from '@/types'
 
@@ -29,10 +29,19 @@ export default function AddMemberPage() {
     notes: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
 
   const createMutation = useMutation({
     mutationFn: memberService.createMember,
-    onSuccess: (member) => {
+    onSuccess: async (member) => {
+      if (photoFile) {
+        try {
+          await memberService.uploadMemberPhoto(member.id, photoFile)
+        } catch (error) {
+          toast.error(`Member created, but photo upload failed: ${getErrorMessage(error)}`)
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ['members'] })
       toast.success('Member created successfully')
       navigate(`/members/${member.id}`)
@@ -92,6 +101,34 @@ export default function AddMemberPage() {
 
     createMutation.mutate(cleanData)
   }
+
+  const handlePhotoSelect = (file: File | null) => {
+    if (!file) return
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      toast.error('Only JPG, PNG, or WEBP files are allowed')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Photo size must be less than 5MB')
+      return
+    }
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl)
+    setPhotoFile(file)
+    setPhotoPreviewUrl(URL.createObjectURL(file))
+  }
+
+  const clearPhoto = () => {
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl)
+    setPhotoPreviewUrl(null)
+    setPhotoFile(null)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl)
+    }
+  }, [photoPreviewUrl])
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -174,6 +211,35 @@ export default function AddMemberPage() {
                 value={formData.date_of_birth || ''}
                 onChange={(e) => updateField('date_of_birth', e.target.value)}
               />
+            </div>
+
+            <div className="pt-2">
+              <p className="label">Profile Photo (optional)</p>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl border border-slate-700 bg-slate-800/50 overflow-hidden flex items-center justify-center">
+                  {photoPreviewUrl ? (
+                    <img src={photoPreviewUrl} alt="Member preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImagePlus className="w-6 h-6 text-slate-500" />
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="btn-secondary cursor-pointer">
+                    Choose Photo
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => handlePhotoSelect(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                  {photoFile && (
+                    <Button type="button" variant="ghost" onClick={clearPhoto} leftIcon={<X className="w-4 h-4" />}>
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

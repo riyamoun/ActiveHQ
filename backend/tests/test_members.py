@@ -3,6 +3,7 @@ Tests for members endpoints and services.
 """
 
 import uuid
+from io import BytesIO
 
 import pytest
 
@@ -181,5 +182,47 @@ class TestMemberDelete:
         response = client.delete(
             f"/api/v1/members/{test_member.id}",
             headers={"Authorization": f"Bearer {manager_token}"},
+        )
+        assert response.status_code == 403
+
+
+class TestMemberPhoto:
+    """Test member photo upload/view/delete endpoints."""
+
+    def test_upload_and_get_and_delete_photo(self, client, owner_token, test_member):
+        files = {
+            "photo": ("member.jpg", BytesIO(b"\xff\xd8\xff\xe0" + b"0" * 128), "image/jpeg"),
+        }
+        upload = client.post(
+            f"/api/v1/members/{test_member.id}/photo",
+            files=files,
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        assert upload.status_code == 200
+        payload = upload.json()
+        assert payload["photo_url"] is not None
+
+        get_photo = client.get(
+            f"/api/v1/members/{test_member.id}/photo",
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        assert get_photo.status_code == 200
+        assert get_photo.headers["content-type"].startswith("image/")
+
+        delete_photo = client.delete(
+            f"/api/v1/members/{test_member.id}/photo",
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        assert delete_photo.status_code == 200
+        assert delete_photo.json()["photo_url"] is None
+
+    def test_upload_photo_requires_manager_or_owner(self, client, staff_token, test_member):
+        files = {
+            "photo": ("member.jpg", BytesIO(b"\xff\xd8\xff\xe0" + b"1" * 64), "image/jpeg"),
+        }
+        response = client.post(
+            f"/api/v1/members/{test_member.id}/photo",
+            files=files,
+            headers={"Authorization": f"Bearer {staff_token}"},
         )
         assert response.status_code == 403

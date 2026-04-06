@@ -6,7 +6,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import TenantContext
-from app.models import Attendance, BiometricDevice, BiometricEvent, Member
+from app.models import Attendance, BiometricDevice, BiometricEvent, DeviceUserMapping, Member
 from app.models.enums import (
     BiometricEventStatus,
     BiometricEventType,
@@ -112,6 +112,29 @@ class BiometricService:
                     )
                 )
             ).scalar_one_or_none()
+
+            # Fallback for biometric devices that use local face/fingerprint user IDs.
+            # These are mapped to ActiveHQ members via device_user_mappings.
+            if not member:
+                mapping = self.db.execute(
+                    select(DeviceUserMapping).where(
+                        and_(
+                            DeviceUserMapping.gym_id == tenant.gym_id,
+                            DeviceUserMapping.device_id == device.id,
+                            DeviceUserMapping.device_user_id == item.person_identifier,
+                        )
+                    )
+                ).scalar_one_or_none()
+                if mapping:
+                    member = self.db.execute(
+                        select(Member).where(
+                            and_(
+                                Member.gym_id == tenant.gym_id,
+                                Member.id == mapping.member_id,
+                                Member.is_active == True,  # noqa: E712
+                            )
+                        )
+                    ).scalar_one_or_none()
 
             event = BiometricEvent(
                 gym_id=tenant.gym_id,
