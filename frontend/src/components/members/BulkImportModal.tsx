@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { Upload, FileJson, FileText, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
-import { apiClient } from '@/services/api'
+import { api } from '@/lib/api'
 
 interface ImportResult {
   total_records: number
@@ -89,7 +89,7 @@ export function BulkImportModal({
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await apiClient.post('/members/import/bulk', formData, {
+      const response = await api.post<ImportResult>('/members/import/bulk', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

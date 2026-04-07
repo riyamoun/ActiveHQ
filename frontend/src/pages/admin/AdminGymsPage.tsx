@@ -1,16 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
-  BarChart3,
   Users,
   TrendingUp,
   Activity,
-  ChevronRight,
-  AlertCircle,
   Search,
   MoreVertical,
 } from 'lucide-react'
-import { apiClient } from '@/services/api'
+import { api } from '@/lib/api'
 
 interface Gym {
   id: string
@@ -36,14 +33,19 @@ export function AdminGymsPage() {
   // Fetch stats
   const statsQuery = useQuery({
     queryKey: ['admin', 'stats'],
-    queryFn: () => apiClient.get('/admin/stats'),
+    queryFn: async () => {
+      const response = await api.get<PlatformStats>('/admin/stats')
+      return response.data
+    },
   })
 
   // Fetch gyms list
   const gymsQuery = useQuery({
     queryKey: ['admin', 'gyms', page],
-    queryFn: () =>
-      apiClient.get('/admin/gyms', { params: { page, page_size: 20 } }),
+    queryFn: async () => {
+      const response = await api.get<{ items: Gym[]; total: number }>('/admin/gyms', { params: { page, page_size: 20 } })
+      return response.data
+    },
   })
 
   const stats = statsQuery.data as PlatformStats | undefined

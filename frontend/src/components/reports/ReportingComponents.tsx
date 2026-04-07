@@ -129,13 +129,11 @@ interface RevenueData {
 interface RevenueBreakdownProps {
   byPlan: RevenueData[]
   byMethod: RevenueData[]
-  trend?: Array<{ date: string; amount: number }>
 }
 
 export function RevenueBreakdown({
   byPlan,
   byMethod,
-  trend,
 }: RevenueBreakdownProps) {
   const totalRevenue = useMemo(() => {
     return byPlan.reduce((sum, item) => sum + item.value, 0)
