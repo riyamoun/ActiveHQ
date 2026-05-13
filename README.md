@@ -413,7 +413,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-- **Email:** hello@activehq.in
+- **Email:** info@activehq.fit
 - **GitHub:** [@riyamoun](https://github.com/riyamoun)
 
 ---

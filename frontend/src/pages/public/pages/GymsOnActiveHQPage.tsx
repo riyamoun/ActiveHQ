@@ -5,36 +5,36 @@ import { trackEvent } from '@/lib/analytics';
 
 const stories = [
   {
-    name: 'FitFirst Gym',
-    location: 'Sector 14, Gurgaon',
+    name: 'Neighborhood gym',
+    location: 'Tier 2 cities · 100–250 members',
     members: '250+',
     image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80',
-    quote: 'Renewals increased by 40% in the first quarter. The system pays for itself.',
-    owner: 'Rajesh Verma',
+    quote: 'Designed so renewals and reminders run automatically — owners reclaim hours every week.',
+    owner: 'Built for gyms of this size',
   },
   {
-    name: 'Iron District',
-    location: 'DLF Phase 2',
+    name: 'Strength studio',
+    location: 'Metro suburbs · 150–200 members',
     members: '180+',
     image: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=600&q=80',
-    quote: 'Zero cash mismatch since we started. Daily closing takes 5 minutes now.',
-    owner: 'Amit Kapoor',
+    quote: 'Cash + UPI reconciliation in one screen, so daily closing takes minutes, not hours.',
+    owner: 'Built for studios like this',
   },
   {
-    name: 'PowerHouse Fitness',
-    location: 'Sohna Road',
+    name: 'Multi-trainer gym',
+    location: 'High-street · 250–400 members',
     members: '320+',
     image: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&q=80',
-    quote: 'Managing two locations from one dashboard changed everything for us.',
-    owner: 'Vikram Singh',
+    quote: 'One dashboard for every trainer, every shift — built so owners can scale without losing control.',
+    owner: 'Built for growing teams',
   },
   {
-    name: 'FlexZone',
-    location: 'Sector 29',
+    name: 'New launch',
+    location: 'Just opened · 50–150 members',
     members: '150+',
     image: 'https://images.unsplash.com/photo-1576678927484-cc907957088c?w=600&q=80',
-    quote: 'Started organized from day one. Every member tracked from the beginning.',
-    owner: 'Priya Sharma',
+    quote: 'Start organized from day one — every member, plan and payment tracked from the first signup.',
+    owner: 'Built for new gyms',
   },
 ];
 
@@ -42,8 +42,8 @@ export function GymsOnActiveHQPage() {
   return (
     <div className="bg-white text-slate-900">
       <SeoMeta
-        title="Gyms Using ActiveHQ | Success Stories"
-        description="Explore real gym success stories from Gurgaon using ActiveHQ for attendance, payments, and member retention."
+        title="Built for Indian Gyms | ActiveHQ"
+        description="ActiveHQ is designed for the gyms that run India — neighborhood centers, strength studios, multi-trainer setups and new launches. Founding access now open."
         path="/gyms"
       />
 
@@ -61,12 +61,12 @@ export function GymsOnActiveHQPage() {
         
         <div className="relative max-w-7xl mx-auto px-8">
           <p className="text-emerald-400 text-sm tracking-[0.3em] uppercase mb-6">
-            Success Stories
+            Founding Access
           </p>
           <h1 className="text-4xl md:text-6xl font-light text-white leading-[1.1] max-w-2xl">
-            Real gyms.
+            Built for the gyms
             <br />
-            <span className="font-medium">Real results.</span>
+            <span className="font-medium">that run India.</span>
           </h1>
         </div>
       </section>
@@ -77,8 +77,11 @@ export function GymsOnActiveHQPage() {
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-8 text-center">
           <p className="text-xl md:text-2xl font-light text-slate-600 leading-relaxed">
-            From neighborhood fitness centers to premium studios, 
-            these gym owners transformed their operations with ActiveHQ.
+            From neighborhood fitness centers to multi-trainer studios,
+            ActiveHQ is designed for every kind of gym operating in India today.
+          </p>
+          <p className="mt-4 text-sm text-slate-500">
+            Profiles below represent the gym archetypes ActiveHQ is built for. Founding-access partners welcome.
           </p>
         </div>
       </section>
@@ -117,7 +120,7 @@ export function GymsOnActiveHQPage() {
                 <blockquote className="text-slate-600 italic mb-3">
                   "{story.quote}"
                 </blockquote>
-                <div className="text-slate-400 text-sm">— {story.owner}</div>
+                <div className="text-slate-400 text-sm">{story.owner}</div>
               </div>
             ))}
           </div>
@@ -131,10 +134,10 @@ export function GymsOnActiveHQPage() {
         <div className="max-w-7xl mx-auto px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: '50+', label: 'Gyms' },
-              { value: '15,000+', label: 'Members' },
-              { value: '₹3Cr+', label: 'Tracked' },
-              { value: '40%', label: 'Avg. Growth' },
+              { value: '50+', label: 'Pilot gym capacity' },
+              { value: '15,000+', label: 'Members per gym' },
+              { value: '₹3Cr+', label: 'Revenue trackable / yr' },
+              { value: '40%', label: 'Target renewal lift' },
             ].map((stat, i) => (
               <div key={i}>
                 <div className="text-3xl md:text-4xl font-light text-slate-900 mb-1">{stat.value}</div>
@@ -154,12 +157,12 @@ export function GymsOnActiveHQPage() {
             <span className="text-3xl text-slate-400">"</span>
           </div>
           <blockquote className="text-2xl md:text-3xl font-light text-slate-700 leading-relaxed mb-8">
-            ActiveHQ didn't just organize our gym — it changed how we think about 
-            running a business. We're finally in control.
+            ActiveHQ isn't built to just organise a gym — it's built so an owner can
+            run the whole business from one screen and stay in control.
           </blockquote>
           <div>
-            <div className="font-medium text-slate-900">Vikram Singh</div>
-            <div className="text-slate-500 text-sm">PowerHouse Fitness</div>
+            <div className="font-medium text-slate-900">The ActiveHQ promise</div>
+            <div className="text-slate-500 text-sm">For Indian gym owners · Founding access open</div>
           </div>
         </div>
       </section>

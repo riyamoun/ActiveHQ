@@ -66,8 +66,8 @@ export function TermsPage() {
         <h2 className="text-xl font-semibold text-slate-800 mt-8">9. Contact</h2>
         <p>
           For questions about these terms, contact us at{' '}
-          <a href="mailto:hello@activehq.in" className="text-emerald-600 hover:text-emerald-500">
-            hello@activehq.in
+          <a href="mailto:info@activehq.fit" className="text-emerald-600 hover:text-emerald-500">
+            info@activehq.fit
           </a>.
         </p>
       </div>

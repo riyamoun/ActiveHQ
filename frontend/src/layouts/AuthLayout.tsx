@@ -32,7 +32,7 @@ export default function AuthLayout() {
               Simple, elegant, and powerful."
             </blockquote>
             <div className="text-white/40 text-sm">
-              — Rajesh Verma, FitFirst Gym
+              — Pilot gym owner, Gurgaon
             </div>
           </div>
         </div>

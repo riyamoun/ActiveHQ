@@ -19,7 +19,7 @@ const orgSchema = {
   '@type': 'Organization',
   name: 'ActiveHQ',
   url: 'https://active-hq-git-main-riyamouns-projects.vercel.app',
-  email: 'hello@activehq.in',
+  email: 'info@activehq.fit',
   telephone: '+91 98765 43210',
 };
 
@@ -75,17 +75,21 @@ export function HomePage() {
             <div className="flex items-center gap-6">
               <Link
                 to="/contact"
-                onClick={() => trackEvent('cta_click', { location: 'home_hero', cta: 'get_started' })}
+                onClick={() => trackEvent('cta_click', { location: 'home_hero', cta: 'book_demo' })}
                 className="px-8 py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-emerald-400 hover:text-white transition-colors duration-200"
               >
-                Get Started
+                Book a demo
               </Link>
-              <button className="flex items-center gap-3 text-white/80 hover:text-white transition-colors duration-200">
+              <Link
+                to="/admin-preview"
+                onClick={() => trackEvent('cta_click', { location: 'home_hero', cta: 'see_live_dashboard' })}
+                className="flex items-center gap-3 text-white/80 hover:text-white transition-colors duration-200"
+              >
                 <span className="w-12 h-12 rounded-full border border-white/30 flex items-center justify-center">
                   <Play className="w-4 h-4 ml-0.5" />
                 </span>
-                <span className="text-sm">Watch video</span>
-              </button>
+                <span className="text-sm">See live dashboard</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -102,10 +106,10 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: '500+', label: 'Active Gyms' },
-              { value: '50K+', label: 'Members Managed' },
-              { value: '98%', label: 'Retention Rate' },
-              { value: '24/7', label: 'Support' },
+              { value: '500+', label: 'Built for gyms of every size' },
+              { value: '50K+', label: 'Member capacity per gym' },
+              { value: '99.9%', label: 'Uptime SLA' },
+              { value: '24/7', label: 'Cloud support' },
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <div className="text-3xl md:text-4xl font-light text-slate-900 mb-1">{stat.value}</div>
@@ -427,8 +431,8 @@ export function HomePage() {
             Our team can finally focus on what matters — our members.
           </blockquote>
           <div>
-            <div className="font-medium text-slate-900">Rajesh Verma</div>
-            <div className="text-slate-500 text-sm">FitFirst Gym, Gurgaon</div>
+            <div className="font-medium text-slate-900">Pilot gym owner</div>
+            <div className="text-slate-500 text-sm">Gurgaon · Founding access</div>
           </div>
         </div>
       </section>

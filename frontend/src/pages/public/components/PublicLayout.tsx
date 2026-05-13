@@ -213,8 +213,8 @@ export function PublicLayout() {
             <div>
               <div className="text-xs tracking-[0.2em] text-white/40 uppercase mb-6">Contact</div>
               <div className="space-y-4 text-white/60">
-                <a href="mailto:hello@activehq.in" className="block hover:text-white transition-colors">
-                  hello@activehq.in
+                <a href="mailto:info@activehq.fit" className="block hover:text-white transition-colors">
+                  info@activehq.fit
                 </a>
                 <a href="tel:+919876543210" className="block hover:text-white transition-colors">
                   +91 98765 43210
