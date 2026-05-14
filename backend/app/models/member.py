@@ -1,13 +1,17 @@
 """
 Member model - Gym customers who have memberships.
-Members do NOT login to the system - they are managed by staff.
+
+Members can now optionally log in to the member portal (read-only).
+Auth happens via WhatsApp OTP, email magic-link or Google OAuth — there is
+NO password column. Staff still create / edit member records; this model
+just gains a few opt-in identifiers used by the portal.
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, Boolean, Date, Enum, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import String, Text, Boolean, Date, DateTime, Enum, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -72,7 +76,13 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     
     # Soft delete
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    
+
+    # ── Member-portal auth (all nullable — populated lazily on first login) ──
+    # Google "sub" claim. Unique within a member row; the same person at
+    # multiple gyms gets one row per gym, each linked to the same google_sub.
+    google_sub: Mapped[str | None] = mapped_column(String(64), index=True)
+    last_member_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     # Relationships
     gym: Mapped["Gym"] = relationship("Gym", back_populates="members")
     

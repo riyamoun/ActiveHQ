@@ -20,6 +20,12 @@
   ],
   "shortcuts": [
     {
+      "name": "My membership",
+      "short_name": "Me",
+      "description": "Sign in to your member portal",
+      "url": "/m/login"
+    },
+    {
       "name": "AI Coach",
       "short_name": "Coach",
       "description": "Build a free workout and diet plan",

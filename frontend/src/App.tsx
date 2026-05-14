@@ -20,6 +20,18 @@ import {
 // Operational Landing (internal preview)
 import LandingPage from '@/pages/landing'
 
+// Member Portal (mobile-first dark app for gym members)
+import {
+  MemberLayout,
+  MemberLoginPage,
+  MemberSelectGymPage,
+  MemberMagicLinkPage,
+  MemberDashboardPage,
+  MemberAttendancePage,
+  MemberPaymentsPage,
+  MemberProfilePage,
+} from '@/pages/member'
+
 // Auth Pages
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
@@ -153,6 +165,19 @@ export default function App() {
 
       {/* Operational system preview (internal) */}
       <Route path="/admin-preview" element={<LandingPage />} />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          MEMBER PORTAL (mobile-first, separate auth from staff)
+      ═══════════════════════════════════════════════════════════════════ */}
+      <Route path="/m/login" element={<MemberLoginPage />} />
+      <Route path="/m/select-gym" element={<MemberSelectGymPage />} />
+      <Route path="/m/auth/magic-link" element={<MemberMagicLinkPage />} />
+      <Route element={<MemberLayout />}>
+        <Route path="/m" element={<MemberDashboardPage />} />
+        <Route path="/m/attendance" element={<MemberAttendancePage />} />
+        <Route path="/m/payments" element={<MemberPaymentsPage />} />
+        <Route path="/m/profile" element={<MemberProfilePage />} />
+      </Route>
 
       {/* 404 */}
       <Route path="*" element={<NotFoundPage />} />

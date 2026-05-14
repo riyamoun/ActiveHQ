@@ -120,6 +120,22 @@ class Settings(BaseSettings):
     default_page_size: int = 20
     max_page_size: int = 100
 
+    # Member portal (mobile-first app for gym members)
+    # When set, magic-link emails point users back here; otherwise we fall
+    # back to the request's Host header at runtime.
+    member_portal_url: str = ""
+    # Token lifetime for the member access token. Members are on phones and
+    # rarely refresh, so we use a long-lived token (no refresh-token flow yet).
+    member_access_token_expire_minutes: int = 60 * 24 * 14  # 14 days
+    # WhatsApp / SMS OTP for member login
+    member_otp_length: int = 6
+    member_otp_expire_seconds: int = 5 * 60  # 5 minutes
+    member_otp_max_attempts: int = 5
+    # Magic-link email login
+    member_magic_link_expire_seconds: int = 15 * 60  # 15 minutes
+    # Google Identity Services — public client id. Same value in frontend env.
+    google_oauth_client_id: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,0 +1,8 @@
+export { MemberLayout } from './components/MemberLayout'
+export { MemberLoginPage } from './MemberLoginPage'
+export { MemberSelectGymPage } from './MemberSelectGymPage'
+export { MemberMagicLinkPage } from './MemberMagicLinkPage'
+export { MemberDashboardPage } from './MemberDashboardPage'
+export { MemberAttendancePage } from './MemberAttendancePage'
+export { MemberPaymentsPage } from './MemberPaymentsPage'
+export { MemberProfilePage } from './MemberProfilePage'

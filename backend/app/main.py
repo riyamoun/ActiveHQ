@@ -305,6 +305,8 @@ from app.biometric.router import router as biometric_router
 from app.automation.router import router as automation_router
 from app.notifications.router import router as notifications_router
 from app.migration.router import router as migration_router
+from app.member_portal.auth_router import router as member_auth_router
+from app.member_portal.api_router import router as member_api_router
 
 # Include all routers
 app.include_router(admin_router, tags=["Admin"])
@@ -321,3 +323,6 @@ app.include_router(biometric_router, prefix="/api/v1/biometric", tags=["Biometri
 app.include_router(automation_router, prefix="/api/v1/automation", tags=["Automation"])
 app.include_router(notifications_router, prefix="/api/v1", tags=["Notifications"])
 app.include_router(migration_router, prefix="/api/v1/migration", tags=["Migration"])
+# Member portal — separate top-level prefix so the surface is easy to spot
+app.include_router(member_auth_router, prefix="/api/m/auth", tags=["Member Portal Auth"])
+app.include_router(member_api_router, prefix="/api/m", tags=["Member Portal"])

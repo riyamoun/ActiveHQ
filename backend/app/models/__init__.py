@@ -36,6 +36,7 @@ from app.models.automation_campaign import AutomationCampaign, CampaignDeliveryL
 from app.models.refresh_token import RefreshToken
 from app.models.audit_log import AuditLog
 from app.models.device_user_mapping import DeviceUserMapping
+from app.models.member_portal import MemberLoginOtp, MemberMagicLink
 
 __all__ = [
     # Enums
@@ -69,4 +70,6 @@ __all__ = [
     "RefreshToken",
     "AuditLog",
     "DeviceUserMapping",
+    "MemberLoginOtp",
+    "MemberMagicLink",
 ]
