@@ -35,7 +35,7 @@ export default function AttendancePage() {
     queryFn: attendanceService.getCurrentlyCheckedIn,
   })
 
-  const { data: attendance, isLoading } = useQuery({
+  const { data: attendance, isLoading, isError } = useQuery({
     queryKey: ['attendance', selectedDate],
     queryFn: () =>
       attendanceService.getAttendance({
@@ -196,14 +196,20 @@ export default function AttendancePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40">
-                {attendance?.items.length === 0 ? (
+                {isError ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-rose-400">
+                      Could not load attendance. Please retry.
+                    </td>
+                  </tr>
+                ) : !attendance?.items?.length ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
                       No check-ins for this date
                     </td>
                   </tr>
                 ) : (
-                  attendance?.items.map((record) => {
+                  attendance.items.map((record) => {
                     const checkIn = new Date(record.check_in_time)
                     const checkOut = record.check_out_time
                       ? new Date(record.check_out_time)
@@ -252,7 +258,7 @@ function CheckInModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
 
-  const { data: members } = useQuery({
+  const { data: members, isFetching: membersFetching } = useQuery({
     queryKey: ['members-search', search],
     queryFn: () => memberService.getMembers({ query: search, page_size: 10 }),
     enabled: search.length >= 2,
@@ -313,11 +319,13 @@ function CheckInModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   <p className="py-4 text-center text-slate-400">
                     Type at least 2 characters to search
                   </p>
-                ) : members?.items.length === 0 ? (
+                ) : membersFetching ? (
+                  <p className="py-4 text-center text-slate-400">Searching…</p>
+                ) : !members?.items?.length ? (
                   <p className="py-4 text-center text-slate-400">No members found</p>
                 ) : (
                   <div className="space-y-2">
-                    {members?.items.map((member) => (
+                    {members.items.map((member) => (
                       <button
                         key={member.id}
                         type="button"

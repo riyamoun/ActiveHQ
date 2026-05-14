@@ -3,11 +3,13 @@ Member management API endpoints.
 """
 
 import uuid
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.responses import FileResponse
 
 from app.auth.dependencies import TenantDep, DbDep, require_manager_or_above, require_owner
+from app.core.logger import logger
 from app.members.schemas import (
     MemberCreate,
     MemberUpdate,
@@ -22,6 +24,7 @@ from app.members.photo_storage import (
     get_member_photo_file_path,
     save_member_photo,
 )
+from app.models import Member
 from app.services.import_service import get_import_service, ImportResult
 
 
@@ -421,27 +424,84 @@ async def bulk_import_members(
     Requires: Owner or Manager
     Returns: Summary with total records, successful imports, and any errors
     """
-    # Read file content
     content = await file.read()
     if not content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File is empty",
         )
-    
-    # Use import service to parse and validate
+
     import_service = get_import_service()
-    result = await import_service.import_file(
-        file_content=content,
-        filename=file.filename or "import.csv",
-        import_type="members",
+    file_format = import_service.detect_format(content, file.filename or "import.csv")
+    if file_format.value == "csv":
+        raw_records = import_service.parse_csv(content, "members")
+    else:
+        raw_records = import_service.parse_json(content, "members")
+
+    validated, parse_errors = import_service.validate_member_records(raw_records)
+
+    existing_phones: set[str] = {
+        phone for (phone,) in db.query(Member.phone).filter(Member.gym_id == tenant.gym_id).all()
+    }
+
+    created = 0
+    skipped_duplicates = 0
+    persist_errors: list[str] = []
+
+    def _parse_iso_date(value: str | None) -> date | None:
+        if not value:
+            return None
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
+        return None
+
+    for idx, record in enumerate(validated, start=1):
+        if record.phone in existing_phones:
+            skipped_duplicates += 1
+            continue
+        try:
+            member = Member(
+                gym_id=tenant.gym_id,
+                name=record.name,
+                phone=record.phone,
+                email=record.email or None,
+                address=record.address or None,
+                date_of_birth=_parse_iso_date(record.date_of_birth),
+                joined_date=_parse_iso_date(record.start_date) or date.today(),
+                notes=record.notes or None,
+                is_active=True,
+            )
+            db.add(member)
+            db.flush()
+            existing_phones.add(record.phone)
+            created += 1
+        except Exception as exc:
+            persist_errors.append(f"Row {idx} ({record.phone}): {exc}")
+            db.rollback()
+
+    if created:
+        db.commit()
+
+    all_errors = parse_errors + persist_errors
+    logger.info(
+        "bulk_members_import",
+        extra={
+            "gym_id": str(tenant.gym_id),
+            "total": len(raw_records),
+            "created": created,
+            "skipped_duplicates": skipped_duplicates,
+            "errors": len(all_errors),
+        },
     )
-    
-    # TODO: In a real implementation, you would:
-    # 1. Create members in database from validated records
-    # 2. Handle duplicates (skip or update)
-    # 3. Send confirmations
-    # 4. Update result with actual created count
-    
-    return result
+
+    return ImportResult(
+        total_records=len(raw_records),
+        successful=created,
+        failed=len(all_errors),
+        errors=all_errors[:100],
+        warnings=[f"{skipped_duplicates} duplicates skipped"] if skipped_duplicates else [],
+    )
 

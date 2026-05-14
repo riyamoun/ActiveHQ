@@ -25,7 +25,7 @@ export default function PaymentsPage() {
 
   const { from, to } = getDateRange()
 
-  const { data: payments, isLoading: paymentsLoading } = useQuery({
+  const { data: payments, isLoading: paymentsLoading, isError: paymentsError } = useQuery({
     queryKey: ['payments', from, to, page],
     queryFn: () =>
       paymentService.getPayments({
@@ -177,14 +177,26 @@ export default function PaymentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/40">
-                  {payments?.items.length === 0 ? (
+                  {paymentsLoading ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
+                        Loading payments…
+                      </td>
+                    </tr>
+                  ) : paymentsError ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center text-rose-400">
+                        Could not load payments. Please retry.
+                      </td>
+                    </tr>
+                  ) : !payments?.items?.length ? (
                     <tr>
                       <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
                         No payments found for this period
                       </td>
                     </tr>
                   ) : (
-                    payments?.items.map((payment) => (
+                    payments.items.map((payment) => (
                       <tr key={payment.id} className="hover:bg-slate-800/30 transition-colors">
                         <td className="px-6 py-4 text-sm text-slate-400">
                           {format(new Date(payment.payment_date), 'dd MMM yyyy')}

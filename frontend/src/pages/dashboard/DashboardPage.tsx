@@ -56,7 +56,17 @@ function AnimatedCounter({ value, prefix = '', suffix = '' }: { value: number; p
 
 function MiniDonut({ segments, size = 100 }: { segments: { value: number; color: string; label: string }[]; size?: number }) {
   const total = segments.reduce((s, seg) => s + seg.value, 0)
-  if (total === 0) return null
+  if (total === 0) {
+    return (
+      <div
+        className="relative flex items-center justify-center rounded-full border-2 border-dashed border-slate-700/60 text-slate-500"
+        style={{ width: size, height: size }}
+        aria-label="No data yet"
+      >
+        <span className="text-[10px] tracking-wide uppercase">No data</span>
+      </div>
+    )
+  }
   const r = (size - 12) / 2
   const cx = size / 2
   const cy = size / 2

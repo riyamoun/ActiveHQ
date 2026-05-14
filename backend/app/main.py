@@ -6,7 +6,7 @@ Main FastAPI application entry point.
 from contextlib import asynccontextmanager
 
 import sentry_sdk
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -269,18 +269,25 @@ async def setup_database(setup_key: str = Query(default="")):
         
         db.commit()
         db.close()
-        
+
         return {
             "status": "success",
-            "message": "Database setup complete!",
-            "login": {
-                "email": "owner@fitzonegym.com",
-                "password": "Owner@123"
-            }
+            "message": "Database setup complete. Sign in with the seeded owner email; password is the one provided in your environment docs.",
+            "login": {"email": "owner@fitzonegym.com"},
         }
-        
+
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        from app.core.logger import logger
+        logger.error(f"setup_database_failed: {e}", exc_info=True)
+        try:
+            db.rollback()  # type: ignore[name-defined]
+            db.close()  # type: ignore[name-defined]
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database setup failed. Check server logs.",
+        )
 
 
 # API Routers

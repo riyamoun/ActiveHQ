@@ -1,50 +1,50 @@
 import { Search, MoreVertical, Phone, MessageCircle } from 'lucide-react';
 
 const members = [
-  { 
-    id: 1, 
-    name: 'Amit Sharma', 
-    phone: '98765-43210', 
-    plan: 'Yearly', 
-    status: 'active', 
+  {
+    id: 1,
+    name: 'Member #2147',
+    phone: '98XXX-XXXXX',
+    plan: 'Yearly',
+    status: 'active',
     expiry: '15 Dec 2026',
-    lastVisit: 'Today, 7:15 AM'
+    lastVisit: 'Today, 7:15 AM',
   },
-  { 
-    id: 2, 
-    name: 'Rahul Verma', 
-    phone: '87654-32109', 
-    plan: 'Quarterly', 
-    status: 'expiring', 
+  {
+    id: 2,
+    name: 'Member #2102',
+    phone: '87XXX-XXXXX',
+    plan: 'Quarterly',
+    status: 'expiring',
     expiry: '3 Feb 2026',
-    lastVisit: 'Yesterday'
+    lastVisit: 'Yesterday',
   },
-  { 
-    id: 3, 
-    name: 'Priya Patel', 
-    phone: '76543-21098', 
-    plan: 'Monthly', 
-    status: 'active', 
+  {
+    id: 3,
+    name: 'Member #2189',
+    phone: '76XXX-XXXXX',
+    plan: 'Monthly',
+    status: 'active',
     expiry: '28 Feb 2026',
-    lastVisit: 'Today, 6:30 AM'
+    lastVisit: 'Today, 6:30 AM',
   },
-  { 
-    id: 4, 
-    name: 'Suresh Kumar', 
-    phone: '65432-10987', 
-    plan: 'Half Yearly', 
-    status: 'expired', 
+  {
+    id: 4,
+    name: 'Member #2055',
+    phone: '65XXX-XXXXX',
+    plan: 'Half Yearly',
+    status: 'expired',
     expiry: '20 Jan 2026',
-    lastVisit: '5 days ago'
+    lastVisit: '5 days ago',
   },
-  { 
-    id: 5, 
-    name: 'Kavita Singh', 
-    phone: '54321-09876', 
-    plan: 'Yearly', 
-    status: 'active', 
+  {
+    id: 5,
+    name: 'Member #2210',
+    phone: '54XXX-XXXXX',
+    plan: 'Yearly',
+    status: 'active',
     expiry: '10 Oct 2026',
-    lastVisit: 'Today, 5:45 PM'
+    lastVisit: 'Today, 5:45 PM',
   },
 ];
 

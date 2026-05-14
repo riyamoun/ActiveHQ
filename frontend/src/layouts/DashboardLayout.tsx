@@ -16,7 +16,6 @@ import {
   ChevronDown,
   Package,
   Sparkles,
-  Bell,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import clsx from 'clsx'
@@ -151,11 +150,6 @@ export default function DashboardLayout() {
 
           {/* Right section */}
           <div className="flex items-center gap-3">
-            {/* Notification bell placeholder */}
-            <button className="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors relative">
-              <Bell className="w-5 h-5" />
-            </button>
-
             {/* User menu */}
             <div className="relative">
               <button

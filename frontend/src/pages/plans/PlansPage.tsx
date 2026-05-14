@@ -92,8 +92,30 @@ export default function PlansPage() {
       </div>
 
       {/* Plans Grid */}
+      {!plans?.length ? (
+        <div className="rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40 p-12 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
+            <Plus className="h-6 w-6 text-emerald-400" />
+          </div>
+          <h3 className="text-base font-semibold text-white">No plans yet</h3>
+          <p className="mt-1 text-sm text-slate-400">
+            Create your first membership plan so you can start enrolling members.
+          </p>
+          <Button
+            variant="primary"
+            className={`${primaryBtn} mt-6`}
+            leftIcon={<Plus className="h-4 w-4" />}
+            onClick={() => {
+              setEditingPlan(null)
+              setShowModal(true)
+            }}
+          >
+            Create your first plan
+          </Button>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {plans?.map((plan) => (
+        {plans.map((plan) => (
           <Card key={plan.id} className={`relative ${cardDark}`}>
             {!plan.is_active && (
               <div className="absolute top-4 right-4">
@@ -154,14 +176,6 @@ export default function PlansPage() {
           </Card>
         ))}
       </div>
-
-      {plans?.length === 0 && (
-        <Card className={`text-center py-12 ${cardDark}`}>
-          <p className="text-slate-400 mb-4">No plans created yet</p>
-          <Button variant="primary" className={primaryBtn} onClick={() => setShowModal(true)}>
-            Create your first plan
-          </Button>
-        </Card>
       )}
 
       {/* Plan Modal */}

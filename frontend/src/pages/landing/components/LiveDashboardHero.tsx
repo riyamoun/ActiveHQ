@@ -9,19 +9,19 @@ import {
   Bell
 } from 'lucide-react';
 
-// Simulated real-time data
+// Illustrative preview data — not live
 const recentActivity = [
-  { id: 1, type: 'checkin', name: 'Amit Sharma', time: '2 min ago' },
-  { id: 2, type: 'payment', name: 'Rahul Verma', amount: 5000, time: '8 min ago' },
-  { id: 3, type: 'checkin', name: 'Priya Patel', time: '12 min ago' },
-  { id: 4, type: 'reminder', name: 'Suresh Kumar', time: '15 min ago' },
-  { id: 5, type: 'checkin', name: 'Kavita Singh', time: '18 min ago' },
+  { id: 1, type: 'checkin', name: 'Member #2147', time: '2 min ago' },
+  { id: 2, type: 'payment', name: 'Member #2102', amount: 5000, time: '8 min ago' },
+  { id: 3, type: 'checkin', name: 'Member #2189', time: '12 min ago' },
+  { id: 4, type: 'reminder', name: 'Member #2055', time: '15 min ago' },
+  { id: 5, type: 'checkin', name: 'Member #2210', time: '18 min ago' },
 ];
 
 const expiringMembers = [
-  { name: 'Vikram M.', days: 2, phone: '98XXX-XXXXX' },
-  { name: 'Neha S.', days: 3, phone: '87XXX-XXXXX' },
-  { name: 'Rohit K.', days: 5, phone: '99XXX-XXXXX' },
+  { name: 'Member #1842', days: 2, phone: '98XXX-XXXXX' },
+  { name: 'Member #1907', days: 3, phone: '87XXX-XXXXX' },
+  { name: 'Member #1989', days: 5, phone: '99XXX-XXXXX' },
 ];
 
 export function LiveDashboardHero() {
@@ -47,14 +47,22 @@ export function LiveDashboardHero() {
 
   return (
     <section className="min-h-screen bg-slate-950 pt-20">
+      {/* Illustrative preview banner */}
+      <div className="bg-amber-500/10 border-b border-amber-500/20">
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2 text-amber-300 text-xs sm:text-sm">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          <span>Illustrative preview · numbers and activity are simulated to show the dashboard layout</span>
+        </div>
+      </div>
+
       {/* Top bar - Gym info */}
       <div className="border-b border-slate-800 bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-white font-medium">FitZone Gym</span>
+            <span className="text-white font-medium">Sample Gym</span>
             <span className="text-slate-500">•</span>
-            <span className="text-slate-400 text-sm">Koramangala, Bangalore</span>
+            <span className="text-slate-400 text-sm">Demo workspace</span>
           </div>
           <div className="flex items-center gap-2 text-slate-400 text-sm">
             <Clock className="h-4 w-4" />
@@ -131,7 +139,7 @@ export function LiveDashboardHero() {
                 </div>
                 <div>
                   <p className="text-white font-medium">New payment received</p>
-                  <p className="text-emerald-400 text-sm">₹5,000 from Rahul Verma • Cash</p>
+                  <p className="text-emerald-400 text-sm">₹5,000 from Member #2102 • Cash</p>
                 </div>
               </div>
               <span className="text-slate-400 text-xs">Just now</span>

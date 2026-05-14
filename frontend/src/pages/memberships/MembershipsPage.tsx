@@ -15,7 +15,7 @@ export default function MembershipsPage() {
   const [statusFilter, setStatusFilter] = useState<MembershipStatus | ''>('')
   const [page, setPage] = useState(1)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['memberships', statusFilter, page],
     queryFn: () =>
       membershipService.getMemberships({
@@ -106,14 +106,20 @@ export default function MembershipsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40">
-                {data?.items.length === 0 ? (
+                {isError ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-rose-400">
+                      Could not load memberships. Please retry.
+                    </td>
+                  </tr>
+                ) : !data?.items?.length ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
                       No memberships found
                     </td>
                   </tr>
                 ) : (
-                  data?.items.map((membership) => (
+                  data.items.map((membership) => (
                     <tr
                       key={membership.id}
                       className="hover:bg-slate-800/30 cursor-pointer"

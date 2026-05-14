@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Link, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 
 // Layouts
@@ -56,6 +56,36 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
   
   return <>{children}</>
+}
+
+function NotFoundPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-black px-6 text-center">
+      <div className="max-w-md">
+        <p className="text-lime-400 text-sm tracking-[0.3em] uppercase mb-4">404</p>
+        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          Page <span className="text-lime-400">not found.</span>
+        </h1>
+        <p className="text-white/50 mb-8">
+          The page you're looking for doesn't exist or has moved.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            to="/"
+            className="px-6 py-3 bg-lime-400 text-black rounded-full hover:bg-lime-300 transition-colors text-sm font-bold"
+          >
+            Back to home
+          </Link>
+          <Link
+            to="/contact"
+            className="px-6 py-3 border border-white/20 text-white rounded-full hover:border-lime-400/60 hover:text-lime-400 transition-colors text-sm"
+          >
+            Talk to us
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function App() {
@@ -122,8 +152,8 @@ export default function App() {
       {/* Operational system preview (internal) */}
       <Route path="/admin-preview" element={<LandingPage />} />
 
-      {/* Catch-all redirect */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }

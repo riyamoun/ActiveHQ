@@ -1,10 +1,11 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import httpx
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.demo_seed import create_demo_data
+from app.core.logger import logger
 from app.models import Gym
 from app.public.schemas import DemoRequestCreate, DemoRequestResponse
 from app.models.demo_request import DemoRequest
@@ -15,10 +16,17 @@ router = APIRouter()
 @router.get("/seed-demo")
 def seed_demo(db: Session = Depends(get_db)):
     """
-    Create demo gym + owner (owner@fitzonegym.com / Owner@123) if no gym exists.
-    Safe to call multiple times; only seeds when the database has zero gyms.
+    Create demo gym + owner if no gym exists (development / staging only).
+
+    Disabled in production to prevent accidental seeding via unauthenticated endpoint.
     Used so the "Try demo" flow works on first deploy without manual setup.
     """
+    if settings.environment.lower() == "production":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not available in this environment",
+        )
+
     existing = db.query(Gym).first()
     if existing:
         return {
@@ -30,8 +38,7 @@ def seed_demo(db: Session = Depends(get_db)):
     if created:
         return {
             "status": "created",
-            "message": "Demo data created. You can log in with owner@fitzonegym.com / Owner@123",
-            "email": "owner@fitzonegym.com",
+            "message": "Demo data created. Sign in with the seeded owner account from your environment docs.",
         }
     return {"status": "already_setup", "message": "Demo data already exists"}
 
@@ -75,10 +82,19 @@ def create_demo_request(
 
 
 def send_lead_webhook(payload: dict) -> None:
-    """Post lead payload to an external webhook/CRM endpoint."""
+    """Post lead payload to an external webhook/CRM endpoint.
+
+    Errors are logged but never re-raised so lead creation never fails on a flaky CRM.
+    """
     try:
         with httpx.Client(timeout=5.0) as client:
             client.post(settings.lead_webhook_url, json=payload)
-    except Exception:
-        # Swallow webhook errors so lead creation never fails.
+    except Exception as exc:
+        logger.warning(
+            "lead_webhook_failed",
+            extra={
+                "lead_id": payload.get("id"),
+                "error": str(exc),
+            },
+        )
         return
