@@ -136,6 +136,10 @@ class Settings(BaseSettings):
     # Google Identity Services — public client id. Same value in frontend env.
     google_oauth_client_id: str = ""
 
+    # Gemini (AI Coach prose on /api/coach/plan). When empty, insights stay deterministic.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
+
 
 @lru_cache
 def get_settings() -> Settings:

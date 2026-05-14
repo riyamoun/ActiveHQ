@@ -7,8 +7,8 @@
  * frame this as "AI Coach" because, in practice, that's exactly how most
  * commercial AI coaching apps work under the hood.
  *
- * If a real LLM is wired later, swap `generatePlan` for an async call to
- * `/api/coach/plan` and keep the same return shape.
+ * Production: `CoachPage` calls POST `/api/coach/plan` (same numbers + optional
+ * Gemini insight prose); falls back to this module if the API fails.
  */
 
 export type Sex = 'male' | 'female';

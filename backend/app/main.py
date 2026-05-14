@@ -307,6 +307,7 @@ from app.notifications.router import router as notifications_router
 from app.migration.router import router as migration_router
 from app.member_portal.auth_router import router as member_auth_router
 from app.member_portal.api_router import router as member_api_router
+from app.coach.router import router as coach_router
 
 # Include all routers
 app.include_router(admin_router, tags=["Admin"])
@@ -326,3 +327,4 @@ app.include_router(migration_router, prefix="/api/v1/migration", tags=["Migratio
 # Member portal — separate top-level prefix so the surface is easy to spot
 app.include_router(member_auth_router, prefix="/api/m/auth", tags=["Member Portal Auth"])
 app.include_router(member_api_router, prefix="/api/m", tags=["Member Portal"])
+app.include_router(coach_router, prefix="/api/coach", tags=["AI Coach"])

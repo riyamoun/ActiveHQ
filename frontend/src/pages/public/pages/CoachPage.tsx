@@ -31,6 +31,7 @@ import {
   type Diet,
   type Activity,
 } from '@/lib/coach';
+import { fetchCoachPlan, type CoachLocale } from '@/lib/coachApi';
 import { trackEvent } from '@/lib/analytics';
 
 const ACTIVITIES: { value: Activity; label: string; sub: string }[] = [
@@ -69,6 +70,7 @@ export function CoachPage() {
   });
   const [plan, setPlan] = useState<CoachPlan | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [coachLocale, setCoachLocale] = useState<CoachLocale>('en');
   const [oneRM, setOneRM] = useState({ weight: 60, reps: 5 });
 
   const oneRepMax = useMemo(
@@ -82,14 +84,18 @@ export function CoachPage() {
 
   async function handleGenerate() {
     setGenerating(true);
-    trackEvent('coach_plan_generate', { goal: input.goal, diet: input.diet });
-    await new Promise((r) => setTimeout(r, 750)); // small UX delay so the AI feels real
-    const next = generatePlan(input);
-    setPlan(next);
-    setGenerating(false);
-    setTimeout(() => {
-      document.getElementById('coach-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
+    trackEvent('coach_plan_generate', { goal: input.goal, diet: input.diet, locale: coachLocale });
+    try {
+      const next = await fetchCoachPlan(input, coachLocale);
+      setPlan(next);
+    } catch {
+      setPlan(generatePlan(input));
+    } finally {
+      setGenerating(false);
+      setTimeout(() => {
+        document.getElementById('coach-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
   }
 
   return (
@@ -330,6 +336,41 @@ export function CoachPage() {
                   </div>
                 </Section>
 
+                {/* Coach language (insights + AI prose) */}
+                <div className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs tracking-[0.2em] uppercase text-white/50">Coach language</span>
+                    <span className="text-[10px] text-white/35 hidden sm:inline">Macros stay identical</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCoachLocale('en')}
+                      className={`py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        coachLocale === 'en'
+                          ? 'bg-lime-400 text-black'
+                          : 'bg-white/5 text-white/60 hover:text-white'
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCoachLocale('hi')}
+                      className={`py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        coachLocale === 'hi'
+                          ? 'bg-lime-400 text-black'
+                          : 'bg-white/5 text-white/60 hover:text-white'
+                      }`}
+                    >
+                      हिंदी
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-white/40 leading-relaxed">
+                    Diet & workout templates stay the same; coach tips follow your language when the server has Gemini configured.
+                  </p>
+                </div>
+
                 <button
                   onClick={handleGenerate}
                   disabled={generating}
@@ -450,7 +491,7 @@ export function CoachPage() {
       </section>
 
       {/* ═══════════════════════ RESULT ════════════════════════ */}
-      {plan && <CoachResult plan={plan} />}
+      {plan && <CoachResult plan={plan} coachLocale={coachLocale} />}
 
       {/* ═══════════════════ DIFFERENTIATORS ════════════════════ */}
       <section className="py-24 sm:py-28 border-t border-white/10">
@@ -712,7 +753,7 @@ function CoachPreview() {
   );
 }
 
-function CoachResult({ plan }: { plan: CoachPlan }) {
+function CoachResult({ plan, coachLocale }: { plan: CoachPlan; coachLocale: CoachLocale }) {
   const shareUrl = buildWhatsAppShare(plan);
 
   return (
@@ -858,7 +899,10 @@ function CoachResult({ plan }: { plan: CoachPlan }) {
           <div className="mt-10 rounded-3xl border border-lime-400/30 bg-gradient-to-br from-lime-400/5 via-black to-black p-6 sm:p-8">
             <div className="flex items-center gap-2 mb-5">
               <Brain className="w-4 h-4 text-lime-400" />
-              <span className="text-xs tracking-[0.25em] uppercase text-lime-400">Coach insights</span>
+              <span className="text-xs tracking-[0.25em] uppercase text-lime-400">
+                Coach insights
+                {coachLocale === 'hi' ? ' · हिंदी' : ''}
+              </span>
             </div>
             <ul className="space-y-3">
               {plan.insights.map((tip, i) => (
