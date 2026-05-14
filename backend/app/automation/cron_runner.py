@@ -231,7 +231,109 @@ def run_inactivity_automation(db: Session, *, inactive_days: int = 7) -> dict[st
     return {"gyms_processed": len(gyms), "inactive_days": inactive_days, "messages_sent": sent, "messages_failed": failed}
 
 
+def run_expiry_followup_automation(db: Session, *, lookback_days: int = 30) -> dict[str, Any]:
+    """
+    For each gym: run EXPIRY_FOLLOWUP campaigns for members whose membership
+    has already expired (within the last `lookback_days` days).
+    Sends one WhatsApp reminder per member per day.
+    """
+    from app.models import Membership, Notification
+    from app.models.enums import NotificationType
+
+    gyms = db.execute(select(Gym).where(Gym.is_active == True)).scalars().all()  # noqa: E712
+    today = date.today()
+    cutoff_date = today - timedelta(days=lookback_days)
+    sent = 0
+    failed = 0
+    skipped = 0
+
+    for gym in gyms:
+        campaign = db.execute(
+            select(AutomationCampaign).where(
+                and_(
+                    AutomationCampaign.gym_id == gym.id,
+                    AutomationCampaign.is_active == True,  # noqa: E712
+                    AutomationCampaign.trigger_type == CampaignTriggerType.EXPIRY_FOLLOWUP,
+                )
+            )
+        ).scalar_one_or_none()
+        if not campaign:
+            continue
+
+        # Find members with expired memberships (expired within last N days)
+        expired_rows = db.execute(
+            select(Membership, Member).join(
+                Member,
+                and_(
+                    Member.id == Membership.member_id,
+                    Member.gym_id == gym.id,
+                    Member.is_active == True,  # noqa: E712
+                ),
+            ).where(
+                Membership.gym_id == gym.id,
+                Membership.status == MembershipStatus.EXPIRED,
+                Membership.end_date >= cutoff_date,
+                Membership.end_date < today,
+            )
+        ).all()
+
+        # Deduplicate: skip if we already sent an expiry followup today
+        seen: set[uuid.UUID] = set()
+        for membership, member in expired_rows:
+            if member.id in seen:
+                continue
+            seen.add(member.id)
+
+            # Check if we already sent this member a followup today
+            today_start = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
+            already_sent_today = db.execute(
+                select(Notification).where(
+                    and_(
+                        Notification.gym_id == gym.id,
+                        Notification.member_id == member.id,
+                        Notification.notification_type == NotificationType.EXPIRY_FOLLOWUP,
+                        Notification.sent_at >= today_start,
+                    )
+                )
+            ).scalar_one_or_none()
+            if already_sent_today:
+                skipped += 1
+                continue
+
+            days_since_expiry = (today - membership.end_date).days
+            context = {
+                "member_name": member.name or "Member",
+                "end_date": str(membership.end_date),
+                "days_since_expiry": days_since_expiry,
+            }
+            result = send_campaign_message(
+                db,
+                gym_id=gym.id,
+                campaign_id=campaign.id,
+                campaign_name=campaign.name,
+                trigger_type=campaign.trigger_type,
+                template_en=campaign.template_en,
+                template_hi=campaign.template_hi,
+                member=member,
+                context=context,
+            )
+            if result.success:
+                sent += 1
+            else:
+                failed += 1
+
+    return {
+        "gyms_processed": len(gyms),
+        "lookback_days": lookback_days,
+        "messages_sent": sent,
+        "messages_failed": failed,
+        "messages_skipped_already_sent_today": skipped,
+    }
+
+
 def run_all_automation(db: Session) -> dict[str, Any]:
     base = run_renewal_and_payment_automation(db)
     inactivity = run_inactivity_automation(db, inactive_days=7)
-    return {"renewal_payment": base, "inactivity": inactivity}
+    expiry_followup = run_expiry_followup_automation(db, lookback_days=30)
+    return {"renewal_payment": base, "inactivity": inactivity, "expiry_followup": expiry_followup}
+
