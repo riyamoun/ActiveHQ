@@ -1,26 +1,36 @@
 import { Link } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  Play, 
-  Smartphone, 
-  QrCode, 
-  Bell, 
-  TrendingUp,
+import {
+  ArrowRight,
+  MessageCircle,
+  IndianRupee,
+  Smartphone,
+  Banknote,
+  Bell,
+  Fingerprint,
+  Wifi,
+  ChevronRight,
+  CheckCircle2,
+  Sparkles,
   Calendar,
-  Trophy,
-  Zap,
-  Shield
+  TrendingUp,
 } from 'lucide-react';
 import { SeoMeta } from '@/components/seo/SeoMeta';
 import { trackEvent } from '@/lib/analytics';
+
+const WHATSAPP_LINK =
+  'https://wa.me/919354349118?text=Hi%20ActiveHQ%2C%20I%20run%20a%20gym%20and%20want%20to%20book%20a%20demo.';
+
+const siteUrl =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_PUBLIC_SITE_URL) ||
+  (typeof window !== 'undefined' ? window.location.origin : 'https://activehq.fit');
 
 const orgSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'ActiveHQ',
-  url: 'https://active-hq-git-main-riyamouns-projects.vercel.app',
+  url: siteUrl,
   email: 'info@activehq.fit',
-  telephone: '+91 98765 43210',
+  telephone: '+91 93543 49118',
 };
 
 const softwareSchema = {
@@ -32,481 +42,688 @@ const softwareSchema = {
   offers: {
     '@type': 'Offer',
     priceCurrency: 'INR',
-    price: '15000',
+    price: '3000',
   },
 };
 
 export function HomePage() {
   return (
-    <div className="bg-white text-slate-900">
+    <div className="bg-black text-white overflow-hidden">
       <SeoMeta
-        title="ActiveHQ | Gym Management Software for Indian Gym Owners"
-        description="Manage memberships, payments, attendance, and renewals in one AI-ready gym operating system built for Indian fitness businesses."
+        title="ActiveHQ — Run your gym in 10 minutes a day | Indian Gym Management Software"
+        description="Cash + UPI collection, WhatsApp renewals, biometric attendance — all in one screen. Built for Indian gyms."
         path="/"
         schemas={[orgSchema, softwareSchema]}
       />
 
-      {/* HERO */}
-      <section className="relative min-h-screen flex items-center">
-        <div className="absolute inset-0">
-          <img 
-            src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=80"
-            alt="Gym"
-            className="w-full h-full object-cover"
-            loading="eager"
+      {/* ════════════════════════════════════════════════════════════════
+          HERO — bold, black, neon-green
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="relative min-h-screen flex items-center pt-24 pb-16">
+        {/* Glow background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-lime-400/10 blur-[180px] rounded-full" />
+          <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 blur-[140px] rounded-full" />
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+              backgroundSize: '32px 32px',
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-8 py-32">
-          <div className="max-w-2xl">
-            <p className="text-emerald-400 text-sm tracking-[0.3em] uppercase mb-6">
-              Gym Management System
-            </p>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-light text-white leading-[1.1] mb-8">
-              Elevate your
-              <br />
-              <span className="font-medium">fitness business</span>
-            </h1>
-            <p className="text-xl text-white/70 font-light leading-relaxed mb-10 max-w-lg">
-              The complete platform for modern gyms. 
-              Membership, payments, and growth — simplified.
-            </p>
-            <div className="flex items-center gap-6">
-              <Link
-                to="/contact"
-                onClick={() => trackEvent('cta_click', { location: 'home_hero', cta: 'book_demo' })}
-                className="px-8 py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-emerald-400 hover:text-white transition-colors duration-200"
-              >
-                Book a demo
-              </Link>
-              <Link
-                to="/admin-preview"
-                onClick={() => trackEvent('cta_click', { location: 'home_hero', cta: 'see_live_dashboard' })}
-                className="flex items-center gap-3 text-white/80 hover:text-white transition-colors duration-200"
-              >
-                <span className="w-12 h-12 rounded-full border border-white/30 flex items-center justify-center">
-                  <Play className="w-4 h-4 ml-0.5" />
+        <div className="relative max-w-7xl mx-auto px-5 sm:px-8 w-full">
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
+            {/* Left: copy */}
+            <div className="lg:col-span-7">
+              {/* Eyebrow */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-lime-400/30 bg-lime-400/5 mb-7">
+                <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+                <span className="text-xs tracking-[0.2em] uppercase text-lime-400 font-medium">
+                  Made in India · For Indian gyms
                 </span>
-                <span className="text-sm">See live dashboard</span>
-              </Link>
-            </div>
-          </div>
-        </div>
+              </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-            <div className="w-1 h-2 bg-white/60 rounded-full animate-bounce" />
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tight">
+                Run your gym in
+                <br />
+                <span className="text-lime-400">10 minutes</span>{' '}
+                <span className="text-white/40 font-light">a day.</span>
+              </h1>
+
+              <p className="mt-8 text-lg sm:text-xl text-white/70 leading-relaxed max-w-2xl">
+                Cash, UPI, attendance, renewals, dues — every part of your gym in one screen.
+                Reminders go out on WhatsApp. Payments land in your bank. You get your evenings back.
+              </p>
+
+              {/* CTAs */}
+              <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <Link
+                  to="/contact"
+                  onClick={() =>
+                    trackEvent('cta_click', { location: 'hero', cta: 'book_demo' })
+                  }
+                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full bg-lime-400 text-black font-bold text-base hover:bg-lime-300 hover:shadow-[0_0_40px_rgba(163,230,53,0.5)] transition-all"
+                >
+                  Book a 15-min demo
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <a
+                  href={WHATSAPP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    trackEvent('cta_click', { location: 'hero', cta: 'whatsapp' })
+                  }
+                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full border border-white/20 text-white font-semibold hover:border-lime-400/60 hover:text-lime-400 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Talk on WhatsApp
+                </a>
+              </div>
+
+              {/* Trust strip */}
+              <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl">
+                {[
+                  { icon: Banknote, label: 'Cash + UPI' },
+                  { icon: MessageCircle, label: 'WhatsApp built-in' },
+                  { icon: Fingerprint, label: 'Biometric ready' },
+                  { icon: Wifi, label: 'Works on any device' },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex items-center gap-2 text-white/60 text-sm">
+                    <Icon className="w-4 h-4 text-lime-400" />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: dashboard mock */}
+            <div className="lg:col-span-5">
+              <DashboardMock />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* STATS BAR */}
-      <section className="py-16 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-8">
+      {/* ════════════════════════════════════════════════════════════════
+          STATS — defensible, honest "built for" framing
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="border-y border-white/10 py-14">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: '500+', label: 'Built for gyms of every size' },
-              { value: '50K+', label: 'Member capacity per gym' },
+              { value: '10 min', label: 'Daily admin · target' },
+              { value: '₹0', label: 'Setup fee · founding gyms' },
               { value: '99.9%', label: 'Uptime SLA' },
-              { value: '24/7', label: 'Cloud support' },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="text-3xl md:text-4xl font-light text-slate-900 mb-1">{stat.value}</div>
-                <div className="text-sm text-slate-500 tracking-wide">{stat.label}</div>
+              { value: '24/7', label: 'WhatsApp support' },
+            ].map((stat) => (
+              <div key={stat.label} className="text-left">
+                <div className="text-3xl sm:text-4xl font-bold text-lime-400">{stat.value}</div>
+                <div className="mt-1 text-sm text-white/50">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          FOR MEMBERS - Technical & Attractive Section
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 bg-gradient-to-b from-slate-50 to-white">
-        <div className="max-w-7xl mx-auto px-8">
-          {/* Header */}
-          <div className="text-center mb-16">
-            <p className="text-emerald-600 text-sm tracking-[0.2em] uppercase mb-4">
-              For Members
+      {/* ════════════════════════════════════════════════════════════════
+          A DAY AT YOUR GYM
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 sm:py-32">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="max-w-2xl mb-16">
+            <p className="text-xs tracking-[0.3em] uppercase text-lime-400 mb-4">
+              A day at your gym
             </p>
-            <h2 className="text-3xl md:text-5xl font-light text-slate-900 mb-4">
-              Your fitness journey, <span className="font-medium">digitized</span>
-            </h2>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              Experience gym like never before. Everything you need, right in your pocket.
-            </p>
-          </div>
-
-          {/* Phone Mockup with Features */}
-          <div className="grid lg:grid-cols-3 gap-8 items-center">
-            {/* Left Features */}
-            <div className="space-y-8">
-              <div className="group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-500 transition-colors duration-200">
-                    <QrCode className="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors duration-200" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-slate-900 mb-1">Instant Check-in</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed">
-                      Scan QR code at entry. No waiting, no hassle. Your attendance logged automatically.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500 transition-colors duration-200">
-                    <Calendar className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors duration-200" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-slate-900 mb-1">Membership Tracker</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed">
-                      Always know your plan status, renewal dates, and payment history at a glance.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-500 transition-colors duration-200">
-                    <Bell className="w-6 h-6 text-purple-600 group-hover:text-white transition-colors duration-200" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-slate-900 mb-1">Smart Reminders</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed">
-                      Get WhatsApp notifications for renewals, offers, and gym updates.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Center - App Preview */}
-            <div className="relative flex justify-center">
-              <div className="relative">
-                {/* Phone Frame */}
-                <div className="w-64 h-[520px] bg-slate-900 rounded-[3rem] p-3 shadow-2xl">
-                  <div className="w-full h-full bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-[2.5rem] overflow-hidden relative">
-                    {/* Status Bar */}
-                    <div className="px-6 pt-4 flex justify-between items-center text-white/80 text-xs">
-                      <span>9:41</span>
-                      <div className="w-20 h-6 bg-black rounded-full" />
-                      <span>100%</span>
-                    </div>
-                    
-                    {/* App Content */}
-                    <div className="px-6 pt-8 text-white">
-                      <p className="text-white/70 text-sm">Good morning,</p>
-                      <h3 className="text-2xl font-semibold mb-6">Rahul 👋</h3>
-                      
-                      {/* Stats Cards */}
-                      <div className="grid grid-cols-2 gap-3 mb-6">
-                        <div className="bg-white/20 backdrop-blur rounded-xl p-4">
-                          <div className="text-2xl font-bold">18</div>
-                          <div className="text-xs text-white/70">Days Left</div>
-                        </div>
-                        <div className="bg-white/20 backdrop-blur rounded-xl p-4">
-                          <div className="text-2xl font-bold">24</div>
-                          <div className="text-xs text-white/70">This Month</div>
-                        </div>
-                      </div>
-
-                      {/* Quick Actions */}
-                      <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium">Quick Check-in</span>
-                          <Zap className="w-4 h-4" />
-                        </div>
-                        <div className="w-full h-10 bg-white rounded-lg flex items-center justify-center">
-                          <span className="text-emerald-600 font-semibold text-sm">Tap to Check In</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bottom Nav */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur px-8 py-4">
-                      <div className="flex justify-between">
-                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                          <Smartphone className="w-5 h-5 text-emerald-600" />
-                        </div>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                          <Calendar className="w-5 h-5 text-white/60" />
-                        </div>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                          <Trophy className="w-5 h-5 text-white/60" />
-                        </div>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                          <TrendingUp className="w-5 h-5 text-white/60" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Floating Badges */}
-                <div className="absolute -left-8 top-20 bg-white rounded-xl shadow-lg p-3 flex items-center gap-2">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <Shield className="w-4 h-4 text-green-600" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">Secure</span>
-                </div>
-
-                <div className="absolute -right-8 bottom-32 bg-white rounded-xl shadow-lg p-3 flex items-center gap-2">
-                  <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">Instant</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Features */}
-            <div className="space-y-8">
-              <div className="group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-500 transition-colors duration-200">
-                    <TrendingUp className="w-6 h-6 text-orange-600 group-hover:text-white transition-colors duration-200" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-slate-900 mb-1">Progress Analytics</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed">
-                      Track your attendance patterns. See your consistency. Stay motivated.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-pink-100 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-500 transition-colors duration-200">
-                    <Trophy className="w-6 h-6 text-pink-600 group-hover:text-white transition-colors duration-200" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-slate-900 mb-1">Rewards & Offers</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed">
-                      Get exclusive discounts on renewals. Early bird offers delivered to you first.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-cyan-100 flex items-center justify-center flex-shrink-0 group-hover:bg-cyan-500 transition-colors duration-200">
-                    <Smartphone className="w-6 h-6 text-cyan-600 group-hover:text-white transition-colors duration-200" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-slate-900 mb-1">Digital Membership</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed">
-                      No plastic cards needed. Your phone is your membership. Always accessible.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FOR GYM OWNERS - Feature Section */}
-      <section className="py-24">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="relative">
-              <img 
-                src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&q=80"
-                alt="Gym member"
-                className="w-full aspect-[4/5] object-cover rounded-2xl"
-                loading="lazy"
-              />
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-emerald-500 rounded-2xl -z-10" />
-            </div>
-
-            <div className="lg:pl-8">
-              <p className="text-emerald-600 text-sm tracking-[0.2em] uppercase mb-4">
-                For Gym Owners
-              </p>
-              <h2 className="text-3xl md:text-4xl font-light text-slate-900 leading-tight mb-6">
-                Run your gym
-                <br />
-                <span className="font-medium">effortlessly</span>
-              </h2>
-              <p className="text-lg text-slate-600 font-light leading-relaxed mb-8">
-                From member onboarding to revenue tracking, everything in one dashboard. 
-                Spend less time on admin, more time growing your business.
-              </p>
-              <ul className="space-y-4 text-slate-600 mb-8">
-                {[
-                  'Complete member management',
-                  'Automated payment tracking',
-                  'WhatsApp notifications',
-                  'Real-time analytics & reports',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/for-gym-owners"
-                className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium transition-colors duration-200"
-              >
-                Learn more <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FULL WIDTH PARALLAX */}
-      <section className="relative py-32">
-        <img 
-          src="https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=1920&q=80"
-          alt="Gym interior"
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-slate-900/80" />
-        
-        <div className="relative max-w-7xl mx-auto px-8 text-center">
-          <p className="text-emerald-400 text-sm tracking-[0.2em] uppercase mb-4">
-            Financial Clarity
-          </p>
-          <h2 className="text-3xl md:text-5xl font-light text-white leading-tight mb-6 max-w-3xl mx-auto">
-            Every payment tracked.
-            <br />
-            <span className="font-medium">Every rupee accounted.</span>
-          </h2>
-          <p className="text-lg text-white/60 font-light max-w-xl mx-auto">
-            Cash, UPI, cards — all in one dashboard. 
-            Daily reconciliation in minutes, not hours.
-          </p>
-        </div>
-      </section>
-
-      {/* GALLERY */}
-      <section className="py-24 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="text-center mb-16">
-            <p className="text-emerald-600 text-sm tracking-[0.2em] uppercase mb-4">
-              Our Community
-            </p>
-            <h2 className="text-3xl md:text-4xl font-light text-slate-900">
-              Trusted by <span className="font-medium">leading gyms</span>
+            <h2 className="text-4xl sm:text-5xl font-bold leading-tight">
+              Open at 6 AM. Close at 10 PM.
+              <br />
+              <span className="text-white/40 font-light">ActiveHQ runs in the background.</span>
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
-              'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80',
-              'https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=600&q=80',
-              'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&q=80',
-            ].map((img, i) => (
-              <div key={i} className="aspect-square rounded-xl overflow-hidden">
-                <img 
-                  src={img}
-                  alt={`Gym ${i + 1}`}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                />
+              {
+                tag: 'Morning',
+                title: 'One-tap check-in',
+                body: 'Members scan in via QR or biometric. You see who is in, in real time.',
+                Icon: Calendar,
+              },
+              {
+                tag: 'Midday',
+                title: 'Payments without paperwork',
+                body: 'Take cash or UPI. Receipts go on WhatsApp. Daily reconciliation in minutes.',
+                Icon: IndianRupee,
+              },
+              {
+                tag: 'Evening',
+                title: 'Renewals on autopilot',
+                body: '7-day, 3-day, expiry-day reminders go out on WhatsApp without you lifting a finger.',
+                Icon: Bell,
+              },
+              {
+                tag: 'Closing',
+                title: 'Close the day in a tap',
+                body: "Today's collection, attendance, dues — one screen, ready for tomorrow.",
+                Icon: TrendingUp,
+              },
+            ].map(({ tag, title, body, Icon }) => (
+              <div
+                key={title}
+                className="group relative rounded-2xl border border-white/10 bg-white/[0.02] p-6 hover:border-lime-400/40 hover:bg-white/[0.04] transition-all"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-[10px] tracking-[0.25em] uppercase text-lime-400">
+                    {tag}
+                  </span>
+                  <Icon className="w-5 h-5 text-white/40 group-hover:text-lime-400 transition-colors" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">{title}</h3>
+                <p className="mt-3 text-sm text-white/60 leading-relaxed">{body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* TESTIMONIAL */}
-      <section className="py-32">
-        <div className="max-w-4xl mx-auto px-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-slate-100 mx-auto mb-8 flex items-center justify-center text-2xl">
-            "
-          </div>
-          <blockquote className="text-2xl md:text-3xl font-light text-slate-700 leading-relaxed mb-8">
-            ActiveHQ transformed how we operate. What used to take hours now takes minutes. 
-            Our team can finally focus on what matters — our members.
-          </blockquote>
+      {/* ════════════════════════════════════════════════════════════════
+          PAYMENTS — UPI / Cash visual
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="relative py-24 sm:py-32 border-t border-white/10">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] bg-lime-400/5 blur-[140px] rounded-full" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-16 items-center">
           <div>
-            <div className="font-medium text-slate-900">Pilot gym owner</div>
-            <div className="text-slate-500 text-sm">Gurgaon · Founding access</div>
+            <p className="text-xs tracking-[0.3em] uppercase text-lime-400 mb-4">
+              Built for Indian payment reality
+            </p>
+            <h2 className="text-4xl sm:text-5xl font-bold leading-tight">
+              Cash <span className="text-white/40 font-light">and</span> UPI{' '}
+              <span className="text-white/40 font-light">in the same flow.</span>
+            </h2>
+            <p className="mt-6 text-lg text-white/60 leading-relaxed max-w-lg">
+              Most gym software assumes everyone pays online. India doesn't work like that.
+              ActiveHQ tracks every rupee — cash at the counter, UPI on PhonePe / GPay / Paytm,
+              card swipes — all in one ledger.
+            </p>
+
+            <ul className="mt-8 space-y-3">
+              {[
+                'Record cash + UPI side by side',
+                'WhatsApp UPI link for renewals (Razorpay-ready)',
+                'Daily collection report — owner gets it on WhatsApp',
+                'Pending dues, member-by-member, one click away',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3 text-white/80">
+                  <CheckCircle2 className="w-5 h-5 text-lime-400 mt-0.5 flex-shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Visual: Payments mock */}
+          <div>
+            <PaymentsMock />
           </div>
         </div>
       </section>
 
-      {/* PRICING */}
-      <section className="py-24 bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto px-8 text-center">
-          <p className="text-emerald-400 text-sm tracking-[0.2em] uppercase mb-4">
-            Pricing
-          </p>
-          <h2 className="text-3xl md:text-4xl font-light mb-4">
-            Simple, transparent <span className="font-medium">pricing</span>
-          </h2>
-          <p className="text-white/60 mb-12">
-            Everything you need. One price. No surprises.
-          </p>
+      {/* ════════════════════════════════════════════════════════════════
+          WHATSAPP DIFFERENTIATOR
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="relative py-24 sm:py-32 border-t border-white/10 bg-gradient-to-b from-black via-emerald-950/20 to-black">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-16 items-center">
+          {/* Phone mock first on mobile, second on desktop */}
+          <div className="order-2 lg:order-1 flex justify-center">
+            <WhatsAppMock />
+          </div>
 
-          <div className="bg-white/5 backdrop-blur rounded-2xl p-8 md:p-12 border border-white/10 max-w-lg mx-auto">
-            <div className="text-5xl md:text-6xl font-light mb-2">
-              ₹15,000
-              <span className="text-xl text-white/50">/year</span>
-            </div>
-            <div className="text-white/50 mb-8">+ ₹5,000 one-time setup</div>
-            
-            <div className="space-y-3 text-left text-white/80 mb-8">
+          <div className="order-1 lg:order-2">
+            <p className="text-xs tracking-[0.3em] uppercase text-[#25D366] mb-4">
+              Where your members already are
+            </p>
+            <h2 className="text-4xl sm:text-5xl font-bold leading-tight">
+              Everything on{' '}
+              <span className="text-[#25D366]">WhatsApp.</span>
+            </h2>
+            <p className="mt-6 text-lg text-white/60 leading-relaxed max-w-lg">
+              Renewal nudges, payment links, attendance updates, birthday wishes —
+              all on the one app every member already checks 60 times a day.
+              No new apps to download. No SMS that nobody opens.
+            </p>
+
+            <div className="mt-8 grid grid-cols-2 gap-4">
               {[
-                'Unlimited members',
-                'All features included',
-                'WhatsApp automation',
-                'Priority support',
-              ].map((feature, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                  {feature}
+                'Renewal reminders',
+                'UPI payment links',
+                'Welcome messages',
+                'Daily collection',
+                'Birthday wishes',
+                'Custom broadcasts',
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-center gap-2 text-sm text-white/80"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#25D366]" />
+                  {item}
                 </div>
               ))}
             </div>
 
-            <Link
-              to="/contact"
-              onClick={() => trackEvent('cta_click', { location: 'home_pricing', cta: 'start_free_trial' })}
-              className="block w-full py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-emerald-400 hover:text-white transition-colors duration-200"
+            <a
+              href={WHATSAPP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('cta_click', { location: 'whatsapp_block', cta: 'whatsapp' })}
+              className="inline-flex items-center gap-2 mt-10 px-6 py-3 rounded-full bg-[#25D366] text-white font-semibold hover:bg-[#1ebd5a] transition-colors"
             >
-              Start Free Trial
-            </Link>
+              <MessageCircle className="w-4 h-4" />
+              See it in action — message us
+            </a>
           </div>
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="relative py-32">
-        <img 
-          src="https://images.unsplash.com/photo-1576678927484-cc907957088c?w=1920&q=80"
-          alt="Gym workout"
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
-        
-        <div className="relative max-w-4xl mx-auto px-8 text-center">
-          <h2 className="text-3xl md:text-5xl font-light text-white leading-tight mb-8">
-            Ready to elevate
-            <br />
-            <span className="font-medium">your gym?</span>
-          </h2>
-          <Link
-            to="/contact"
-            onClick={() => trackEvent('cta_click', { location: 'home_final_cta', cta: 'get_started' })}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-emerald-400 hover:text-white transition-colors duration-200"
-          >
-            Get Started <ArrowRight className="w-4 h-4" />
-          </Link>
+      {/* ════════════════════════════════════════════════════════════════
+          WHY ACTIVEHQ
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 sm:py-32 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="max-w-2xl mb-16">
+            <p className="text-xs tracking-[0.3em] uppercase text-lime-400 mb-4">
+              Why ActiveHQ
+            </p>
+            <h2 className="text-4xl sm:text-5xl font-bold leading-tight">
+              Built by people who get
+              <br />
+              <span className="text-lime-400">Indian gym life.</span>
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
+            {[
+              {
+                title: 'Cash-first, UPI-fluent',
+                body: 'Reconcile cash bundles + UPI screenshots without ever opening Excel.',
+                Icon: IndianRupee,
+              },
+              {
+                title: 'Works on any device',
+                body: 'Owner on iPhone, staff on a ₹10,000 Android, biometric at the gate — one system.',
+                Icon: Smartphone,
+              },
+              {
+                title: 'WhatsApp is the channel',
+                body: 'Every reminder, receipt and renewal nudge lands where members live — WhatsApp.',
+                Icon: MessageCircle,
+              },
+              {
+                title: 'Biometric you already own',
+                body: 'Plug in ZKTeco or Essl devices. Attendance flows into ActiveHQ automatically.',
+                Icon: Fingerprint,
+              },
+              {
+                title: 'Migrate from anything',
+                body: 'On AdviceFit, an Excel sheet, or a notebook? We bring it all in on the demo call.',
+                Icon: Sparkles,
+              },
+              {
+                title: 'Honest pricing',
+                body: 'No per-member fees. No per-message fees. One yearly price, locked for founding gyms.',
+                Icon: CheckCircle2,
+              },
+            ].map(({ title, body, Icon }) => (
+              <div
+                key={title}
+                className="group rounded-2xl border border-white/10 bg-white/[0.02] p-6 hover:border-lime-400/40 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl bg-lime-400/10 border border-lime-400/20 flex items-center justify-center group-hover:bg-lime-400/20 transition-colors">
+                  <Icon className="w-5 h-5 text-lime-400" />
+                </div>
+                <h3 className="mt-5 text-lg font-semibold">{title}</h3>
+                <p className="mt-2 text-sm text-white/60 leading-relaxed">{body}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
+
+      {/* ════════════════════════════════════════════════════════════════
+          FOUNDING-GYM PRICING
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="relative py-24 sm:py-32 border-t border-white/10">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-lime-400/10 blur-[180px] rounded-full" />
+        </div>
+
+        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-lime-400/30 bg-lime-400/5 mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+            <span className="text-xs tracking-[0.2em] uppercase text-lime-400 font-medium">
+              Founding gyms · limited spots
+            </span>
+          </div>
+          <h2 className="text-4xl sm:text-5xl font-bold leading-tight">
+            One price. <span className="text-white/40 font-light">No surprises.</span>
+          </h2>
+          <p className="mt-5 text-lg text-white/60 max-w-xl mx-auto">
+            We migrate your old data on the demo call itself. You only pay once you're convinced.
+          </p>
+
+          <div className="mt-12 relative rounded-3xl border border-lime-400/30 bg-black p-10 sm:p-14 shadow-[0_0_80px_rgba(163,230,53,0.15)]">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-lime-400 text-black text-[11px] font-bold tracking-[0.2em] uppercase">
+              Founding Offer
+            </div>
+
+            <div className="text-6xl sm:text-7xl font-bold">
+              <span className="text-white/40 text-3xl align-top">₹</span>
+              <span className="text-lime-400">3,000</span>
+              <span className="text-white/40 text-xl font-light">/year</span>
+            </div>
+            <div className="mt-1 text-white/50">+ ₹0 setup for founding gyms · usually ₹2,500</div>
+
+            <div className="mt-10 grid sm:grid-cols-2 gap-3 text-left max-w-md mx-auto">
+              {[
+                'Unlimited members',
+                'Cash + UPI tracking',
+                'WhatsApp automation',
+                'Biometric integration',
+                'Free data migration',
+                'Lifetime price-lock',
+              ].map((feature) => (
+                <div key={feature} className="flex items-center gap-2 text-white/80">
+                  <CheckCircle2 className="w-4 h-4 text-lime-400 flex-shrink-0" />
+                  <span className="text-sm">{feature}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                to="/contact"
+                onClick={() =>
+                  trackEvent('cta_click', { location: 'pricing', cta: 'book_demo' })
+                }
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-lime-400 text-black font-bold hover:bg-lime-300 transition-colors"
+              >
+                Book a 15-min demo
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <a
+                href={WHATSAPP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() =>
+                  trackEvent('cta_click', { location: 'pricing', cta: 'whatsapp' })
+                }
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full border border-white/20 text-white font-semibold hover:border-lime-400/60 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Talk on WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════
+          FOUNDER BLOCK
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="py-20 sm:py-24 border-t border-white/10 bg-white/[0.02]">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8 text-center">
+          <p className="text-xs tracking-[0.3em] uppercase text-lime-400 mb-5">
+            A note from the founder
+          </p>
+          <p className="text-xl sm:text-2xl font-light text-white/90 leading-relaxed">
+            "Indian gym owners juggle cash, UPI, biometric, WhatsApp and Excel — every single day.
+            ActiveHQ exists so that juggling becomes one screen.
+            If you run a gym, I'd love to do the demo myself."
+          </p>
+          <a
+            href={WHATSAPP_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent('cta_click', { location: 'founder', cta: 'whatsapp' })
+            }
+            className="mt-8 inline-flex items-center gap-2 text-lime-400 font-semibold hover:text-lime-300 transition-colors"
+          >
+            Message the founder on WhatsApp
+            <ChevronRight className="w-4 h-4" />
+          </a>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════
+          FINAL CTA
+      ════════════════════════════════════════════════════════════════ */}
+      <section className="relative py-24 sm:py-32 border-t border-white/10">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-lime-400/10 blur-[180px] rounded-full" />
+        </div>
+
+        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 text-center">
+          <h2 className="text-5xl sm:text-6xl font-bold leading-tight">
+            Ready in <span className="text-lime-400">15 minutes.</span>
+          </h2>
+          <p className="mt-6 text-lg text-white/60">
+            We bring your old data in on the call. You walk away with a working dashboard the same day.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/contact"
+              onClick={() =>
+                trackEvent('cta_click', { location: 'final_cta', cta: 'book_demo' })
+              }
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-lime-400 text-black font-bold hover:bg-lime-300 hover:shadow-[0_0_40px_rgba(163,230,53,0.5)] transition-all"
+            >
+              Book a 15-min demo
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <a
+              href={WHATSAPP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() =>
+                trackEvent('cta_click', { location: 'final_cta', cta: 'whatsapp' })
+              }
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full border border-white/20 text-white font-semibold hover:border-lime-400/60 hover:text-lime-400 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Talk on WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Mocks — small, self-contained, illustrative
+   ──────────────────────────────────────────────────────────────────────── */
+
+function DashboardMock() {
+  return (
+    <div className="relative">
+      {/* Glow */}
+      <div className="absolute -inset-4 bg-lime-400/20 blur-[60px] rounded-3xl" />
+
+      <div className="relative rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl shadow-black/60 overflow-hidden">
+        {/* Window chrome */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40">
+          <div className="flex gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+          </div>
+          <div className="text-[10px] text-white/40 font-mono">activehq.fit/dashboard</div>
+          <span className="w-8" />
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          {/* Top row */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[11px] text-white/40 uppercase tracking-wide">Today</div>
+              <div className="text-lg font-semibold text-white">Sample Gym</div>
+            </div>
+            <span className="text-[10px] text-lime-400 bg-lime-400/10 px-2 py-1 rounded-full border border-lime-400/20">
+              Live
+            </span>
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-xl bg-black/40 border border-white/5 p-3">
+              <div className="text-[10px] text-white/40">Check-ins</div>
+              <div className="text-2xl font-bold text-white mt-1">47</div>
+            </div>
+            <div className="rounded-xl bg-black/40 border border-white/5 p-3">
+              <div className="text-[10px] text-white/40">Collected</div>
+              <div className="text-2xl font-bold text-lime-400 mt-1">₹12.5K</div>
+            </div>
+            <div className="rounded-xl bg-black/40 border border-white/5 p-3">
+              <div className="text-[10px] text-white/40">Active</div>
+              <div className="text-2xl font-bold text-white mt-1">247</div>
+            </div>
+            <div className="rounded-xl bg-black/40 border border-white/5 p-3">
+              <div className="text-[10px] text-white/40">Expiring (7d)</div>
+              <div className="text-2xl font-bold text-amber-400 mt-1">18</div>
+            </div>
+          </div>
+
+          {/* Activity feed */}
+          <div className="rounded-xl bg-black/40 border border-white/5 p-3 space-y-2.5">
+            <div className="flex items-center justify-between text-[10px] text-white/40 uppercase tracking-wide">
+              <span>Recent activity</span>
+              <span>just now</span>
+            </div>
+            {[
+              { dot: 'bg-lime-400', text: 'Member #2147 · checked in', t: '2m' },
+              { dot: 'bg-emerald-400', text: 'UPI ₹5,000 · Member #2102', t: '8m' },
+              { dot: 'bg-[#25D366]', text: 'WhatsApp renewal sent · 18 members', t: '14m' },
+            ].map((row) => (
+              <div key={row.text} className="flex items-center gap-2.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${row.dot}`} />
+                <span className="text-xs text-white/80 flex-1 truncate">{row.text}</span>
+                <span className="text-[10px] text-white/40">{row.t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Floating badge */}
+      <div className="absolute -bottom-4 -left-4 px-3 py-2 rounded-xl bg-lime-400 text-black text-xs font-bold shadow-xl flex items-center gap-1.5">
+        <Sparkles className="w-3.5 h-3.5" />
+        Illustrative preview
+      </div>
+    </div>
+  );
+}
+
+function PaymentsMock() {
+  return (
+    <div className="relative">
+      <div className="absolute -inset-6 bg-emerald-500/10 blur-[80px] rounded-full" />
+      <div className="relative rounded-2xl border border-white/10 bg-zinc-950 p-5 shadow-2xl shadow-black/60">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <div className="text-[10px] text-white/40 uppercase tracking-wide">Today's collection</div>
+            <div className="text-3xl font-bold text-lime-400 mt-1">₹24,500</div>
+          </div>
+          <span className="text-[10px] text-lime-400 bg-lime-400/10 px-2 py-1 rounded-full border border-lime-400/20">
+            6 payments
+          </span>
+        </div>
+
+        <div className="space-y-2.5">
+          {[
+            { method: 'UPI', icon: Smartphone, name: 'Member #2102', amount: '₹5,000', color: 'text-emerald-400' },
+            { method: 'Cash', icon: Banknote, name: 'Member #2189', amount: '₹3,000', color: 'text-lime-400' },
+            { method: 'UPI', icon: Smartphone, name: 'Member #2055', amount: '₹7,500', color: 'text-emerald-400' },
+            { method: 'Cash', icon: Banknote, name: 'Member #2210', amount: '₹4,000', color: 'text-lime-400' },
+            { method: 'UPI', icon: Smartphone, name: 'Member #1842', amount: '₹5,000', color: 'text-emerald-400' },
+          ].map((row, i) => {
+            const Icon = row.icon;
+            return (
+              <div
+                key={i}
+                className="flex items-center justify-between p-3 rounded-xl bg-black/40 border border-white/5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center ${row.color}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-white">{row.name}</div>
+                    <div className="text-[10px] text-white/40 uppercase tracking-wide">{row.method}</div>
+                  </div>
+                </div>
+                <div className="text-sm font-semibold text-white">{row.amount}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-xs">
+          <span className="text-white/40">Cash · ₹7,000</span>
+          <span className="text-white/40">UPI · ₹17,500</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WhatsAppMock() {
+  return (
+    <div className="relative">
+      <div className="absolute -inset-6 bg-[#25D366]/10 blur-[80px] rounded-full" />
+      <div className="relative w-72 sm:w-80 rounded-[2.5rem] bg-zinc-950 border border-white/10 p-3 shadow-2xl shadow-black/60">
+        {/* Phone screen */}
+        <div className="rounded-[2rem] bg-[#0b141a] overflow-hidden">
+          {/* WhatsApp header */}
+          <div className="px-4 py-3 bg-[#075e54] flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-lime-400 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-black" />
+            </div>
+            <div>
+              <div className="text-white text-sm font-semibold">Sample Gym</div>
+              <div className="text-white/70 text-[10px]">via ActiveHQ</div>
+            </div>
+          </div>
+
+          {/* Chat */}
+          <div className="p-4 space-y-3 min-h-[340px] bg-[#0b141a]">
+            <div className="max-w-[80%] bg-[#005c4b] text-white text-sm rounded-2xl rounded-tr-sm px-3 py-2">
+              Hi! Your membership ends in 3 days. Renew now → upi.activehq.fit/r/2102
+              <div className="text-[9px] text-white/50 mt-1 text-right">9:24 AM ✓✓</div>
+            </div>
+            <div className="max-w-[80%] bg-white/5 text-white text-sm rounded-2xl rounded-tl-sm px-3 py-2">
+              Done, paid ₹5,000 ✅
+              <div className="text-[9px] text-white/40 mt-1">9:26 AM</div>
+            </div>
+            <div className="max-w-[80%] bg-[#005c4b] text-white text-sm rounded-2xl rounded-tr-sm px-3 py-2">
+              Got it 🙌 Receipt + new validity sent. See you at the gym!
+              <div className="text-[9px] text-white/50 mt-1 text-right">9:26 AM ✓✓</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating badge */}
+      <div className="absolute -top-3 -right-3 px-3 py-1.5 rounded-full bg-[#25D366] text-white text-[10px] font-bold uppercase tracking-wide shadow-xl">
+        Real WhatsApp
+      </div>
     </div>
   );
 }

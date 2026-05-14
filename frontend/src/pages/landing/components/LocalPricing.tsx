@@ -39,14 +39,14 @@ export function LocalPricing() {
           {/* CTA */}
           <div className="space-y-3">
             <a
-              href="tel:+919876543210"
+              href="tel:+919354349118"
               className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl transition-colors"
             >
               <Phone className="h-5 w-5" />
               Talk to Us
             </a>
             <a
-              href="https://wa.me/919876543210"
+              href="https://wa.me/919354349118"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl border border-slate-700 transition-colors"

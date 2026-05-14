@@ -16,11 +16,11 @@ export function SimpleNavbar() {
           {/* Right side */}
           <div className="flex items-center gap-4">
             <a
-              href="tel:+919876543210"
+              href="tel:+919354349118"
               className="hidden sm:flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors"
             >
               <Phone className="h-4 w-4" />
-              <span>+91 98765 43210</span>
+              <span>+91 93543 49118</span>
             </a>
             <a
               href="/login"

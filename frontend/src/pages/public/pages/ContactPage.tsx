@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Phone, Mail, MapPin, Check } from 'lucide-react';
+import { Phone, Mail, MapPin, Check, MessageCircle, ArrowRight } from 'lucide-react';
 import { publicApi, getErrorMessage } from '@/lib/api';
 import { SeoMeta } from '@/components/seo/SeoMeta';
 import { buildLeadSource, trackEvent } from '@/lib/analytics';
+
+const WHATSAPP_LINK =
+  'https://wa.me/919354349118?text=Hi%20ActiveHQ%2C%20I%20run%20a%20gym%20and%20want%20to%20book%20a%20demo.';
 
 export function ContactPage() {
   const [form, setForm] = useState({
@@ -16,7 +19,9 @@ export function ContactPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -35,213 +40,258 @@ export function ContactPage() {
       trackEvent('demo_request_submit_success', { city: form.city });
     } catch (err) {
       setStatus('error');
-      setErrorMsg(`${getErrorMessage(err)} Email info@activehq.fit if you need help.`);
+      setErrorMsg(
+        `${getErrorMessage(err)} You can also message info@activehq.fit or WhatsApp us.`
+      );
       trackEvent('demo_request_submit_failed', { city: form.city });
     }
   };
 
   if (status === 'success') {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center px-8">
+      <div className="min-h-[70vh] flex items-center justify-center px-5 sm:px-8 bg-black text-white">
         <div className="max-w-md text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 mx-auto mb-6 flex items-center justify-center">
-            <Check className="w-8 h-8 text-emerald-600" />
+          <div className="w-16 h-16 rounded-full bg-lime-400 mx-auto mb-6 flex items-center justify-center shadow-[0_0_40px_rgba(163,230,53,0.4)]">
+            <Check className="w-8 h-8 text-black" />
           </div>
-          <h1 className="text-3xl font-light text-slate-900 mb-4">
-            Request <span className="font-medium">received</span>
+          <h1 className="text-4xl font-bold mb-4">
+            Request <span className="text-lime-400">received.</span>
           </h1>
-          <p className="text-lg text-slate-600 font-light mb-8">
-            We'll call you within 24 hours to schedule your personalized demo.
+          <p className="text-lg text-white/60 mb-8">
+            We'll WhatsApp you within 24 hours to schedule your 15-min demo.
           </p>
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 text-slate-700 rounded-full hover:bg-slate-50 transition-colors"
-          >
-            Back to home
-          </a>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="/"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/20 text-white rounded-full hover:border-lime-400/60 hover:text-lime-400 transition-colors"
+            >
+              Back to home
+            </a>
+            <a
+              href={WHATSAPP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-lime-400 text-black font-bold rounded-full hover:bg-lime-300 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Message us now
+            </a>
+          </div>
         </div>
       </div>
     );
   }
 
+  const inputCls =
+    'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-lime-400/60 focus:ring-2 focus:ring-lime-400/20 transition';
+
   return (
-    <div className="bg-white text-slate-900">
+    <div className="bg-black text-white">
       <SeoMeta
         title="Request a Demo | ActiveHQ"
         description="Book a personalized ActiveHQ demo for your gym. Get setup, pricing, and growth automation walkthrough."
         path="/contact"
       />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          HERO
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="pt-12 pb-16">
-        <div className="max-w-4xl mx-auto px-8 text-center">
-          <p className="text-emerald-600 text-sm tracking-[0.2em] uppercase mb-4">
-            Contact
-          </p>
-          <h1 className="text-4xl md:text-5xl font-light text-slate-900 leading-tight mb-6">
-            Let's <span className="font-medium">connect</span>
+      {/* HERO */}
+      <section className="relative pt-20 pb-12 sm:pb-16">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-lime-400/10 blur-[180px] rounded-full" />
+        </div>
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-lime-400/30 bg-lime-400/5 mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+            <span className="text-xs tracking-[0.2em] uppercase text-lime-400 font-medium">
+              Book a demo
+            </span>
+          </div>
+          <h1 className="text-5xl sm:text-6xl font-bold leading-[0.95] tracking-tight">
+            See ActiveHQ on
+            <br />
+            <span className="text-lime-400">your gym's data.</span>
           </h1>
-          <p className="text-xl text-slate-600 font-light max-w-lg mx-auto">
-            Schedule a personalized demo. See how ActiveHQ 
-            can transform your gym operations.
+          <p className="mt-6 text-lg text-white/60 max-w-xl mx-auto">
+            15-minute call. We migrate your old data live on the call itself.
+            You only commit once you've seen it working.
           </p>
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          FORM + CONTACT
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="pb-24">
-        <div className="max-w-6xl mx-auto px-8">
-          <div className="grid lg:grid-cols-2 gap-16">
+      {/* FORM + CONTACT */}
+      <section className="pb-24 sm:pb-32">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div className="grid lg:grid-cols-5 gap-12">
             {/* Form */}
-            <div>
-              <h2 className="text-2xl font-light text-slate-900 mb-8">
-                Request a <span className="font-medium">demo</span>
-              </h2>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
+            <div className="lg:col-span-3 rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-8">
+              <h2 className="text-2xl font-bold mb-1">Tell us about your gym</h2>
+              <p className="text-sm text-white/50 mb-7">
+                We reply on WhatsApp within 24 hours.
+              </p>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-slate-500 mb-2">Your name</label>
+                    <label className="block text-xs text-white/60 mb-2 uppercase tracking-wide">
+                      Your name
+                    </label>
                     <input
                       type="text"
                       name="name"
+                      required
                       value={form.name}
                       onChange={handleChange}
-                      required
-                      className="w-full px-0 py-3 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
-                      placeholder="Rajesh Verma"
+                      placeholder="Your name"
+                      className={inputCls}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-500 mb-2">Gym name</label>
+                    <label className="block text-xs text-white/60 mb-2 uppercase tracking-wide">
+                      Gym name
+                    </label>
                     <input
                       type="text"
                       name="gym_name"
+                      required
                       value={form.gym_name}
                       onChange={handleChange}
-                      required
-                      className="w-full px-0 py-3 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
-                      placeholder="FitFirst Gym"
+                      placeholder="Your gym"
+                      className={inputCls}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm text-slate-500 mb-2">Phone / WhatsApp</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={form.phone}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-0 py-3 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
-                    placeholder="+91 98765 43210"
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-slate-500 mb-2">City</label>
-                    <select
-                      name="city"
-                      value={form.city}
+                    <label className="block text-xs text-white/60 mb-2 uppercase tracking-wide">
+                      Phone (WhatsApp)
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      required
+                      value={form.phone}
                       onChange={handleChange}
-                      className="w-full px-0 py-3 bg-transparent border-0 border-b border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
-                    >
-                      <option value="Gurgaon">Gurgaon</option>
-                      <option value="Delhi">Delhi</option>
-                      <option value="Noida">Noida</option>
-                      <option value="Other">Other</option>
-                    </select>
+                      placeholder="+91 93543 49118"
+                      className={inputCls}
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-500 mb-2">Locality</label>
+                    <label className="block text-xs text-white/60 mb-2 uppercase tracking-wide">
+                      City
+                    </label>
                     <input
                       type="text"
-                      name="locality"
-                      value={form.locality}
+                      name="city"
+                      required
+                      value={form.city}
                       onChange={handleChange}
-                      className="w-full px-0 py-3 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
-                      placeholder="Sector 14"
+                      placeholder="Bangalore / Mumbai / …"
+                      className={inputCls}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm text-slate-500 mb-2">Email (optional)</label>
+                  <label className="block text-xs text-white/60 mb-2 uppercase tracking-wide">
+                    Email (optional)
+                  </label>
                   <input
                     type="email"
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    className="w-full px-0 py-3 bg-transparent border-0 border-b border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
-                    placeholder="rajesh@email.com"
+                    placeholder="you@gym.com"
+                    className={inputCls}
                   />
                 </div>
 
                 {status === 'error' && (
-                  <div className="text-red-600 text-sm">{errorMsg}</div>
+                  <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+                    {errorMsg}
+                  </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="w-full py-4 bg-slate-900 text-white rounded-full hover:bg-emerald-600 disabled:opacity-50 transition-all mt-8"
+                  className="inline-flex items-center justify-center gap-2 w-full py-4 rounded-full bg-lime-400 text-black font-bold hover:bg-lime-300 hover:shadow-[0_0_40px_rgba(163,230,53,0.4)] disabled:opacity-50 disabled:cursor-wait transition-all"
                 >
-                  {status === 'loading' ? 'Submitting...' : 'Request Demo'}
+                  {status === 'loading' ? 'Sending…' : 'Request demo'}
+                  {status !== 'loading' && <ArrowRight className="w-4 h-4" />}
                 </button>
+
+                <p className="text-xs text-white/40 text-center">
+                  Or just{' '}
+                  <a
+                    href={WHATSAPP_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lime-400 hover:text-lime-300 underline underline-offset-2"
+                  >
+                    message us on WhatsApp
+                  </a>{' '}
+                  — fastest reply.
+                </p>
               </form>
             </div>
 
-            {/* Contact Info */}
-            <div className="lg:pl-8">
-              <h2 className="text-2xl font-light text-slate-900 mb-8">
-                Get in <span className="font-medium">touch</span>
-              </h2>
-              
-              <div className="space-y-8 mb-12">
-                <a href="tel:+919876543210" className="flex items-start gap-4 group">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-                    <Phone className="w-5 h-5 text-slate-600 group-hover:text-emerald-600" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-slate-900">+91 98765 43210</div>
-                    <div className="text-slate-500 text-sm">Call or WhatsApp</div>
-                  </div>
-                </a>
+            {/* Contact */}
+            <div className="lg:col-span-2 space-y-6">
+              <h2 className="text-2xl font-bold">Talk to us directly</h2>
 
-                <a href="mailto:info@activehq.fit" className="flex items-start gap-4 group">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-                    <Mail className="w-5 h-5 text-slate-600 group-hover:text-emerald-600" />
+              <a
+                href={WHATSAPP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackEvent('cta_click', { location: 'contact', cta: 'whatsapp' })}
+                className="block rounded-2xl bg-[#25D366]/10 border border-[#25D366]/30 p-6 hover:bg-[#25D366]/15 transition-colors group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#25D366] flex items-center justify-center shadow-lg shadow-[#25D366]/30">
+                    <MessageCircle className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <div className="font-medium text-slate-900">info@activehq.fit</div>
-                    <div className="text-slate-500 text-sm">Email us anytime</div>
+                    <div className="font-bold text-white">WhatsApp</div>
+                    <div className="text-sm text-white/60">Fastest · usually under 1 hour</div>
                   </div>
-                </a>
+                  <ArrowRight className="w-4 h-4 text-white/40 ml-auto group-hover:text-[#25D366] transition-colors" />
+                </div>
+              </a>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-slate-600" />
+              <a
+                href="tel:+919354349118"
+                className="block rounded-2xl bg-white/[0.02] border border-white/10 p-5 hover:border-lime-400/40 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-lime-400/10 border border-lime-400/20 flex items-center justify-center">
+                    <Phone className="w-5 h-5 text-lime-400" />
                   </div>
                   <div>
-                    <div className="font-medium text-slate-900">Gurgaon, Haryana</div>
-                    <div className="text-slate-500 text-sm">India</div>
+                    <div className="font-semibold text-white">+91 93543 49118</div>
+                    <div className="text-xs text-white/50">Call between 9 AM – 9 PM IST</div>
                   </div>
                 </div>
-              </div>
+              </a>
 
-              {/* Image */}
-              <div 
-                className="aspect-[4/3] rounded-xl bg-cover bg-center"
-                style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1570829460005-c840387bb1ca?w=600&q=80')`,
-                }}
-              />
+              <a
+                href="mailto:info@activehq.fit"
+                className="block rounded-2xl bg-white/[0.02] border border-white/10 p-5 hover:border-lime-400/40 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-lime-400/10 border border-lime-400/20 flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-lime-400" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">info@activehq.fit</div>
+                    <div className="text-xs text-white/50">Email anytime</div>
+                  </div>
+                </div>
+              </a>
+
+              <div className="flex items-center gap-3 text-white/50 text-sm px-1">
+                <MapPin className="w-4 h-4" />
+                <span>Gurgaon, India · serving gyms across India</span>
+              </div>
             </div>
           </div>
         </div>
