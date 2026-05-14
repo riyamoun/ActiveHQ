@@ -1,0 +1,35 @@
+{
+  "name": "ActiveHQ — Gym OS + AI Coach",
+  "short_name": "ActiveHQ",
+  "description": "Run a gym in 10 minutes a day, or build your own free AI workout + diet plan in 60 seconds.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["fitness", "health", "business", "productivity"],
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "AI Coach",
+      "short_name": "Coach",
+      "description": "Build a free workout and diet plan",
+      "url": "/coach"
+    },
+    {
+      "name": "Book a demo",
+      "short_name": "Demo",
+      "description": "Talk to ActiveHQ for your gym",
+      "url": "/contact"
+    }
+  ]
+}

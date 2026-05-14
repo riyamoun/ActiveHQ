@@ -5,6 +5,7 @@ import { trackEvent } from '@/lib/analytics';
 
 const navLinks = [
   { to: '/', label: 'Home' },
+  { to: '/coach', label: 'AI Coach', highlight: true },
   { to: '/for-gym-owners', label: 'Why ActiveHQ' },
   { to: '/gyms', label: 'For Gyms' },
   { to: '/contact', label: 'Contact' },
@@ -51,19 +52,30 @@ export function PublicLayout() {
             </Link>
 
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-7 lg:gap-8">
               {navLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
                   end={link.to === '/'}
                   className={({ isActive }) =>
-                    `text-sm font-medium tracking-wide transition-colors ${
-                      isActive ? 'text-white' : 'text-white/60 hover:text-white'
+                    `relative text-sm font-medium tracking-wide transition-colors ${
+                      isActive
+                        ? 'text-white'
+                        : link.highlight
+                          ? 'text-lime-400 hover:text-lime-300'
+                          : 'text-white/60 hover:text-white'
                     }`
                   }
                 >
-                  {link.label}
+                  <span className="inline-flex items-center gap-1.5">
+                    {link.label}
+                    {link.highlight && (
+                      <span className="text-[9px] tracking-widest uppercase px-1.5 py-0.5 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400">
+                        new
+                      </span>
+                    )}
+                  </span>
                 </NavLink>
               ))}
             </nav>
@@ -109,12 +121,21 @@ export function PublicLayout() {
                   to={link.to}
                   end={link.to === '/'}
                   className={({ isActive }) =>
-                    `block py-3 text-base ${
-                      isActive ? 'text-white font-semibold' : 'text-white/70'
+                    `flex items-center justify-between py-3 text-base ${
+                      isActive
+                        ? 'text-white font-semibold'
+                        : link.highlight
+                          ? 'text-lime-400'
+                          : 'text-white/70'
                     }`
                   }
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.highlight && (
+                    <span className="text-[9px] tracking-widest uppercase px-1.5 py-0.5 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400">
+                      new
+                    </span>
+                  )}
                 </NavLink>
               ))}
               <div className="pt-4 mt-4 border-t border-white/10 space-y-3">

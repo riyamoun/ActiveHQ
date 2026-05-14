@@ -9,6 +9,7 @@ import DashboardLayout from '@/layouts/DashboardLayout'
 import {
   PublicLayout,
   HomePage,
+  CoachPage,
   ForGymOwnersPage,
   GymsOnActiveHQPage,
   ContactPage,
@@ -97,6 +98,7 @@ export default function App() {
       ═══════════════════════════════════════════════════════════════════ */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/coach" element={<CoachPage />} />
         <Route path="/for-gym-owners" element={<ForGymOwnersPage />} />
         <Route path="/gyms" element={<GymsOnActiveHQPage />} />
         <Route path="/contact" element={<ContactPage />} />
