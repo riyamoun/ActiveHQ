@@ -88,6 +88,12 @@ export function PublicLayout() {
               >
                 Login
               </Link>
+              <Link
+                to="/register"
+                className="text-sm font-semibold text-lime-400 hover:text-lime-300 transition-colors px-3 py-2"
+              >
+                Start free trial
+              </Link>
               <a
                 href={WHATSAPP_LINK}
                 target="_blank"
@@ -144,6 +150,12 @@ export function PublicLayout() {
                   className="block py-2 text-white/70"
                 >
                   Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="block py-2 text-lime-400 font-semibold"
+                >
+                  Start free trial
                 </Link>
                 <a
                   href={WHATSAPP_LINK}

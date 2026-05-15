@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth.dependencies import TenantDep, require_manager_or_above, DbDep, BiometricDeviceTenantDep
 from app.biometric.schemas import (
@@ -7,8 +9,11 @@ from app.biometric.schemas import (
     BiometricDeviceTokenResponse,
     BiometricEventIngestRequest,
     BiometricIngestSummary,
+    DeviceUserMappingCreate,
+    DeviceUserMappingResponse,
 )
 from app.biometric.service import BiometricService
+from app.models import Member
 
 router = APIRouter()
 
@@ -20,7 +25,7 @@ def list_devices(
     _: object = Depends(require_manager_or_above),
 ):
     service = BiometricService(db)
-    return service.list_devices(tenant)
+    return [service.device_to_response(d) for d in service.list_devices(tenant)]
 
 
 @router.post("/devices", response_model=BiometricDeviceResponse, status_code=status.HTTP_201_CREATED)
@@ -32,8 +37,7 @@ def create_device(
 ):
     service = BiometricService(db)
     device = service.create_device(tenant, payload)
-    resp = BiometricDeviceResponse(**device.to_dict(), has_ingest_token=bool(device.ingest_token_hash))
-    return resp
+    return service.device_to_response(device)
 
 
 @router.post("/devices/{device_id}/token", response_model=BiometricDeviceTokenResponse)
@@ -44,7 +48,6 @@ def rotate_device_token(
     _: object = Depends(require_manager_or_above),
 ):
     service = BiometricService(db)
-    import uuid
     try:
         device_uuid = uuid.UUID(device_id)
     except ValueError as exc:
@@ -54,6 +57,67 @@ def rotate_device_token(
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return BiometricDeviceTokenResponse(device_id=device.id, ingest_token=token)
+
+
+@router.get("/mappings", response_model=list[DeviceUserMappingResponse])
+def list_mappings(
+    tenant: TenantDep,
+    db: DbDep,
+    device_id: str = Query(..., description="Biometric device UUID"),
+    _: object = Depends(require_manager_or_above),
+):
+    service = BiometricService(db)
+    try:
+        device_uuid = uuid.UUID(device_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid device id") from exc
+    rows = service.list_device_mappings(tenant, device_uuid)
+    return [DeviceUserMappingResponse(**r) for r in rows]
+
+
+@router.post("/mappings", response_model=DeviceUserMappingResponse, status_code=status.HTTP_201_CREATED)
+def upsert_mapping(
+    payload: DeviceUserMappingCreate,
+    tenant: TenantDep,
+    db: DbDep,
+    _: object = Depends(require_manager_or_above),
+):
+    service = BiometricService(db)
+    try:
+        mapping = service.upsert_device_mapping(
+            tenant,
+            device_id=payload.device_id,
+            member_id=payload.member_id,
+            device_user_id=payload.device_user_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    member = db.get(Member, payload.member_id)
+    return DeviceUserMappingResponse(
+        id=mapping.id,
+        device_id=mapping.device_id,
+        member_id=mapping.member_id,
+        device_user_id=mapping.device_user_id,
+        member_name=member.name if member else None,
+        member_phone=member.phone if member else None,
+    )
+
+
+@router.delete("/mappings/{mapping_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_mapping(
+    mapping_id: str,
+    tenant: TenantDep,
+    db: DbDep,
+    _: object = Depends(require_manager_or_above),
+):
+    service = BiometricService(db)
+    try:
+        mapping_uuid = uuid.UUID(mapping_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid mapping id") from exc
+    if not service.delete_device_mapping(tenant, mapping_uuid):
+        raise HTTPException(status_code=404, detail="Mapping not found")
 
 
 @router.post("/events/ingest", response_model=BiometricIngestSummary)

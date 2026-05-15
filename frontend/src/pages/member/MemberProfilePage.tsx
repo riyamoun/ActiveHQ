@@ -31,7 +31,6 @@ export function MemberProfilePage() {
       <div className="rounded-3xl bg-white/[0.03] border border-white/10 p-6 flex items-center gap-4">
         <div className="w-16 h-16 rounded-2xl bg-lime-400/15 border border-lime-400/30 flex items-center justify-center overflow-hidden">
           {member.photo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={member.photo_url}
               alt={member.name}

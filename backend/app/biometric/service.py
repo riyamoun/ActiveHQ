@@ -30,6 +30,117 @@ class BiometricService:
             .order_by(BiometricDevice.created_at.desc())
         ).scalars().all()
 
+    def device_to_response(self, device: BiometricDevice):
+        from app.biometric.schemas import BiometricDeviceResponse
+        return BiometricDeviceResponse(
+            **device.to_dict(),
+            has_ingest_token=bool(device.ingest_token_hash),
+        )
+
+    def list_device_mappings(self, tenant: TenantContext, device_id) -> list[dict]:
+        """Return mappings for a device with member display fields."""
+        rows = self.db.execute(
+            select(DeviceUserMapping, Member)
+            .join(Member, Member.id == DeviceUserMapping.member_id)
+            .where(
+                and_(
+                    DeviceUserMapping.gym_id == tenant.gym_id,
+                    DeviceUserMapping.device_id == device_id,
+                )
+            )
+            .order_by(DeviceUserMapping.device_user_id)
+        ).all()
+        out = []
+        for mapping, member in rows:
+            out.append({
+                "id": mapping.id,
+                "device_id": mapping.device_id,
+                "member_id": mapping.member_id,
+                "device_user_id": mapping.device_user_id,
+                "member_name": member.name,
+                "member_phone": member.phone,
+            })
+        return out
+
+    def upsert_device_mapping(
+        self,
+        tenant: TenantContext,
+        *,
+        device_id,
+        member_id,
+        device_user_id: str,
+    ) -> DeviceUserMapping:
+        device = self.db.execute(
+            select(BiometricDevice).where(
+                and_(
+                    BiometricDevice.gym_id == tenant.gym_id,
+                    BiometricDevice.id == device_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not device:
+            raise ValueError("Device not found")
+
+        member = self.db.execute(
+            select(Member).where(
+                and_(
+                    Member.gym_id == tenant.gym_id,
+                    Member.id == member_id,
+                    Member.is_active == True,  # noqa: E712
+                )
+            )
+        ).scalar_one_or_none()
+        if not member:
+            raise ValueError("Member not found")
+
+        device_user_id = device_user_id.strip()
+        existing = self.db.execute(
+            select(DeviceUserMapping).where(
+                and_(
+                    DeviceUserMapping.gym_id == tenant.gym_id,
+                    DeviceUserMapping.device_id == device_id,
+                    DeviceUserMapping.device_user_id == device_user_id,
+                )
+            )
+        ).scalar_one_or_none()
+
+        if existing and existing.member_id != member_id:
+            existing.member_id = member_id
+            mapping = existing
+        elif existing:
+            mapping = existing
+        else:
+            mapping = DeviceUserMapping(
+                gym_id=tenant.gym_id,
+                device_id=device_id,
+                member_id=member_id,
+                device_user_id=device_user_id,
+            )
+            self.db.add(mapping)
+
+        # Keep member_code in sync so agent + direct ingest both work.
+        if not member.member_code:
+            member.member_code = device_user_id
+
+        self.db.commit()
+        self.db.refresh(mapping)
+        return mapping
+
+    def delete_device_mapping(self, tenant: TenantContext, mapping_id) -> bool:
+        row = self.db.execute(
+            select(DeviceUserMapping).where(
+                and_(
+                    DeviceUserMapping.gym_id == tenant.gym_id,
+                    DeviceUserMapping.id == mapping_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not row:
+            return False
+        self.db.delete(row)
+        self.db.commit()
+        return True
+
     def create_device(self, tenant: TenantContext, payload: BiometricDeviceCreate) -> BiometricDevice:
         device = BiometricDevice(
             gym_id=tenant.gym_id,

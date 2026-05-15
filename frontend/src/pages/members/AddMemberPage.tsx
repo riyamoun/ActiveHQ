@@ -161,10 +161,11 @@ export default function AddMemberPage() {
                 placeholder="Full name"
               />
               <Input
-                label="Member Code"
+                label="Device User ID (eSSL)"
                 value={formData.member_code || ''}
                 onChange={(e) => updateField('member_code', e.target.value)}
-                placeholder="e.g., GYM001"
+                placeholder="e.g. 4 — same number shown on device when they scan"
+                helperText="Required for biometric check-in. Match the User ID on your eSSL screen."
               />
             </div>
 

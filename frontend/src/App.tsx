@@ -48,6 +48,7 @@ import AttendancePage from '@/pages/attendance/AttendancePage'
 import ReportsPage from '@/pages/reports/ReportsPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import ImportDataPage from '@/pages/settings/ImportDataPage'
+import BiometricSettingsPage from '@/pages/settings/BiometricSettingsPage'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -160,6 +161,7 @@ export default function App() {
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/biometric" element={<BiometricSettingsPage />} />
         <Route path="/settings/import" element={<ImportDataPage />} />
       </Route>
 

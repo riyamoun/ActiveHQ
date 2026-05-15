@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
-import { Upload, Settings } from 'lucide-react'
+import { Upload, Settings, Fingerprint } from 'lucide-react'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
@@ -87,6 +87,29 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Settings</h1>
           <p className="text-slate-400">Manage your gym and account settings</p>
+        </div>
+      </div>
+
+      {/* Biometric (eSSL) */}
+      <div className={`${cardClass} border-emerald-500/20`}>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Fingerprint className="w-5 h-5 text-emerald-400" />
+              Biometric device (eSSL)
+            </h3>
+            <p className="text-sm text-slate-400 mt-1">
+              Register your scanner, map device User IDs to members, run the gym PC sync agent.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/settings/biometric')}
+            className={`flex items-center gap-2 px-5 py-2.5 ${primaryBtnClass} text-sm font-medium transition-colors`}
+          >
+            <Fingerprint className="w-4 h-4" />
+            Set up biometric
+          </button>
         </div>
       </div>
 

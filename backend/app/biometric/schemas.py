@@ -51,3 +51,21 @@ class BiometricIngestSummary(BaseModel):
     duplicates: int
     conflicts: int
     failed: int
+
+
+class DeviceUserMappingCreate(BaseModel):
+    device_id: UUID
+    member_id: UUID
+    device_user_id: str = Field(..., min_length=1, max_length=120,
+        description="User ID shown on the eSSL device screen (e.g. 4)")
+
+
+class DeviceUserMappingResponse(BaseModel):
+    id: UUID
+    device_id: UUID
+    member_id: UUID
+    device_user_id: str
+    member_name: str | None = None
+    member_phone: str | None = None
+
+    model_config = {"from_attributes": True}

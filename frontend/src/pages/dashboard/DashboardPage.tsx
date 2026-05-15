@@ -647,6 +647,13 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings/biometric')}
+                  className="mt-4 w-full text-sm font-medium text-emerald-400 hover:text-emerald-300 flex items-center justify-center gap-1"
+                >
+                  Manage biometric <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ) : (
@@ -659,7 +666,7 @@ export default function DashboardPage() {
                 Connect your biometric devices for automated check-ins and real-time attendance tracking.
               </p>
               <button
-                onClick={() => navigate('/settings')}
+                onClick={() => navigate('/settings/biometric')}
                 className="mt-4 text-sm font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
               >
                 Set up devices <ArrowRight className="w-4 h-4" />

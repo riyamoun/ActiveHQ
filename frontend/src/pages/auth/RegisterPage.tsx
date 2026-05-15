@@ -66,8 +66,8 @@ export default function RegisterPage() {
       const gym = await gymService.getCurrentGym()
       login(response.user, gym, response.tokens.access_token, response.tokens.refresh_token)
 
-      toast.success('Gym registered successfully!')
-      navigate('/dashboard')
+      toast.success('Gym registered! Set up your eSSL device next.')
+      navigate('/settings/biometric')
     } catch (error) {
       toast.error(getErrorMessage(error))
     } finally {

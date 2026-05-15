@@ -10,8 +10,8 @@ interface SeoMetaProps {
   schemas?: SchemaObject[]
 }
 
-const BASE_URL = import.meta.env.VITE_APP_URL || 'https://active-hq-git-main-riyamouns-projects.vercel.app'
-const DEFAULT_IMAGE = `${BASE_URL}/favicon.svg`
+const BASE_URL = import.meta.env.VITE_APP_URL || 'https://activehq.fit'
+const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`
 
 export function SeoMeta({ title, description, path, image, schemas = [] }: SeoMetaProps) {
   const canonical = `${BASE_URL}${path}`

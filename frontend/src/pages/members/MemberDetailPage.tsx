@@ -40,6 +40,7 @@ export default function MemberDetailPage() {
   const [isPhotoLoading, setIsPhotoLoading] = useState(false)
   const [isPhotoUploading, setIsPhotoUploading] = useState(false)
   const [isPhotoDeleting, setIsPhotoDeleting] = useState(false)
+  const [deviceUserId, setDeviceUserId] = useState('')
 
   // Fetch member details
   const { data: member, isLoading: memberLoading } = useQuery({
@@ -77,6 +78,23 @@ export default function MemberDetailPage() {
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
+
+  const updateDeviceUserIdMutation = useMutation({
+    mutationFn: () =>
+      memberService.updateMember(id!, {
+        member_code: deviceUserId.trim() || undefined,
+      }),
+    onSuccess: () => {
+      toast.success('Device User ID saved')
+      queryClient.invalidateQueries({ queryKey: ['member', id] })
+      queryClient.invalidateQueries({ queryKey: ['members'] })
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  })
+
+  useEffect(() => {
+    setDeviceUserId(member?.member_code || '')
+  }, [member?.member_code])
 
   useEffect(() => {
     let mounted = true
@@ -281,6 +299,28 @@ export default function MemberDetailPage() {
                 <Calendar className="w-4 h-4" />
                 <span>Joined {format(new Date(member.joined_date), 'dd MMM yyyy')}</span>
               </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800/60 space-y-2">
+              <Input
+                label="Device User ID (eSSL)"
+                value={deviceUserId}
+                onChange={(e) => setDeviceUserId(e.target.value)}
+                placeholder="e.g. 4"
+                helperText="Must match the User ID shown on the biometric device when they scan."
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                isLoading={updateDeviceUserIdMutation.isPending}
+                disabled={
+                  deviceUserId.trim() === (member.member_code || '') ||
+                  updateDeviceUserIdMutation.isPending
+                }
+                onClick={() => updateDeviceUserIdMutation.mutate()}
+              >
+                Save device ID
+              </Button>
             </div>
 
             {member.current_membership_end && (
