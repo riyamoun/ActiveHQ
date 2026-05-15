@@ -30,11 +30,13 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.core.base import Base
 from app.models import (
-    Gym, User, Member, Plan, Membership, Payment, Attendance
+    Gym, User, Member, Plan, Membership, Payment, Attendance,
+    AutomationCampaign,
 )
 from app.models.enums import (
     SubscriptionStatus, BillingCycle, UserRole, Gender,
-    MembershipStatus, PaymentMode
+    MembershipStatus, PaymentMode, CampaignTriggerType,
+    NotificationChannel,
 )
 
 # Sample data
@@ -332,6 +334,43 @@ def main():
                 attendance_count += 1
         
         print(f"   ✅ Created {attendance_count} attendance records")
+        
+        # Create Automation Campaigns (default templates)
+        print("📢 Creating automation campaigns...")
+        campaigns_data = [
+            (
+                "Renewal Reminder",
+                CampaignTriggerType.RENEWAL_REMINDER,
+                "Hi {{member_name}}, your gym membership expires on {{end_date}} ({{days_until_expiry}} days left). Renew now to keep your fitness journey going! Visit us or call to renew. — FitZone Premium Gym",
+                "Namaste {{member_name}}, aapki gym membership {{end_date}} ko expire ho rahi hai ({{days_until_expiry}} din baki). Abhi renew karein! — FitZone Premium Gym",
+            ),
+            (
+                "Payment Followup",
+                CampaignTriggerType.PAYMENT_FOLLOWUP,
+                "Hi {{member_name}}, you have a pending due of ₹{{amount_due}} for your gym membership. Please clear it at your earliest convenience. — FitZone Premium Gym",
+                "Namaste {{member_name}}, aapki gym membership ke liye ₹{{amount_due}} baaki hai. Kripya jaldi se jaldi payment karein. — FitZone Premium Gym",
+            ),
+            (
+                "Expiry Followup",
+                CampaignTriggerType.EXPIRY_FOLLOWUP,
+                "Hi {{member_name}}, your gym membership expired on {{end_date}} ({{days_since_expiry}} days ago). We miss you! 💪 Renew now to continue your fitness journey. Visit us or call to renew. — FitZone Premium Gym",
+                "Namaste {{member_name}}, aapki gym membership {{end_date}} ko expire ho gayi thi ({{days_since_expiry}} din pehle). Hum aapko miss kar rahe hain! 💪 Abhi renew karein. — FitZone Premium Gym",
+            ),
+        ]
+        for camp_name, trigger_type, template_en, template_hi in campaigns_data:
+            campaign = AutomationCampaign(
+                gym_id=gym.id,
+                name=camp_name,
+                trigger_type=trigger_type,
+                primary_channel=NotificationChannel.WHATSAPP,
+                fallback_channel=NotificationChannel.SMS,
+                template_en=template_en,
+                template_hi=template_hi,
+                ai_enabled=True,
+                is_active=True,
+            )
+            db.add(campaign)
+            print(f"   ✅ Created campaign: {camp_name}")
         
         # Commit all
         db.commit()

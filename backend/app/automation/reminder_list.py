@@ -21,9 +21,10 @@ def get_reminder_list(
     gym_id: uuid.UUID,
     *,
     expiring_days: int = 7,
+    expired_lookback_days: int = 30,
 ) -> dict[str, Any]:
     """
-    Build list of members to remind (expiring + dues) with rendered message text
+    Build list of members to remind (expiring + dues + expired) with rendered message text
     per campaign. No sending — for manual copy-paste to WhatsApp/SMS.
     """
     today = date.today()
@@ -35,6 +36,7 @@ def get_reminder_list(
                 AutomationCampaign.trigger_type.in_([
                     CampaignTriggerType.RENEWAL_REMINDER,
                     CampaignTriggerType.PAYMENT_FOLLOWUP,
+                    CampaignTriggerType.EXPIRY_FOLLOWUP,
                 ]),
             )
         )
@@ -67,9 +69,26 @@ def get_reminder_list(
             Membership.amount_total > Membership.amount_paid,
         )
     ).all()
+    # Expired members (within lookback window)
+    expired_rows = db.execute(
+        select(Membership, Member).join(
+            Member,
+            and_(
+                Member.id == Membership.member_id,
+                Member.gym_id == gym_id,
+                Member.is_active == True,  # noqa: E712
+            ),
+        ).where(
+            Membership.gym_id == gym_id,
+            Membership.status == MembershipStatus.EXPIRED,
+            Membership.end_date >= today - timedelta(days=expired_lookback_days),
+            Membership.end_date < today,
+        )
+    ).all()
     # Build by member: one row per member, messages list (one per campaign)
     expiring_by_member: dict[uuid.UUID, dict[str, Any]] = {}
     dues_by_member: dict[uuid.UUID, dict[str, Any]] = {}
+    expired_by_member: dict[uuid.UUID, dict[str, Any]] = {}
     for campaign in campaigns:
         if campaign.trigger_type == CampaignTriggerType.RENEWAL_REMINDER:
             for membership, member in expiring_rows:
@@ -118,7 +137,31 @@ def get_reminder_list(
                     "campaign_name": campaign.name,
                     "message_text": message_text,
                 })
+        elif campaign.trigger_type == CampaignTriggerType.EXPIRY_FOLLOWUP:
+            for membership, member in expired_rows:
+                days_since_expiry = (today - membership.end_date).days
+                context = {
+                    "member_name": member.name or "Member",
+                    "end_date": str(membership.end_date),
+                    "days_since_expiry": days_since_expiry,
+                }
+                message_text = render_template(campaign.template_en, context)
+                if member.id not in expired_by_member:
+                    expired_by_member[member.id] = {
+                        "member_id": str(member.id),
+                        "member_name": member.name or "",
+                        "phone": member.phone or "",
+                        "days_since_expiry": days_since_expiry,
+                        "end_date": str(membership.end_date),
+                        "messages": [],
+                    }
+                expired_by_member[member.id]["messages"].append({
+                    "campaign_name": campaign.name,
+                    "message_text": message_text,
+                })
     return {
         "expiring": list(expiring_by_member.values()),
         "dues": list(dues_by_member.values()),
+        "expired": list(expired_by_member.values()),
     }
+

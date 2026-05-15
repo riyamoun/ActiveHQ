@@ -55,6 +55,7 @@ class PaymentMode(str, enum.Enum):
 class NotificationType(str, enum.Enum):
     """Types of notifications sent to members."""
     EXPIRY_REMINDER = "expiry_reminder"
+    EXPIRY_FOLLOWUP = "expiry_followup"
     PAYMENT_DUE = "payment_due"
     WELCOME = "welcome"
     CUSTOM = "custom"
@@ -101,4 +102,5 @@ class CampaignTriggerType(str, enum.Enum):
     RENEWAL_REMINDER = "renewal_reminder"
     PAYMENT_FOLLOWUP = "payment_followup"
     INACTIVITY_NUDGE = "inactivity_nudge"
+    EXPIRY_FOLLOWUP = "expiry_followup"
     CUSTOM = "custom"

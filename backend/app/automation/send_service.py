@@ -25,6 +25,7 @@ TRIGGER_TO_NOTIFICATION_TYPE = {
     CampaignTriggerType.RENEWAL_REMINDER: NotificationType.EXPIRY_REMINDER,
     CampaignTriggerType.PAYMENT_FOLLOWUP: NotificationType.PAYMENT_DUE,
     CampaignTriggerType.INACTIVITY_NUDGE: NotificationType.CUSTOM,
+    CampaignTriggerType.EXPIRY_FOLLOWUP: NotificationType.EXPIRY_FOLLOWUP,
     CampaignTriggerType.CUSTOM: NotificationType.CUSTOM,
 }
 
