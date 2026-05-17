@@ -12,6 +12,12 @@ const sizes = {
   lg: 'w-8 h-8',
 }
 
+const logoHeights = {
+  sm: 'h-8',
+  md: 'h-10',
+  lg: 'h-14',
+}
+
 export default function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) {
   return (
     <Loader2 className={clsx('animate-spin text-emerald-400', sizes[size], className)} />
@@ -20,8 +26,13 @@ export default function LoadingSpinner({ size = 'md', className }: LoadingSpinne
 
 export function PageLoader() {
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <LoadingSpinner size="lg" />
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <img
+        src="/logo.jpg"
+        alt=""
+        className={clsx(logoHeights.lg, 'w-auto object-contain animate-logo-breathe opacity-90')}
+      />
+      <LoadingSpinner size="md" />
     </div>
   )
 }

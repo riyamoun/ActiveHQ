@@ -1,17 +1,12 @@
-import { Dumbbell, Phone } from 'lucide-react';
+import { Phone } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
 
 export function SimpleNavbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-lg border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-4">
         <nav className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <a href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center">
-              <Dumbbell className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-white font-semibold text-lg">ActiveHQ</span>
-          </a>
+          <Logo size="sm" href="/" />
 
           {/* Right side */}
           <div className="flex items-center gap-4">

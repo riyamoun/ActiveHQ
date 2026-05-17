@@ -2,6 +2,8 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Menu, X, MessageCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { trackEvent } from '@/lib/analytics';
+import { AmbientBackground } from '@/components/brand/AmbientBackground';
+import { Logo } from '@/components/brand/Logo';
 
 const navLinks = [
   { to: '/', label: 'Home' },
@@ -29,12 +31,13 @@ export function PublicLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-black text-white antialiased selection:bg-lime-400/30 selection:text-white">
+    <div className="min-h-screen bg-black text-white antialiased selection:bg-lime-400/30 selection:text-white relative isolate">
+      <AmbientBackground variant="public" />
       {/* ════════════════════════════════════════════════════════════════
           HEADER — black, minimal, neon-green CTA
       ════════════════════════════════════════════════════════════════ */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-300 ${
           scrolled
             ? 'bg-black/90 backdrop-blur-xl border-b border-white/10'
             : 'bg-transparent'
@@ -42,14 +45,7 @@ export function PublicLayout() {
       >
         <div className="max-w-7xl mx-auto px-5 sm:px-8">
           <div className="flex items-center justify-between h-16 sm:h-18">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group">
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-lime-400 group-hover:shadow-[0_0_20px_rgba(163,230,53,0.8)] transition-shadow" />
-              <span className="text-lg sm:text-xl tracking-tight text-white">
-                <span className="font-light">Active</span>
-                <span className="font-bold">HQ</span>
-              </span>
-            </Link>
+            <Logo size="sm" to="/" />
 
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-7 lg:gap-8">
@@ -179,7 +175,7 @@ export function PublicLayout() {
       {/* ════════════════════════════════════════════════════════════════
           MAIN
       ════════════════════════════════════════════════════════════════ */}
-      <main>
+      <main className="relative z-[1]">
         <Outlet />
       </main>
 
@@ -201,18 +197,12 @@ export function PublicLayout() {
       {/* ════════════════════════════════════════════════════════════════
           FOOTER — black, structured
       ════════════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-white/10 bg-black">
+      <footer className="relative z-[1] border-t border-white/10 bg-black/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
           <div className="grid md:grid-cols-5 gap-12">
             {/* Brand */}
             <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-5">
-                <span className="inline-block w-2.5 h-2.5 rounded-full bg-lime-400" />
-                <span className="text-2xl text-white">
-                  <span className="font-light">Active</span>
-                  <span className="font-bold">HQ</span>
-                </span>
-              </div>
+              <Logo size="md" to="/" className="mb-5" />
               <p className="text-white/50 max-w-sm leading-relaxed">
                 Run your gym in 10 minutes a day. Built in India, for Indian gyms.
                 Cash, UPI, biometric and WhatsApp — all in one place.

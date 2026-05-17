@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, ArrowRight, Dumbbell } from 'lucide-react';
+import { Menu, X, ArrowRight } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
 
 const navLinks = [
   { name: 'Features', href: '#features' },
@@ -26,13 +27,7 @@ export function Navbar() {
           <nav className={`flex items-center justify-between rounded-2xl transition-all duration-300 ${
             scrolled ? 'bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 px-6 py-3 shadow-xl' : ''
           }`}>
-            {/* Logo */}
-            <a href="/" className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                <Dumbbell className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">ActiveHQ</span>
-            </a>
+            <Logo size="sm" href="/" />
 
             {/* Desktop navigation */}
             <div className="hidden md:flex items-center gap-8">

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Dumbbell } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
 
 export function Footer() {
   return (
@@ -8,12 +9,7 @@ export function Footer() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                <Dumbbell className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">ActiveHQ</span>
-            </div>
+            <Logo size="md" to="/" className="mb-6" />
             <p className="text-slate-400 max-w-sm mb-6">
               Modern gym management for Indian fitness businesses. Simple. Powerful. Affordable.
             </p>

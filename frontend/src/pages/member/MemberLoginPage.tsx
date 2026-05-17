@@ -17,6 +17,8 @@ import {
   getErrorMessage,
   type AuthChallengeResponse,
 } from '@/lib/memberApi'
+import { AmbientBackground } from '@/components/brand/AmbientBackground'
+import { Logo } from '@/components/brand/Logo'
 
 type Tab = 'whatsapp' | 'email' | 'google'
 
@@ -64,12 +66,13 @@ export function MemberLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen bg-black text-white flex flex-col relative isolate">
+      <AmbientBackground variant="member" showLogoWatermark={false} />
+      <div className="relative z-[1] px-5 pt-10 pb-4 flex justify-center">
+        <Logo size="sm" to="/" />
+      </div>
       {/* Hero */}
-      <div className="relative px-5 pt-12 pb-8">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-lime-400/10 blur-[140px] rounded-full" />
-        </div>
+      <div className="relative z-[1] px-5 pt-4 pb-8">
         <div className="relative max-w-md mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-lime-400/30 bg-lime-400/5 mb-5">
             <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
@@ -87,7 +90,7 @@ export function MemberLoginPage() {
       </div>
 
       {/* Tab switcher */}
-      <div className="px-5">
+      <div className="relative z-[1] px-5">
         <div className="max-w-md mx-auto">
           <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-white/[0.04] border border-white/10">
             <TabButton active={tab === 'whatsapp'} onClick={() => setTab('whatsapp')} icon={<MessageCircle className="w-4 h-4" />}>

@@ -15,8 +15,9 @@ import {
   X,
   ChevronDown,
   Package,
-  Sparkles,
 } from 'lucide-react'
+import { AmbientBackground } from '@/components/brand/AmbientBackground'
+import { Logo } from '@/components/brand/Logo'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 
@@ -44,7 +45,8 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-slate-950 relative">
+      <AmbientBackground variant="dashboard" showLogoWatermark={false} className="fixed" />
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -60,15 +62,8 @@ export default function DashboardLayout() {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {/* Logo */}
-        <div className="h-20 flex items-center gap-3 px-8 border-b border-slate-800/50">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <div className="text-xl text-white">
-            <span className="font-light tracking-wide">Active</span>
-            <span className="font-bold">HQ</span>
-          </div>
+        <div className="h-20 flex items-center px-6 border-b border-slate-800/50">
+          <Logo size="sm" to="/dashboard" />
         </div>
 
         {/* Gym info */}
@@ -128,8 +123,7 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* Main content area */}
-      <div className="lg:pl-72">
+      <div className="lg:pl-72 relative z-[1]">
         {/* Top bar */}
         <header className="sticky top-0 z-30 h-16 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/40 flex items-center justify-between px-6 lg:px-8">
           {/* Mobile menu button */}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Dumbbell, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
 
 export function SimpleFooter() {
   return (
@@ -8,12 +9,7 @@ export function SimpleFooter() {
         <div className="grid md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center">
-                <Dumbbell className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-white font-semibold">ActiveHQ</span>
-            </div>
+            <Logo size="sm" to="/" className="mb-4" />
             <p className="text-slate-500 text-sm">
               Gym management software built for Indian fitness businesses.
             </p>

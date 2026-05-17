@@ -68,6 +68,21 @@ export function HomePage() {
       <section className="relative min-h-screen flex items-center pt-24 pb-16">
         {/* Glow background — animated drift */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute -left-[10%] top-[5%] h-[55vh] w-[45vw] max-w-lg rounded-[40%] bg-cover bg-center opacity-[0.12] blur-[80px] animate-ambient"
+            style={{
+              backgroundImage:
+                "url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=70')",
+            }}
+          />
+          <div
+            className="absolute bottom-0 right-[-5%] h-[45vh] w-[40vw] max-w-md rounded-[40%] bg-cover bg-center opacity-[0.1] blur-[72px] animate-ambient"
+            style={{
+              backgroundImage:
+                "url('https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&q=70')",
+              animationDelay: '7s',
+            }}
+          />
           <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-lime-400/10 blur-[180px] rounded-full animate-ambient" />
           <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 blur-[140px] rounded-full animate-ambient" style={{ animationDelay: '4s' }} />
           <div

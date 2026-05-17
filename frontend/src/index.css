@@ -95,6 +95,16 @@ body {
   50% { transform: translateY(-6px); }
 }
 
+@keyframes logo-watermark {
+  0%, 100% { opacity: 0.028; }
+  50% { opacity: 0.042; }
+}
+
+@keyframes logo-breathe {
+  0%, 100% { opacity: 0.92; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.015); }
+}
+
 /* ─── Cinematic additions ─── */
 
 @keyframes marquee {
@@ -162,6 +172,12 @@ body {
 .animate-float {
   animation: floatSlow 4s ease-in-out infinite;
 }
+.animate-logo-watermark {
+  animation: logo-watermark 22s ease-in-out infinite;
+}
+.animate-logo-breathe {
+  animation: logo-breathe 5s ease-in-out infinite;
+}
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradient-shift 6s ease infinite;
@@ -212,7 +228,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   [data-reveal] { opacity: 1 !important; transform: none !important; animation: none !important; }
   .animate-marquee, .animate-ambient, .animate-glow-pulse-lime, .animate-scan,
-  .animate-pulse-glow, .animate-breathe, .animate-float, .animate-gradient {
+  .animate-pulse-glow, .animate-breathe, .animate-float, .animate-gradient,
+  .animate-logo-watermark, .animate-logo-breathe {
     animation: none !important;
   }
 }

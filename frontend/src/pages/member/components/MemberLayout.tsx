@@ -1,6 +1,8 @@
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Home, CalendarCheck2, Wallet, User, LogOut } from 'lucide-react'
 import { useMemberAuthStore } from '@/store/memberAuthStore'
+import { AmbientBackground } from '@/components/brand/AmbientBackground'
+import { Logo } from '@/components/brand/Logo'
 
 const tabs = [
   { to: '/m', label: 'Home', Icon: Home, end: true },
@@ -23,15 +25,16 @@ export function MemberLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white antialiased">
+    <div className="min-h-screen bg-black text-white antialiased relative isolate">
+      <AmbientBackground variant="member" showLogoWatermark={false} />
       {/* ════════════════════════════════════════════════════════════════
           Top bar — minimal, surfaces gym + member identity
       ════════════════════════════════════════════════════════════════ */}
       <header className="sticky top-0 z-30 bg-black/85 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-lime-400" />
-            <div>
+          <div className="flex items-center gap-3 min-w-0">
+            <Logo size="xs" to={null} animated={false} imgClassName="!h-7" />
+            <div className="min-w-0">
               <div className="text-[10px] tracking-[0.25em] uppercase text-white/40 leading-none">
                 {member.gym_name || 'Your gym'}
               </div>
@@ -54,7 +57,7 @@ export function MemberLayout() {
       </header>
 
       {/* Body */}
-      <main className="max-w-md mx-auto px-5 pb-28 pt-5">
+      <main className="relative z-[1] max-w-md mx-auto px-5 pb-28 pt-5">
         <Outlet />
       </main>
 
