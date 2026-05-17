@@ -73,6 +73,24 @@ export interface ImportResult {
   errors: string[]
 }
 
+export type ImportPreviewAction = 'create' | 'update' | 'skip' | 'error'
+
+export interface ImportPreviewRow {
+  row_number: number
+  action: ImportPreviewAction
+  summary: string
+  identifier?: string | null
+}
+
+export interface ImportPreviewResult {
+  total_rows: number
+  will_create: number
+  will_update: number
+  will_skip: number
+  error_count: number
+  rows: ImportPreviewRow[]
+}
+
 export interface ReconciliationReport {
   period_days: number
   total_members: number
@@ -109,6 +127,31 @@ export interface BiometricSyncOverview {
 // ── API calls ──────────────────────────────────────────────────────
 
 export const migrationService = {
+  async previewMembers(data: MemberImportRequest): Promise<ImportPreviewResult> {
+    const res = await api.post<ImportPreviewResult>('/migration/members/preview', data)
+    return res.data
+  },
+
+  async previewPlans(data: { plans: PlanImportRow[] }): Promise<ImportPreviewResult> {
+    const res = await api.post<ImportPreviewResult>('/migration/plans/preview', data)
+    return res.data
+  },
+
+  async previewMemberships(data: { memberships: MembershipImportRow[] }): Promise<ImportPreviewResult> {
+    const res = await api.post<ImportPreviewResult>('/migration/memberships/preview', data)
+    return res.data
+  },
+
+  async previewPayments(data: { payments: PaymentImportRow[] }): Promise<ImportPreviewResult> {
+    const res = await api.post<ImportPreviewResult>('/migration/payments/preview', data)
+    return res.data
+  },
+
+  async previewAttendance(data: { records: AttendanceImportRow[]; source_label?: string }): Promise<ImportPreviewResult> {
+    const res = await api.post<ImportPreviewResult>('/migration/attendance/preview', data)
+    return res.data
+  },
+
   async importMembers(data: MemberImportRequest): Promise<ImportResult> {
     const res = await api.post<ImportResult>('/migration/members', data)
     return res.data

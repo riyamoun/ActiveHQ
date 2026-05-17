@@ -2,6 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -197,3 +198,32 @@ class BiometricSyncOverview(BaseModel):
     total_mapped_members: int
     last_event_at: datetime | None
     devices: list[DeviceSyncStatus]
+
+
+# ── Import preview (dry-run) ───────────────────────────────────────
+
+
+class ImportPreviewAction(str, Enum):
+    CREATE = "create"
+    UPDATE = "update"
+    SKIP = "skip"
+    ERROR = "error"
+
+
+class ImportPreviewRow(BaseModel):
+    row_number: int
+    action: ImportPreviewAction
+    summary: str
+    identifier: str | None = None
+
+
+class ImportPreviewResult(BaseModel):
+    total_rows: int
+    will_create: int
+    will_update: int
+    will_skip: int
+    error_count: int
+    rows: list[ImportPreviewRow] = Field(
+        default_factory=list,
+        description="First 500 row-level outcomes for review in the UI",
+    )

@@ -26,6 +26,9 @@ from app.migration.schemas import (
     DeviceSyncStatus,
     DeviceUserMappingRequest,
     DeviceUserMappingResult,
+    ImportPreviewAction,
+    ImportPreviewResult,
+    ImportPreviewRow,
     MemberImportRequest,
     MemberImportResult,
     MembershipImportRequest,
@@ -36,6 +39,8 @@ from app.migration.schemas import (
     PlanImportResult,
     ReconciliationReport,
 )
+
+_PREVIEW_ROW_CAP = 500
 
 
 class MigrationService:
@@ -555,6 +560,244 @@ class MigrationService:
             last_event_at=last_event_global,
             devices=device_statuses,
         )
+
+    # ── Import preview (dry-run, no DB writes) ───────────────────
+
+    def _finalize_preview(self, rows: list[ImportPreviewRow]) -> ImportPreviewResult:
+        will_create = sum(1 for r in rows if r.action == ImportPreviewAction.CREATE)
+        will_update = sum(1 for r in rows if r.action == ImportPreviewAction.UPDATE)
+        will_skip = sum(1 for r in rows if r.action == ImportPreviewAction.SKIP)
+        error_count = sum(1 for r in rows if r.action == ImportPreviewAction.ERROR)
+        return ImportPreviewResult(
+            total_rows=len(rows),
+            will_create=will_create,
+            will_update=will_update,
+            will_skip=will_skip,
+            error_count=error_count,
+            rows=rows[:_PREVIEW_ROW_CAP],
+        )
+
+    def preview_members(
+        self, gym_id: uuid.UUID, req: MemberImportRequest
+    ) -> ImportPreviewResult:
+        existing_phones: set[str] = set(
+            self.db.execute(
+                select(Member.phone).where(Member.gym_id == gym_id)
+            ).scalars().all()
+        )
+        seen_in_file: set[str] = set()
+        rows: list[ImportPreviewRow] = []
+
+        for idx, row in enumerate(req.members, start=1):
+            phone = (row.phone or "").strip()
+            name = (row.name or "").strip()
+            if not name:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Name is required", identifier=phone or None,
+                ))
+                continue
+            if len(phone) < 10:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Valid phone is required (10+ digits)", identifier=phone or None,
+                ))
+                continue
+            if phone in seen_in_file:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Duplicate phone in this file", identifier=phone,
+                ))
+                continue
+            seen_in_file.add(phone)
+            if phone in existing_phones:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.SKIP,
+                    summary="Member already exists", identifier=phone,
+                ))
+                continue
+            rows.append(ImportPreviewRow(
+                row_number=idx, action=ImportPreviewAction.CREATE,
+                summary=f"Will add {name}", identifier=phone,
+            ))
+            existing_phones.add(phone)
+
+        return self._finalize_preview(rows)
+
+    def preview_plans(
+        self, gym_id: uuid.UUID, req: PlanImportRequest
+    ) -> ImportPreviewResult:
+        existing_names: set[str] = {
+            n.lower()
+            for n in self.db.execute(
+                select(Plan.name).where(Plan.gym_id == gym_id)
+            ).scalars().all()
+        }
+        seen_in_file: set[str] = set()
+        rows: list[ImportPreviewRow] = []
+
+        for idx, row in enumerate(req.plans, start=1):
+            name = (row.name or "").strip()
+            if not name:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Plan name is required",
+                ))
+                continue
+            key = name.lower()
+            if key in seen_in_file:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Duplicate plan name in this file", identifier=name,
+                ))
+                continue
+            seen_in_file.add(key)
+            if key in existing_names:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.SKIP,
+                    summary="Plan already exists", identifier=name,
+                ))
+                continue
+            rows.append(ImportPreviewRow(
+                row_number=idx, action=ImportPreviewAction.CREATE,
+                summary=f"Will add plan ({row.duration_days}d, ₹{row.price})",
+                identifier=name,
+            ))
+            existing_names.add(key)
+
+        return self._finalize_preview(rows)
+
+    def preview_memberships(
+        self, gym_id: uuid.UUID, req: MembershipImportRequest
+    ) -> ImportPreviewResult:
+        phone_to_member = self._phone_to_member_map(gym_id)
+        name_to_plan = self._name_to_plan_map(gym_id)
+        rows: list[ImportPreviewRow] = []
+
+        for idx, row in enumerate(req.memberships, start=1):
+            phone = (row.member_phone or "").strip()
+            if len(phone) < 10:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Valid member phone is required", identifier=phone or None,
+                ))
+                continue
+            member = phone_to_member.get(phone)
+            if not member:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Member not found — import members first", identifier=phone,
+                ))
+                continue
+            if row.end_date < row.start_date:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="End date must be on or after start date", identifier=phone,
+                ))
+                continue
+
+            plan_name = row.plan_name.strip() or self._derive_plan_name(
+                row.start_date, row.end_date
+            )
+            plan = name_to_plan.get(plan_name.lower())
+            if plan:
+                summary = f"Will link {member.name} → {plan.name}"
+            else:
+                summary = f"Will link {member.name} → {plan_name} (plan will be created)"
+
+            rows.append(ImportPreviewRow(
+                row_number=idx, action=ImportPreviewAction.CREATE,
+                summary=summary, identifier=phone,
+            ))
+
+        return self._finalize_preview(rows)
+
+    def preview_payments(
+        self, gym_id: uuid.UUID, req: PaymentImportRequest
+    ) -> ImportPreviewResult:
+        phone_to_member = self._phone_to_member_map(gym_id)
+        rows: list[ImportPreviewRow] = []
+
+        for idx, row in enumerate(req.payments, start=1):
+            phone = (row.member_phone or "").strip()
+            if len(phone) < 10:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Valid member phone is required", identifier=phone or None,
+                ))
+                continue
+            member = phone_to_member.get(phone)
+            if not member:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Member not found — import members first", identifier=phone,
+                ))
+                continue
+            if row.amount <= 0:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="Amount must be greater than zero", identifier=phone,
+                ))
+                continue
+            rows.append(ImportPreviewRow(
+                row_number=idx, action=ImportPreviewAction.CREATE,
+                summary=f"Will record ₹{row.amount} on {row.payment_date} (no receipt for import)",
+                identifier=phone,
+            ))
+
+        return self._finalize_preview(rows)
+
+    def preview_attendance(
+        self, gym_id: uuid.UUID, req: AttendanceImportRequest
+    ) -> ImportPreviewResult:
+        code_to_member = self._code_to_member_map(gym_id)
+        rows: list[ImportPreviewRow] = []
+
+        for idx, row in enumerate(req.records, start=1):
+            ident = (row.person_identifier or "").strip()
+            if not ident:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.ERROR,
+                    summary="person_identifier is required",
+                ))
+                continue
+            member = code_to_member.get(ident)
+            if not member:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.SKIP,
+                    summary="Unknown member code — map device users first",
+                    identifier=ident,
+                ))
+                continue
+
+            ts = row.timestamp
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+
+            existing = self.db.execute(
+                select(Attendance).where(
+                    and_(
+                        Attendance.gym_id == gym_id,
+                        Attendance.member_id == member.id,
+                        Attendance.check_in_time == ts,
+                    )
+                )
+            ).scalar_one_or_none()
+            if existing:
+                rows.append(ImportPreviewRow(
+                    row_number=idx, action=ImportPreviewAction.SKIP,
+                    summary="Duplicate punch at same time",
+                    identifier=ident,
+                ))
+                continue
+
+            rows.append(ImportPreviewRow(
+                row_number=idx, action=ImportPreviewAction.CREATE,
+                summary=f"Will import punch for {member.name}",
+                identifier=ident,
+            ))
+
+        return self._finalize_preview(rows)
 
     # ── Helpers ────────────────────────────────────────────────────
 

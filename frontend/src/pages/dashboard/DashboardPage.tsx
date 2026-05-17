@@ -168,6 +168,18 @@ export default function DashboardPage() {
 
   const { data: stats, isLoading: statsLoading } = useQuery({ queryKey: ['dashboard-stats'], queryFn: reportService.getDashboardStats })
   const { data: actionCenter } = useQuery({ queryKey: ['action-center'], queryFn: reportService.getActionCenter })
+  const { data: expiringList } = useQuery({
+    queryKey: ['dashboard-expiring'],
+    queryFn: () => reportService.getExpiringMembers(7),
+  })
+  const { data: duesList } = useQuery({
+    queryKey: ['dashboard-dues'],
+    queryFn: () => reportService.getMembersWithDues(),
+  })
+  const { data: inactiveList } = useQuery({
+    queryKey: ['dashboard-inactive'],
+    queryFn: () => reportService.getInactiveMembers(7, 1, 8),
+  })
   const { data: revenueOpportunity } = useQuery({ queryKey: ['revenue-opportunity'], queryFn: reportService.getRevenueOpportunity })
   const { data: activityFeed } = useQuery({ queryKey: ['activity-feed'], queryFn: () => reportService.getActivityFeed(15) })
   const { data: biometricSync } = useQuery({ queryKey: ['biometric-sync'], queryFn: () => migrationService.getBiometricSync(), refetchInterval: 60_000 })
@@ -318,6 +330,78 @@ export default function DashboardPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-fade-in-up stagger-2">
+        <button type="button" onClick={() => navigate('/members?status=expiring')} className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-left hover:border-amber-500/40 transition-colors">
+          <p className="text-[10px] uppercase tracking-wider text-amber-400/90">Expiring (7d)</p>
+          <p className="text-2xl font-bold text-white mt-1">{stats?.expiring_soon ?? 0}</p>
+        </button>
+        <button type="button" onClick={() => navigate('/payments')} className="rounded-xl border border-red-500/25 bg-red-500/5 p-4 text-left hover:border-red-500/40 transition-colors">
+          <p className="text-[10px] uppercase tracking-wider text-red-400/90">Dues</p>
+          <p className="text-2xl font-bold text-white mt-1">{stats?.members_with_dues ?? 0}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{fmt(Number(stats?.total_dues ?? 0))}</p>
+        </button>
+        <button type="button" onClick={() => navigate('/members')} className="rounded-xl border border-slate-600/40 bg-slate-800/30 p-4 text-left hover:border-slate-500/50 transition-colors">
+          <p className="text-[10px] uppercase tracking-wider text-slate-400">Missed attendance</p>
+          <p className="text-2xl font-bold text-white mt-1">{actionCenter?.inactive_7d_count ?? 0}</p>
+          <p className="text-xs text-slate-500 mt-0.5">inactive 7+ days</p>
+        </button>
+        <button type="button" onClick={() => navigate('/attendance')} className="rounded-xl border border-sky-500/25 bg-sky-500/5 p-4 text-left hover:border-sky-500/40 transition-colors">
+          <p className="text-[10px] uppercase tracking-wider text-sky-400/90">Today check-ins</p>
+          <p className="text-2xl font-bold text-white mt-1">{stats?.today_check_ins ?? 0}</p>
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 overflow-hidden animate-fade-in-up stagger-3">
+        <div className="px-6 py-4 border-b border-slate-800/40 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-white">Today&apos;s action list</h2>
+          <span className="text-xs text-slate-500">Top items to handle now</span>
+        </div>
+        <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-800/40">
+          <div className="p-5">
+            <p className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-3">Expiring soon</p>
+            {!expiringList?.length ? <p className="text-sm text-slate-500">None in the next 7 days</p> : (
+              <ul className="space-y-2">
+                {expiringList.slice(0, 5).map((m) => (
+                  <li key={m.member_id}>
+                    <button type="button" onClick={() => navigate(`/members/${m.member_id}`)} className="w-full text-left text-sm text-slate-200 hover:text-amber-300">
+                      {m.member_name}<span className="block text-xs text-slate-500">{m.plan_name} · {m.days_until_expiry}d left</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="p-5">
+            <p className="text-xs font-medium text-red-400 uppercase tracking-wider mb-3">Pending dues</p>
+            {!duesList?.length ? <p className="text-sm text-slate-500">No outstanding dues</p> : (
+              <ul className="space-y-2">
+                {duesList.slice(0, 5).map((m) => (
+                  <li key={m.member_id}>
+                    <button type="button" onClick={() => navigate(`/members/${m.member_id}`)} className="w-full text-left text-sm text-slate-200 hover:text-red-300">
+                      {m.member_name}<span className="block text-xs text-slate-500">{fmt(Number(m.total_due))} due</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="p-5">
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Missed attendance</p>
+            {!inactiveList?.length ? <p className="text-sm text-slate-500">Everyone active this week</p> : (
+              <ul className="space-y-2">
+                {inactiveList.slice(0, 5).map((m) => (
+                  <li key={m.member_id}>
+                    <button type="button" onClick={() => navigate(`/members/${m.member_id}`)} className="w-full text-left text-sm text-slate-200 hover:text-slate-100">
+                      {m.member_name}<span className="block text-xs text-slate-500">{m.days_inactive}d since last visit</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ═══ MAIN GRID: ACTION CENTER + MEMBER OVERVIEW ═══ */}

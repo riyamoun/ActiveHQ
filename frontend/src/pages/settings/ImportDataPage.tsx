@@ -6,7 +6,13 @@ import {
   CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight, FileSpreadsheet,
   RefreshCw, Wifi, WifiOff, Activity,
 } from 'lucide-react'
-import { migrationService, type ImportResult, type ReconciliationReport, type BiometricSyncOverview } from '@/services/migrationService'
+import {
+  migrationService,
+  type ImportPreviewResult,
+  type ImportResult,
+  type ReconciliationReport,
+  type BiometricSyncOverview,
+} from '@/services/migrationService'
 import { getErrorMessage } from '@/lib/api'
 
 type Step = 'members' | 'plans' | 'memberships' | 'payments' | 'attendance' | 'reconciliation'
@@ -350,90 +356,241 @@ function ReconCard({ label, value, prefix, sub, color = 'text-white' }: {
   )
 }
 
+const previewActionStyles: Record<string, string> = {
+  create: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  update: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  skip: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  error: 'bg-red-500/15 text-red-400 border-red-500/30',
+}
+
+function buildStepPayload(step: Step, csvRows: Record<string, string>[]) {
+  switch (step) {
+    case 'members':
+      return {
+        members: csvRows.map((r) => ({
+          name: field(r, ['name', 'member', 'member_name']),
+          phone: field(r, ['phone', 'mobile', 'mobile_number', 'member_phone']),
+          email: field(r, ['email']) || undefined,
+          gender: normalizeGender(field(r, ['gender'])),
+          date_of_birth: normalizeDate(field(r, ['date_of_birth', 'dob'])) || undefined,
+          address: field(r, ['address']) || undefined,
+          joined_date: normalizeDate(field(r, ['joined_date', 'join_date'])) || undefined,
+          member_code: field(r, ['member_code', 'code', 'device_user_id']) || undefined,
+          notes: field(r, ['notes']) || undefined,
+        })),
+        skip_duplicates: true,
+      }
+    case 'plans':
+      return {
+        plans: csvRows.map((r) => ({
+          name: derivePlanName(r),
+          duration_days: deriveDurationDays(r),
+          price: parseMoney(field(r, ['price', 'amount', 'package_price'])),
+          description: field(r, ['description']) || undefined,
+        })),
+      }
+    case 'memberships':
+      return {
+        memberships: csvRows.map((r) => ({
+          member_phone: field(r, ['member_phone', 'phone', 'mobile']),
+          plan_name: derivePlanName(r),
+          start_date: normalizeDate(field(r, ['start_date'])) || '',
+          end_date: normalizeDate(field(r, ['end_date'])) || '',
+          amount_total: parseMoney(field(r, ['amount_total', 'total', 'price', 'amount'])),
+          amount_paid: parseMoney(field(r, ['amount_paid', 'paid', 'price', 'amount'])),
+          status: normalizeStatus(field(r, ['status', 'package_status'])),
+        })),
+      }
+    case 'payments':
+      return {
+        payments: csvRows.map((r) => ({
+          member_phone: field(r, ['member_phone', 'phone', 'mobile']),
+          amount: parseMoney(field(r, ['amount', 'paid_amount'])),
+          payment_date: normalizeDate(field(r, ['payment_date', 'date'])) || '',
+          payment_mode: normalizePaymentMode(field(r, ['payment_mode', 'mode', 'method'])),
+          reference_number: field(r, ['reference_number', 'reference', 'invoice']) || undefined,
+          notes: field(r, ['notes', 'package']) || undefined,
+        })),
+      }
+    case 'attendance':
+      return {
+        records: csvRows.map((r) => ({
+          person_identifier: field(r, ['person_identifier', 'device_user_id', 'member_code', 'code', 'user_id']),
+          timestamp: field(r, ['timestamp', 'punch_time', 'time', 'date']),
+          punch_type: (['check_in', 'check_out'].includes(field(r, ['punch_type', 'type']))
+            ? field(r, ['punch_type', 'type'])
+            : 'unknown') as 'unknown',
+        })),
+        source_label: 'csv_import',
+      }
+    default:
+      return null
+  }
+}
+
+async function runPreview(step: Step, payload: NonNullable<ReturnType<typeof buildStepPayload>>) {
+  switch (step) {
+    case 'members':
+      return migrationService.previewMembers(payload as Parameters<typeof migrationService.previewMembers>[0])
+    case 'plans':
+      return migrationService.previewPlans(payload as Parameters<typeof migrationService.previewPlans>[0])
+    case 'memberships':
+      return migrationService.previewMemberships(payload as Parameters<typeof migrationService.previewMemberships>[0])
+    case 'payments':
+      return migrationService.previewPayments(payload as Parameters<typeof migrationService.previewPayments>[0])
+    case 'attendance':
+      return migrationService.previewAttendance(payload as Parameters<typeof migrationService.previewAttendance>[0])
+    default:
+      throw new Error('Invalid step')
+  }
+}
+
+async function runImport(step: Step, payload: NonNullable<ReturnType<typeof buildStepPayload>>) {
+  switch (step) {
+    case 'members':
+      return migrationService.importMembers(payload as Parameters<typeof migrationService.importMembers>[0])
+    case 'plans':
+      return migrationService.importPlans(payload as Parameters<typeof migrationService.importPlans>[0])
+    case 'memberships':
+      return migrationService.importMemberships(payload as Parameters<typeof migrationService.importMemberships>[0])
+    case 'payments':
+      return migrationService.importPayments(payload as Parameters<typeof migrationService.importPayments>[0])
+    case 'attendance':
+      return migrationService.importAttendance(payload as Parameters<typeof migrationService.importAttendance>[0])
+    default:
+      throw new Error('Invalid step')
+  }
+}
+
+function PreviewPanel({
+  preview,
+  onConfirm,
+  onReReview,
+  confirming,
+  canConfirm,
+}: {
+  preview: ImportPreviewResult
+  onConfirm: () => void
+  onReReview: () => void
+  confirming: boolean
+  canConfirm: boolean
+}) {
+  return (
+    <div className="space-y-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-5">
+      <div>
+        <h3 className="text-base font-semibold text-white">Import preview</h3>
+        <p className="text-sm text-slate-400 mt-1">
+          Review create / skip / error per row before anything is written.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Stat label="Create" value={preview.will_create} color="text-emerald-400" />
+        <Stat label="Skip" value={preview.will_skip} color="text-amber-400" />
+        <Stat label="Update" value={preview.will_update} color="text-sky-400" />
+        <Stat label="Errors" value={preview.error_count} color={preview.error_count > 0 ? 'text-red-400' : 'text-slate-400'} />
+      </div>
+      {preview.total_rows > preview.rows.length && (
+        <p className="text-xs text-slate-500">
+          Showing first {preview.rows.length} of {preview.total_rows} rows.
+        </p>
+      )}
+      <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-800/60">
+        <table className="w-full text-xs">
+          <thead className="sticky top-0 bg-slate-900">
+            <tr className="text-slate-500">
+              <th className="text-left px-3 py-2 font-medium">#</th>
+              <th className="text-left px-3 py-2 font-medium">Action</th>
+              <th className="text-left px-3 py-2 font-medium">Detail</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/40">
+            {preview.rows.map((row) => (
+              <tr key={row.row_number}>
+                <td className="px-3 py-2 text-slate-500">{row.row_number}</td>
+                <td className="px-3 py-2">
+                  <span className={`inline-flex px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${previewActionStyles[row.action]}`}>
+                    {row.action}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-slate-300">
+                  {row.summary}
+                  {row.identifier && <span className="text-slate-500"> · {row.identifier}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={!canConfirm || confirming}
+          className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+        >
+          <Upload className="w-4 h-4" />
+          {confirming ? 'Importing…' : 'Confirm import'}
+        </button>
+        <button type="button" onClick={onReReview} className="px-4 py-2.5 text-sm text-slate-400 hover:text-white transition-colors">
+          Re-run preview
+        </button>
+      </div>
+      {preview.error_count > 0 && preview.will_create === 0 && (
+        <p className="text-sm text-red-400">Fix errors in the CSV before importing.</p>
+      )}
+    </div>
+  )
+}
+
 export default function ImportDataPage() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState<Step>('members')
   const [csvRows, setCsvRows] = useState<Record<string, string>[]>([])
+  const [preview, setPreview] = useState<ImportPreviewResult | null>(null)
   const [lastResult, setLastResult] = useState<ImportResult | null>(null)
   const [error, setError] = useState('')
 
   const currentIdx = STEPS.findIndex(s => s.key === currentStep)
+
+  const resetStepState = () => {
+    setCsvRows([])
+    setPreview(null)
+    setLastResult(null)
+    setError('')
+  }
+
+  const previewMutation = useMutation({
+    mutationFn: async () => {
+      setError('')
+      setPreview(null)
+      if (csvRows.length === 0) throw new Error('No data loaded. Upload a CSV first.')
+      const payload = buildStepPayload(currentStep, csvRows)
+      if (!payload) throw new Error('Invalid step')
+      return runPreview(currentStep, payload)
+    },
+    onSuccess: (result) => setPreview(result),
+    onError: (err) => setError(getErrorMessage(err)),
+  })
 
   const importMutation = useMutation({
     mutationFn: async () => {
       setError('')
       setLastResult(null)
       if (csvRows.length === 0) throw new Error('No data loaded. Upload a CSV first.')
-
-      switch (currentStep) {
-        case 'members':
-          return migrationService.importMembers({
-            members: csvRows.map(r => ({
-              name: field(r, ['name', 'member', 'member_name']),
-              phone: field(r, ['phone', 'mobile', 'mobile_number', 'member_phone']),
-              email: field(r, ['email']) || undefined,
-              gender: normalizeGender(field(r, ['gender'])),
-              date_of_birth: normalizeDate(field(r, ['date_of_birth', 'dob'])) || undefined,
-              address: field(r, ['address']) || undefined,
-              joined_date: normalizeDate(field(r, ['joined_date', 'join_date'])) || undefined,
-              member_code: field(r, ['member_code', 'code', 'device_user_id']) || undefined,
-              notes: field(r, ['notes']) || undefined,
-            })),
-            skip_duplicates: true,
-          })
-
-        case 'plans':
-          return migrationService.importPlans({
-            plans: csvRows.map(r => ({
-              name: derivePlanName(r),
-              duration_days: deriveDurationDays(r),
-              price: parseMoney(field(r, ['price', 'amount', 'package_price'])),
-              description: field(r, ['description']) || undefined,
-            })),
-          })
-
-        case 'memberships':
-          return migrationService.importMemberships({
-            memberships: csvRows.map(r => ({
-              member_phone: field(r, ['member_phone', 'phone', 'mobile']),
-              plan_name: derivePlanName(r),
-              start_date: normalizeDate(field(r, ['start_date'])) || '',
-              end_date: normalizeDate(field(r, ['end_date'])) || '',
-              amount_total: parseMoney(field(r, ['amount_total', 'total', 'price', 'amount'])),
-              amount_paid: parseMoney(field(r, ['amount_paid', 'paid', 'price', 'amount'])),
-              status: normalizeStatus(field(r, ['status', 'package_status'])),
-            })),
-          })
-
-        case 'payments':
-          return migrationService.importPayments({
-            payments: csvRows.map(r => ({
-              member_phone: field(r, ['member_phone', 'phone', 'mobile']),
-              amount: parseMoney(field(r, ['amount', 'paid_amount'])),
-              payment_date: normalizeDate(field(r, ['payment_date', 'date'])) || '',
-              payment_mode: normalizePaymentMode(field(r, ['payment_mode', 'mode', 'method'])),
-              reference_number: field(r, ['reference_number', 'reference', 'invoice']) || undefined,
-              notes: field(r, ['notes', 'package']) || undefined,
-            })),
-          })
-
-        case 'attendance':
-          return migrationService.importAttendance({
-            records: csvRows.map(r => ({
-              person_identifier: r.person_identifier || r.device_user_id || r.member_code || r.user_id || '',
-              timestamp: r.timestamp || r.punch_time || r.time || '',
-              punch_type: (['check_in', 'check_out'].includes(r.punch_type || r.type) ? (r.punch_type || r.type) : 'unknown') as 'unknown',
-            })),
-            source_label: 'csv_import',
-          })
-
-        default:
-          throw new Error('Invalid step')
-      }
+      const payload = buildStepPayload(currentStep, csvRows)
+      if (!payload) throw new Error('Invalid step')
+      return runImport(currentStep, payload)
     },
-    onSuccess: (result) => setLastResult(result),
+    onSuccess: (result) => {
+      setLastResult(result)
+      setPreview(null)
+    },
     onError: (err) => setError(getErrorMessage(err)),
   })
+
+  const canConfirmImport = Boolean(
+    preview && (preview.will_create > 0 || preview.will_update > 0 || preview.will_skip > 0)
+  )
 
   const sampleData: Record<Step, { headers: string; row: string }> = {
     members: {
@@ -480,7 +637,7 @@ export default function ImportDataPage() {
           return (
             <button
               key={step.key}
-              onClick={() => { setCsvRows([]); setLastResult(null); setError(''); setCurrentStep(step.key) }}
+              onClick={() => { resetStepState(); setCurrentStep(step.key) }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
                 isCurrent ? 'bg-emerald-600 text-white' : isPast ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800/30'
               }`}
@@ -506,26 +663,37 @@ export default function ImportDataPage() {
         ) : (
           <>
             <CSVUploadArea
-              onData={(rows) => { setCsvRows(rows); setLastResult(null); setError('') }}
+              onData={(rows) => { setCsvRows(rows); setPreview(null); setLastResult(null); setError('') }}
               sampleHeaders={sampleData[currentStep].headers}
               sampleRow={sampleData[currentStep].row}
             />
 
             {csvRows.length > 0 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm text-slate-400">{csvRows.length} rows loaded from CSV</p>
                   <button
-                    onClick={() => importMutation.mutate()}
-                    disabled={importMutation.isPending}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+                    type="button"
+                    onClick={() => previewMutation.mutate()}
+                    disabled={previewMutation.isPending || importMutation.isPending}
+                    className="flex items-center gap-2 px-5 py-2.5 border border-emerald-500/40 text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-500/10 disabled:opacity-50 transition-colors"
                   >
-                    <Upload className="w-4 h-4" />
-                    {importMutation.isPending ? 'Importing...' : `Import ${csvRows.length} records`}
+                    <RefreshCw className={`w-4 h-4 ${previewMutation.isPending ? 'animate-spin' : ''}`} />
+                    {previewMutation.isPending ? 'Reviewing…' : 'Review import'}
                   </button>
                 </div>
 
-                {/* Preview */}
+                {preview && (
+                  <PreviewPanel
+                    preview={preview}
+                    onConfirm={() => importMutation.mutate()}
+                    onReReview={() => previewMutation.mutate()}
+                    confirming={importMutation.isPending}
+                    canConfirm={canConfirmImport}
+                  />
+                )}
+
+                {/* Raw CSV sample */}
                 <div className="bg-slate-800/40 rounded-lg p-4 overflow-x-auto max-h-48">
                   <table className="text-xs text-slate-400 w-full">
                     <thead>
@@ -557,14 +725,14 @@ export default function ImportDataPage() {
       {/* Navigation */}
       <div className="flex justify-between">
         <button
-          onClick={() => { if (currentIdx > 0) { setCurrentStep(STEPS[currentIdx - 1].key); setCsvRows([]); setLastResult(null); setError('') } }}
+          onClick={() => { if (currentIdx > 0) { resetStepState(); setCurrentStep(STEPS[currentIdx - 1].key) } }}
           disabled={currentIdx === 0}
           className="flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Previous
         </button>
         <button
-          onClick={() => { if (currentIdx < STEPS.length - 1) { setCurrentStep(STEPS[currentIdx + 1].key); setCsvRows([]); setLastResult(null); setError('') } }}
+          onClick={() => { if (currentIdx < STEPS.length - 1) { resetStepState(); setCurrentStep(STEPS[currentIdx + 1].key) } }}
           disabled={currentIdx === STEPS.length - 1}
           className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 hover:text-emerald-300 disabled:opacity-30 transition-colors"
         >

@@ -9,6 +9,7 @@ from app.migration.schemas import (
     BiometricSyncOverview,
     DeviceUserMappingRequest,
     DeviceUserMappingResult,
+    ImportPreviewResult,
     MemberImportRequest,
     MemberImportResult,
     MembershipImportRequest,
@@ -23,6 +24,17 @@ from app.migration.schemas import (
 from app.migration.service import MigrationService
 
 router = APIRouter()
+
+
+@router.post("/members/preview", response_model=ImportPreviewResult)
+def preview_members(
+    payload: MemberImportRequest,
+    tenant: TenantDep,
+    db: DbDep,
+    _: object = Depends(require_manager_or_above),
+):
+    """Dry-run member import — shows create / skip / error per row without writing."""
+    return MigrationService(db).preview_members(tenant.gym_id, payload)
 
 
 @router.post("/members", response_model=MemberImportResult)
@@ -42,6 +54,16 @@ def import_members(
     return svc.import_members(tenant.gym_id, payload)
 
 
+@router.post("/plans/preview", response_model=ImportPreviewResult)
+def preview_plans(
+    payload: PlanImportRequest,
+    tenant: TenantDep,
+    db: DbDep,
+    _: object = Depends(require_manager_or_above),
+):
+    return MigrationService(db).preview_plans(tenant.gym_id, payload)
+
+
 @router.post("/plans", response_model=PlanImportResult)
 def import_plans(
     payload: PlanImportRequest,
@@ -52,6 +74,16 @@ def import_plans(
     """Bulk-import membership plans. Duplicate names are skipped."""
     svc = MigrationService(db)
     return svc.import_plans(tenant.gym_id, payload)
+
+
+@router.post("/memberships/preview", response_model=ImportPreviewResult)
+def preview_memberships(
+    payload: MembershipImportRequest,
+    tenant: TenantDep,
+    db: DbDep,
+    _: object = Depends(require_manager_or_above),
+):
+    return MigrationService(db).preview_memberships(tenant.gym_id, payload)
 
 
 @router.post("/memberships", response_model=MembershipImportResult)
@@ -76,6 +108,16 @@ def import_payments(
     """Bulk-import historical payments. Resolves members by phone."""
     svc = MigrationService(db)
     return svc.import_payments(tenant.gym_id, payload)
+
+
+@router.post("/attendance/preview", response_model=ImportPreviewResult)
+def preview_attendance(
+    payload: AttendanceImportRequest,
+    tenant: TenantDep,
+    db: DbDep,
+    _: object = Depends(require_manager_or_above),
+):
+    return MigrationService(db).preview_attendance(tenant.gym_id, payload)
 
 
 @router.post("/attendance", response_model=AttendanceImportResult)
