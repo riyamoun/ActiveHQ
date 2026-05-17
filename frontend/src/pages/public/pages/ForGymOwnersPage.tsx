@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { SeoMeta } from '@/components/seo/SeoMeta';
 import { trackEvent } from '@/lib/analytics';
+import { PublicPricing } from '@/pages/public/components/PublicPricing';
 
 const WHATSAPP_LINK =
   'https://wa.me/919354349118?text=Hi%20ActiveHQ%2C%20I%20run%20a%20gym%20and%20want%20to%20book%20a%20demo.';
@@ -180,62 +181,18 @@ export function ForGymOwnersPage() {
         </div>
       </section>
 
-      {/* PRICING */}
-      <section className="relative py-24 sm:py-28 border-t border-white/10">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-lime-400/10 blur-[180px] rounded-full" />
-        </div>
-
-        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 text-center">
-          <p className="text-xs tracking-[0.3em] uppercase text-lime-400 mb-4">
-            Investment
-          </p>
-          <h2 className="text-4xl sm:text-5xl font-bold leading-tight">
-            One price.{' '}
-            <span className="text-white/40 font-light">No surprises.</span>
-          </h2>
-
-          <div className="mt-12 relative rounded-3xl border border-lime-400/30 bg-black p-10 sm:p-14 shadow-[0_0_80px_rgba(163,230,53,0.15)]">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-lime-400 text-black text-[11px] font-bold tracking-[0.2em] uppercase">
-              Founding Offer
-            </div>
-
-            <div className="text-6xl sm:text-7xl font-bold">
-              <span className="text-white/40 text-3xl align-top">₹</span>
-              <span className="text-lime-400">3,000</span>
-              <span className="text-white/40 text-xl font-light">/year</span>
-            </div>
-            <div className="mt-1 text-white/50">+ ₹0 setup for founding gyms · usually ₹2,500</div>
-
-            <div className="mt-10 grid sm:grid-cols-2 gap-3 text-left max-w-md mx-auto">
-              {[
-                'Unlimited members',
-                'All features included',
-                'WhatsApp automation',
-                'Staff training',
-                'Data migration',
-                'Lifetime price-lock',
-              ].map((f) => (
-                <div key={f} className="flex items-center gap-2 text-white/80 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-lime-400 flex-shrink-0" />
-                  {f}
-                </div>
-              ))}
-            </div>
-
-            <Link
-              to="/contact"
-              onClick={() =>
-                trackEvent('cta_click', { location: 'owners_pricing', cta: 'book_demo' })
-              }
-              className="inline-flex items-center gap-2 mt-10 px-8 py-4 rounded-full bg-lime-400 text-black font-bold hover:bg-lime-300 transition-colors"
-            >
-              Book a demo
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
+      <PublicPricing
+        location="owners_pricing"
+        showWhatsApp={false}
+        features={[
+          'Unlimited members',
+          'All features included',
+          'WhatsApp automation',
+          'Staff training',
+          'Data migration',
+          'Lifetime price-lock',
+        ]}
+      />
 
       {/* CTA */}
       <section className="relative py-24 sm:py-32 border-t border-white/10">

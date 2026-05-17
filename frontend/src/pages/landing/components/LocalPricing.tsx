@@ -1,42 +1,49 @@
 import { Phone, MessageCircle } from 'lucide-react';
+import { formatInr, PRICING } from '@/constants/pricing';
 
 export function LocalPricing() {
+  const { normal, founding } = PRICING;
+
   return (
     <section className="bg-slate-950 py-16 border-t border-slate-800">
       <div className="max-w-xl mx-auto px-4">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
-          {/* Header */}
           <div className="text-center mb-8">
             <h2 className="text-white text-xl font-medium mb-2">Software Charges</h2>
             <p className="text-slate-500 text-sm">Simple, transparent pricing</p>
           </div>
 
-          {/* Pricing items */}
           <div className="space-y-4 mb-8">
             <div className="flex items-center justify-between py-4 border-b border-slate-800">
               <div>
-                <p className="text-white font-medium">One-time setup fee</p>
-                <p className="text-slate-500 text-sm">Includes onboarding & training</p>
+                <p className="text-white font-medium">Standard — one-time setup</p>
+                <p className="text-slate-500 text-sm">Onboarding & training</p>
               </div>
-              <p className="text-white text-lg font-medium">₹2,500</p>
+              <p className="text-white text-lg font-medium">₹{formatInr(normal.setupInr)}</p>
             </div>
             <div className="flex items-center justify-between py-4 border-b border-slate-800">
               <div>
-                <p className="text-white font-medium">Yearly renewal</p>
+                <p className="text-white font-medium">Standard — yearly</p>
                 <p className="text-slate-500 text-sm">Full access, all features</p>
               </div>
-              <p className="text-white text-lg font-medium">₹3,000/year</p>
+              <p className="text-white text-lg font-medium">₹{formatInr(normal.yearlyInr)}/year</p>
+            </div>
+            <div className="flex items-center justify-between py-4">
+              <div>
+                <p className="text-amber-400 font-medium">Founding gym — first year</p>
+                <p className="text-slate-500 text-sm">+ ₹{formatInr(founding.setupInr)} setup</p>
+              </div>
+              <p className="text-amber-400 text-lg font-medium">₹{formatInr(founding.yearlyInr)}</p>
             </div>
           </div>
 
-          {/* Founding offer */}
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
             <p className="text-amber-400 text-sm font-medium text-center">
-              🎁 Founding gym discounts available — limited spots
+              Founding gym: ₹{formatInr(founding.yearlyInr)} first year + ₹
+              {formatInr(founding.setupInr)} setup — limited spots
             </p>
           </div>
 
-          {/* CTA */}
           <div className="space-y-3">
             <a
               href="tel:+919354349118"
@@ -56,9 +63,8 @@ export function LocalPricing() {
             </a>
           </div>
 
-          {/* Trust line */}
           <p className="text-center text-slate-600 text-xs mt-6">
-            No hidden charges • GST extra if applicable
+            No hidden charges · GST extra if applicable
           </p>
         </div>
       </div>

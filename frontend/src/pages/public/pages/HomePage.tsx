@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { SeoMeta } from '@/components/seo/SeoMeta';
 import { Reveal } from '@/components/Reveal';
+import { PublicPricing } from '@/pages/public/components/PublicPricing';
 import { trackEvent } from '@/lib/analytics';
 
 const WHATSAPP_LINK =
@@ -47,7 +48,7 @@ const softwareSchema = {
   offers: {
     '@type': 'Offer',
     priceCurrency: 'INR',
-    price: '3000',
+    price: '15000',
   },
 };
 
@@ -182,7 +183,7 @@ export function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { value: '10 min', label: 'Daily admin · target' },
-              { value: '₹0', label: 'Setup fee · founding gyms' },
+              { value: '₹10k', label: 'Founding year 1 · limited' },
               { value: '99.9%', label: 'Uptime SLA' },
               { value: '24/7', label: 'WhatsApp support' },
             ].map((stat, i) => (
@@ -509,83 +510,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          FOUNDING-GYM PRICING
-      ════════════════════════════════════════════════════════════════ */}
-      <section className="relative py-24 sm:py-32 border-t border-white/10">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-lime-400/10 blur-[180px] rounded-full" />
-        </div>
-
-        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-lime-400/30 bg-lime-400/5 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
-            <span className="text-xs tracking-[0.2em] uppercase text-lime-400 font-medium">
-              Founding gyms · limited spots
-            </span>
-          </div>
-          <h2 className="text-4xl sm:text-5xl font-bold leading-tight">
-            One price. <span className="text-white/40 font-light">No surprises.</span>
-          </h2>
-          <p className="mt-5 text-lg text-white/60 max-w-xl mx-auto">
-            We migrate your old data on the demo call itself. You only pay once you're convinced.
-          </p>
-
-          <div className="mt-12 relative rounded-3xl border border-lime-400/30 bg-black p-10 sm:p-14 shadow-[0_0_80px_rgba(163,230,53,0.15)]">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-lime-400 text-black text-[11px] font-bold tracking-[0.2em] uppercase">
-              Founding Offer
-            </div>
-
-            <div className="text-6xl sm:text-7xl font-bold">
-              <span className="text-white/40 text-3xl align-top">₹</span>
-              <span className="text-lime-400">3,000</span>
-              <span className="text-white/40 text-xl font-light">/year</span>
-            </div>
-            <div className="mt-1 text-white/50">+ ₹0 setup for founding gyms · usually ₹2,500</div>
-
-            <div className="mt-10 grid sm:grid-cols-2 gap-3 text-left max-w-md mx-auto">
-              {[
-                'Unlimited members',
-                'Cash + UPI tracking',
-                'WhatsApp automation',
-                'Biometric integration',
-                'Free data migration',
-                'Lifetime price-lock',
-              ].map((feature) => (
-                <div key={feature} className="flex items-center gap-2 text-white/80">
-                  <CheckCircle2 className="w-4 h-4 text-lime-400 flex-shrink-0" />
-                  <span className="text-sm">{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                to="/contact"
-                onClick={() =>
-                  trackEvent('cta_click', { location: 'pricing', cta: 'book_demo' })
-                }
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-lime-400 text-black font-bold hover:bg-lime-300 transition-colors"
-              >
-                Book a 15-min demo
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() =>
-                  trackEvent('cta_click', { location: 'pricing', cta: 'whatsapp' })
-                }
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full border border-white/20 text-white font-semibold hover:border-lime-400/60 transition-colors"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Talk on WhatsApp
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PublicPricing location="pricing" />
 
       {/* ════════════════════════════════════════════════════════════════
           FOUNDER BLOCK
