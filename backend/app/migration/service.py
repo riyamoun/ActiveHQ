@@ -157,10 +157,25 @@ class MigrationService:
                 errors.append(f"Row {idx}: member phone {row.member_phone} not found")
                 continue
 
-            plan = name_to_plan.get(row.plan_name.lower())
+            plan_name = row.plan_name.strip() or self._derive_plan_name(row.start_date, row.end_date)
+            plan = name_to_plan.get(plan_name.lower())
             if not plan:
-                errors.append(f"Row {idx}: plan '{row.plan_name}' not found")
-                continue
+                try:
+                    duration_days = max((row.end_date - row.start_date).days + 1, 1)
+                    plan = Plan(
+                        gym_id=gym_id,
+                        name=plan_name,
+                        duration_days=duration_days,
+                        price=row.amount_total,
+                        description="Created during historical import",
+                        is_active=True,
+                    )
+                    self.db.add(plan)
+                    self.db.flush()
+                    name_to_plan[plan_name.lower()] = plan
+                except Exception as exc:
+                    errors.append(f"Row {idx}: could not create plan '{plan_name}': {exc}")
+                    continue
 
             try:
                 membership = Membership(
@@ -562,3 +577,13 @@ class MigrationService:
             select(Plan).where(Plan.gym_id == gym_id)
         ).scalars().all()
         return {p.name.lower(): p for p in plans}
+
+    def _derive_plan_name(self, start_date: date, end_date: date) -> str:
+        duration_days = max((end_date - start_date).days + 1, 1)
+        if duration_days >= 360:
+            return "Yearly"
+        if duration_days >= 170:
+            return "Half Yearly"
+        if duration_days >= 80:
+            return "Quarterly"
+        return "Monthly"

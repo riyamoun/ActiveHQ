@@ -12,13 +12,144 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import AutomationCampaign, Gym, Member
-from app.models.enums import CampaignTriggerType, MembershipStatus
+from app.models import AutomationCampaign, Gym, Member, Notification
+from app.models.enums import CampaignTriggerType, MembershipStatus, NotificationType
 from app.automation.send_service import send_campaign_message, send_campaign_message_email
 
 
 def _smtp_configured() -> bool:
     return bool(settings.smtp_host and settings.smtp_user and settings.smtp_password)
+
+
+def _pickyassist_configured() -> bool:
+    return bool((settings.pickyassist_api_token or "").strip())
+
+
+DEFAULT_CAMPAIGNS = {
+    CampaignTriggerType.RENEWAL_REMINDER: {
+        "name": "Default renewal reminder",
+        "template": (
+            "Hi {{member_name}}, your gym membership expires on {{end_date}} "
+            "({{days_until_expiry}} days left). Please renew to continue without interruption."
+        ),
+    },
+    CampaignTriggerType.PAYMENT_FOLLOWUP: {
+        "name": "Default payment follow-up",
+        "template": (
+            "Hi {{member_name}}, your pending gym payment is Rs {{amount_due}}. "
+            "Please clear it at reception or reply for help."
+        ),
+    },
+    CampaignTriggerType.INACTIVITY_NUDGE: {
+        "name": "Default inactivity nudge",
+        "template": (
+            "Hi {{member_name}}, we missed you at the gym. It has been {{days_inactive}} "
+            "days since your last visit. See you today?"
+        ),
+    },
+}
+
+
+def ensure_default_campaign(
+    db: Session,
+    *,
+    gym_id,
+    trigger_type: CampaignTriggerType,
+) -> AutomationCampaign:
+    campaign = db.execute(
+        select(AutomationCampaign).where(
+            and_(
+                AutomationCampaign.gym_id == gym_id,
+                AutomationCampaign.is_active == True,  # noqa: E712
+                AutomationCampaign.trigger_type == trigger_type,
+            )
+        )
+    ).scalar_one_or_none()
+    if campaign:
+        return campaign
+
+    defaults = DEFAULT_CAMPAIGNS[trigger_type]
+    campaign = AutomationCampaign(
+        gym_id=gym_id,
+        name=defaults["name"],
+        trigger_type=trigger_type,
+        template_en=defaults["template"],
+        template_hi=None,
+        ai_enabled=False,
+        is_active=True,
+    )
+    db.add(campaign)
+    db.flush()
+    db.commit()
+    db.refresh(campaign)
+    return campaign
+
+
+def already_notified_today(
+    db: Session,
+    *,
+    gym_id,
+    member_id,
+    notification_type: NotificationType,
+) -> bool:
+    today_start = datetime.combine(date.today(), datetime.min.time(), tzinfo=timezone.utc)
+    return bool(
+        db.execute(
+            select(Notification.id)
+            .where(
+                and_(
+                    Notification.gym_id == gym_id,
+                    Notification.member_id == member_id,
+                    Notification.notification_type == notification_type,
+                    Notification.created_at >= today_start,
+                )
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+    )
+
+
+def send_best_available_channel(
+    db: Session,
+    *,
+    gym_id,
+    campaign: AutomationCampaign,
+    member: Member,
+    context: dict[str, Any],
+    subject_prefix: str,
+):
+    if _pickyassist_configured():
+        return send_campaign_message(
+            db,
+            gym_id=gym_id,
+            campaign_id=campaign.id,
+            campaign_name=campaign.name,
+            trigger_type=campaign.trigger_type,
+            template_en=campaign.template_en,
+            template_hi=campaign.template_hi,
+            member=member,
+            context=context,
+        )
+    if _smtp_configured() and member.email:
+        return send_campaign_message_email(
+            db,
+            gym_id=gym_id,
+            campaign_id=campaign.id,
+            campaign_name=campaign.name,
+            trigger_type=campaign.trigger_type,
+            template_en=campaign.template_en,
+            member=member,
+            context=context,
+            subject_prefix=subject_prefix,
+        )
+    from app.services.messaging import SendResult
+
+    return SendResult(
+        success=False,
+        channel="none",
+        provider_message_id=None,
+        error="No WhatsApp/SMS or email provider configured",
+    )
 
 
 def run_renewal_and_payment_automation(db: Session) -> dict[str, Any]:
@@ -35,20 +166,10 @@ def run_renewal_and_payment_automation(db: Session) -> dict[str, Any]:
     sent = 0
     failed = 0
     for gym in gyms:
-        campaigns = db.execute(
-            select(AutomationCampaign).where(
-                and_(
-                    AutomationCampaign.gym_id == gym.id,
-                    AutomationCampaign.is_active == True,  # noqa: E712
-                    AutomationCampaign.trigger_type.in_([
-                        CampaignTriggerType.RENEWAL_REMINDER,
-                        CampaignTriggerType.PAYMENT_FOLLOWUP,
-                    ]),
-                )
-            )
-        ).scalars().all()
-        if not campaigns:
-            continue
+        campaigns = [
+            ensure_default_campaign(db, gym_id=gym.id, trigger_type=CampaignTriggerType.RENEWAL_REMINDER),
+            ensure_default_campaign(db, gym_id=gym.id, trigger_type=CampaignTriggerType.PAYMENT_FOLLOWUP),
+        ]
         # Expiring members (next 7 days)
         from app.models import Membership
         expiring_rows = db.execute(
@@ -88,6 +209,13 @@ def run_renewal_and_payment_automation(db: Session) -> dict[str, Any]:
                 for membership, member in expiring_rows:
                     if member.id in seen_renewal:
                         continue
+                    if already_notified_today(
+                        db,
+                        gym_id=gym.id,
+                        member_id=member.id,
+                        notification_type=NotificationType.EXPIRY_REMINDER,
+                    ):
+                        continue
                     seen_renewal.add(member.id)
                     days_left = (membership.end_date - today).days
                     context = {
@@ -96,16 +224,13 @@ def run_renewal_and_payment_automation(db: Session) -> dict[str, Any]:
                         "end_date": str(membership.end_date),
                         "amount_due": float(membership.amount_total - membership.amount_paid),
                     }
-                    result = send_campaign_message(
+                    result = send_best_available_channel(
                         db,
                         gym_id=gym.id,
-                        campaign_id=campaign.id,
-                        campaign_name=campaign.name,
-                        trigger_type=campaign.trigger_type,
-                        template_en=campaign.template_en,
-                        template_hi=campaign.template_hi,
+                        campaign=campaign,
                         member=member,
                         context=context,
+                        subject_prefix="Membership renewal",
                     )
                     if result.success:
                         sent += 1
@@ -114,6 +239,13 @@ def run_renewal_and_payment_automation(db: Session) -> dict[str, Any]:
             elif campaign.trigger_type == CampaignTriggerType.PAYMENT_FOLLOWUP:
                 for membership, member in dues_rows:
                     if member.id in seen_dues:
+                        continue
+                    if already_notified_today(
+                        db,
+                        gym_id=gym.id,
+                        member_id=member.id,
+                        notification_type=NotificationType.PAYMENT_DUE,
+                    ):
                         continue
                     amount_due = float(membership.amount_total - membership.amount_paid)
                     if amount_due <= 0:
@@ -124,16 +256,13 @@ def run_renewal_and_payment_automation(db: Session) -> dict[str, Any]:
                         "amount_due": amount_due,
                         "end_date": str(membership.end_date),
                     }
-                    result = send_campaign_message(
+                    result = send_best_available_channel(
                         db,
                         gym_id=gym.id,
-                        campaign_id=campaign.id,
-                        campaign_name=campaign.name,
-                        trigger_type=campaign.trigger_type,
-                        template_en=campaign.template_en,
-                        template_hi=campaign.template_hi,
+                        campaign=campaign,
                         member=member,
                         context=context,
+                        subject_prefix="Payment reminder",
                     )
                     if result.success:
                         sent += 1
@@ -156,17 +285,11 @@ def run_inactivity_automation(db: Session, *, inactive_days: int = 7) -> dict[st
     failed = 0
 
     for gym in gyms:
-        campaign = db.execute(
-            select(AutomationCampaign).where(
-                and_(
-                    AutomationCampaign.gym_id == gym.id,
-                    AutomationCampaign.is_active == True,  # noqa: E712
-                    AutomationCampaign.trigger_type == CampaignTriggerType.INACTIVITY_NUDGE,
-                )
-            )
-        ).scalar_one_or_none()
-        if not campaign:
-            continue
+        campaign = ensure_default_campaign(
+            db,
+            gym_id=gym.id,
+            trigger_type=CampaignTriggerType.INACTIVITY_NUDGE,
+        )
 
         # Latest check-in per member
         latest_rows = db.execute(
@@ -205,6 +328,13 @@ def run_inactivity_automation(db: Session, *, inactive_days: int = 7) -> dict[st
             ).scalar_one_or_none()
             if not active_membership:
                 continue
+            if already_notified_today(
+                db,
+                gym_id=gym.id,
+                member_id=member.id,
+                notification_type=NotificationType.CUSTOM,
+            ):
+                continue
 
             days_inactive = int((datetime.now(timezone.utc) - last_seen).total_seconds() // 86400)
             context = {
@@ -212,16 +342,13 @@ def run_inactivity_automation(db: Session, *, inactive_days: int = 7) -> dict[st
                 "days_inactive": days_inactive,
                 "last_seen": last_seen.date().isoformat(),
             }
-            result = send_campaign_message(
+            result = send_best_available_channel(
                 db,
                 gym_id=gym.id,
-                campaign_id=campaign.id,
-                campaign_name=campaign.name,
-                trigger_type=campaign.trigger_type,
-                template_en=campaign.template_en,
-                template_hi=campaign.template_hi,
+                campaign=campaign,
                 member=member,
                 context=context,
+                subject_prefix="Workout reminder",
             )
             if result.success:
                 sent += 1

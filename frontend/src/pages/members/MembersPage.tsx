@@ -7,6 +7,43 @@ import { Plus, Search, Users } from 'lucide-react'
 import { format } from 'date-fns'
 import type { MemberSummary } from '@/types'
 
+function membershipBadge(member: MemberSummary) {
+  if (!member.is_active) {
+    return {
+      label: 'Inactive',
+      className: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
+    }
+  }
+  if (!member.current_membership_status) {
+    return {
+      label: 'No plan',
+      className: 'bg-amber-500/10 text-amber-300 border border-amber-500/20',
+    }
+  }
+  if (member.current_membership_status === 'expired') {
+    return {
+      label: 'Expired',
+      className: 'bg-red-500/10 text-red-300 border border-red-500/20',
+    }
+  }
+  if (member.current_membership_status === 'paused') {
+    return {
+      label: 'Paused',
+      className: 'bg-blue-500/10 text-blue-300 border border-blue-500/20',
+    }
+  }
+  if (member.current_membership_status === 'cancelled') {
+    return {
+      label: 'Cancelled',
+      className: 'bg-slate-500/10 text-slate-300 border border-slate-500/20',
+    }
+  }
+  return {
+    label: 'Active',
+    className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+  }
+}
+
 export default function MembersPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -110,29 +147,35 @@ export default function MembersPage() {
                     <td colSpan={4} className="px-6 py-12 text-center text-slate-500">No members found</td>
                   </tr>
                 ) : (
-                  data?.items?.map((member: MemberSummary) => (
-                    <tr
-                      key={member.id}
-                      onClick={() => navigate(`/members/${member.id}`)}
-                      className="hover:bg-slate-800/30 cursor-pointer transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <p className="font-medium text-white">{member.name}</p>
-                        <p className="text-sm text-slate-500">{member.phone}</p>
-                      </td>
-                      <td className="px-6 py-4 text-slate-400">{member.member_code || '-'}</td>
-                      <td className="px-6 py-4 text-slate-400">{format(new Date(member.joined_date), 'dd MMM yyyy')}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                          member.is_active
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                        }`}>
-                          {member.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
+                  data?.items?.map((member: MemberSummary) => {
+                    const badge = membershipBadge(member)
+                    return (
+                      <tr
+                        key={member.id}
+                        onClick={() => navigate(`/members/${member.id}`)}
+                        className="hover:bg-slate-800/30 cursor-pointer transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <p className="font-medium text-white">{member.name}</p>
+                          <p className="text-sm text-slate-500">{member.phone}</p>
+                        </td>
+                        <td className="px-6 py-4 text-slate-400">{member.member_code || '-'}</td>
+                        <td className="px-6 py-4 text-slate-400">{format(new Date(member.joined_date), 'dd MMM yyyy')}</td>
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                            {member.current_membership_end && (
+                              <p className="text-xs text-slate-500">
+                                till {format(new Date(member.current_membership_end), 'dd MMM yyyy')}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

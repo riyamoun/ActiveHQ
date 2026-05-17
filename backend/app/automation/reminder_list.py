@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.models import AutomationCampaign, Member, Membership
 from app.models.enums import CampaignTriggerType, MembershipStatus
 from app.automation.send_service import render_template
+from app.automation.cron_runner import ensure_default_campaign
 
 
 def get_reminder_list(
@@ -27,18 +28,10 @@ def get_reminder_list(
     per campaign. No sending — for manual copy-paste to WhatsApp/SMS.
     """
     today = date.today()
-    campaigns = db.execute(
-        select(AutomationCampaign).where(
-            and_(
-                AutomationCampaign.gym_id == gym_id,
-                AutomationCampaign.is_active == True,  # noqa: E712
-                AutomationCampaign.trigger_type.in_([
-                    CampaignTriggerType.RENEWAL_REMINDER,
-                    CampaignTriggerType.PAYMENT_FOLLOWUP,
-                ]),
-            )
-        )
-    ).scalars().all()
+    campaigns = [
+        ensure_default_campaign(db, gym_id=gym_id, trigger_type=CampaignTriggerType.RENEWAL_REMINDER),
+        ensure_default_campaign(db, gym_id=gym_id, trigger_type=CampaignTriggerType.PAYMENT_FOLLOWUP),
+    ]
     expiring_rows = db.execute(
         select(Membership, Member).join(
             Member,

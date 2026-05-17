@@ -21,15 +21,154 @@ const STEPS: { key: Step; label: string; icon: typeof Users; description: string
 ]
 
 function parseCSV(text: string): Record<string, string>[] {
-  const lines = text.trim().split(/\r?\n/)
-  if (lines.length < 2) return []
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, '_'))
-  return lines.slice(1).map(line => {
-    const values = line.split(',').map(v => v.trim())
+  const rows: string[][] = []
+  let current = ''
+  let row: string[] = []
+  let inQuotes = false
+
+  const pushValue = () => {
+    row.push(current.trim().replace(/^"|"$/g, '').replace(/""/g, '"'))
+    current = ''
+  }
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i]
+    const next = text[i + 1]
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"'
+      i += 1
+    } else if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      pushValue()
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i += 1
+      pushValue()
+      if (row.some((value) => value.length > 0)) rows.push(row)
+      row = []
+    } else {
+      current += char
+    }
+  }
+
+  if (current.length > 0 || row.length > 0) {
+    pushValue()
+    if (row.some((value) => value.length > 0)) rows.push(row)
+  }
+
+  if (rows.length < 2) return []
+  const headers = rows[0].map((h) => normalizeHeader(h))
+  return rows.slice(1).map((values) => {
     const row: Record<string, string> = {}
     headers.forEach((h, i) => { row[h] = values[i] || '' })
     return row
   })
+}
+
+function normalizeHeader(value: string): string {
+  return value
+    .replace(/^\uFEFF/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
+function field(row: Record<string, string>, keys: string[]): string {
+  for (const key of keys) {
+    const value = row[normalizeHeader(key)]
+    if (value !== undefined && value.trim() !== '') return value.trim()
+  }
+  return ''
+}
+
+function parseMoney(value: string): number {
+  const cleaned = value.replace(/[^\d.-]/g, '')
+  return parseFloat(cleaned) || 0
+}
+
+function normalizeDate(value: string): string | undefined {
+  const raw = value.trim().replace(/^"|"$/g, '')
+  if (!raw) return undefined
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(raw)) {
+    const [year, month, day] = raw.split('-')
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+  const slash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (slash) {
+    const [, day, month, year] = slash
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+  const named = raw.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})$/)
+  if (named) {
+    const [, day, monthName, year] = named
+    const months: Record<string, string> = {
+      jan: '01', january: '01', feb: '02', february: '02', mar: '03', march: '03',
+      apr: '04', april: '04', may: '05', jun: '06', june: '06', jul: '07', july: '07',
+      aug: '08', august: '08', sep: '09', sept: '09', september: '09', oct: '10',
+      october: '10', nov: '11', november: '11', dec: '12', december: '12',
+    }
+    const month = months[monthName.toLowerCase()]
+    if (month) return `${year}-${month}-${day.padStart(2, '0')}`
+  }
+  return raw
+}
+
+function normalizeGender(value: string): 'male' | 'female' | 'other' | undefined {
+  const gender = value.trim().toLowerCase()
+  if (gender === 'male' || gender === 'm') return 'male'
+  if (gender === 'female' || gender === 'f') return 'female'
+  if (gender === 'other') return 'other'
+  return undefined
+}
+
+function normalizeStatus(value: string): 'active' | 'expired' | 'paused' | 'cancelled' {
+  const status = value.trim().toLowerCase()
+  if (status === 'expired') return 'expired'
+  if (status === 'paused') return 'paused'
+  if (status === 'cancelled' || status === 'canceled') return 'cancelled'
+  return 'active'
+}
+
+function normalizePaymentMode(value: string): 'cash' | 'upi' | 'card' | 'bank_transfer' | 'other' {
+  const mode = value.trim().toLowerCase().replace(/\s+/g, '_')
+  if (mode === 'upi') return 'upi'
+  if (mode === 'card' || mode === 'credit_card' || mode === 'debit_card') return 'card'
+  if (mode === 'bank' || mode === 'bank_transfer' || mode === 'banktransfer') return 'bank_transfer'
+  if (mode === 'cash') return 'cash'
+  return mode ? 'other' : 'cash'
+}
+
+function derivePlanName(row: Record<string, string>): string {
+  const explicit = field(row, ['plan_name', 'plan', 'package', 'membership_type'])
+  if (explicit) return explicit
+  const start = normalizeDate(field(row, ['start_date']))
+  const end = normalizeDate(field(row, ['end_date']))
+  if (start && end) {
+    const startMs = new Date(`${start}T00:00:00`).getTime()
+    const endMs = new Date(`${end}T00:00:00`).getTime()
+    const days = Math.max(1, Math.round((endMs - startMs) / 86400000) + 1)
+    if (days >= 360) return 'Yearly'
+    if (days >= 170) return 'Half Yearly'
+    if (days >= 80) return 'Quarterly'
+    return 'Monthly'
+  }
+  return 'Imported Plan'
+}
+
+function deriveDurationDays(row: Record<string, string>, fallback = 30): number {
+  const explicit = parseInt(field(row, ['duration_days', 'duration']))
+  if (explicit > 0) return explicit
+  const start = normalizeDate(field(row, ['start_date']))
+  const end = normalizeDate(field(row, ['end_date']))
+  if (start && end) {
+    const startMs = new Date(`${start}T00:00:00`).getTime()
+    const endMs = new Date(`${end}T00:00:00`).getTime()
+    const days = Math.round((endMs - startMs) / 86400000) + 1
+    if (days > 0) return days
+  }
+  return fallback
 }
 
 function ResultCard({ result, label }: { result: ImportResult; label: string }) {
@@ -230,15 +369,15 @@ export default function ImportDataPage() {
         case 'members':
           return migrationService.importMembers({
             members: csvRows.map(r => ({
-              name: r.name || '',
-              phone: r.phone || '',
-              email: r.email || undefined,
-              gender: (['male', 'female', 'other'].includes(r.gender) ? r.gender : undefined) as 'male' | 'female' | 'other' | undefined,
-              date_of_birth: r.date_of_birth || undefined,
-              address: r.address || undefined,
-              joined_date: r.joined_date || undefined,
-              member_code: r.member_code || r.device_user_id || undefined,
-              notes: r.notes || undefined,
+              name: field(r, ['name', 'member', 'member_name']),
+              phone: field(r, ['phone', 'mobile', 'mobile_number', 'member_phone']),
+              email: field(r, ['email']) || undefined,
+              gender: normalizeGender(field(r, ['gender'])),
+              date_of_birth: normalizeDate(field(r, ['date_of_birth', 'dob'])) || undefined,
+              address: field(r, ['address']) || undefined,
+              joined_date: normalizeDate(field(r, ['joined_date', 'join_date'])) || undefined,
+              member_code: field(r, ['member_code', 'code', 'device_user_id']) || undefined,
+              notes: field(r, ['notes']) || undefined,
             })),
             skip_duplicates: true,
           })
@@ -246,35 +385,35 @@ export default function ImportDataPage() {
         case 'plans':
           return migrationService.importPlans({
             plans: csvRows.map(r => ({
-              name: r.name || '',
-              duration_days: parseInt(r.duration_days) || 30,
-              price: parseFloat(r.price) || 0,
-              description: r.description || undefined,
+              name: derivePlanName(r),
+              duration_days: deriveDurationDays(r),
+              price: parseMoney(field(r, ['price', 'amount', 'package_price'])),
+              description: field(r, ['description']) || undefined,
             })),
           })
 
         case 'memberships':
           return migrationService.importMemberships({
             memberships: csvRows.map(r => ({
-              member_phone: r.member_phone || r.phone || '',
-              plan_name: r.plan_name || r.plan || '',
-              start_date: r.start_date || '',
-              end_date: r.end_date || '',
-              amount_total: parseFloat(r.amount_total || r.total) || 0,
-              amount_paid: parseFloat(r.amount_paid || r.paid) || 0,
-              status: (['active', 'expired', 'paused', 'cancelled'].includes(r.status) ? r.status : 'active') as 'active',
+              member_phone: field(r, ['member_phone', 'phone', 'mobile']),
+              plan_name: derivePlanName(r),
+              start_date: normalizeDate(field(r, ['start_date'])) || '',
+              end_date: normalizeDate(field(r, ['end_date'])) || '',
+              amount_total: parseMoney(field(r, ['amount_total', 'total', 'price', 'amount'])),
+              amount_paid: parseMoney(field(r, ['amount_paid', 'paid', 'price', 'amount'])),
+              status: normalizeStatus(field(r, ['status', 'package_status'])),
             })),
           })
 
         case 'payments':
           return migrationService.importPayments({
             payments: csvRows.map(r => ({
-              member_phone: r.member_phone || r.phone || '',
-              amount: parseFloat(r.amount) || 0,
-              payment_date: r.payment_date || r.date || '',
-              payment_mode: (['cash', 'upi', 'card', 'bank_transfer', 'other'].includes(r.payment_mode || r.mode) ? (r.payment_mode || r.mode) : 'cash') as 'cash',
-              reference_number: r.reference_number || undefined,
-              notes: r.notes || undefined,
+              member_phone: field(r, ['member_phone', 'phone', 'mobile']),
+              amount: parseMoney(field(r, ['amount', 'paid_amount'])),
+              payment_date: normalizeDate(field(r, ['payment_date', 'date'])) || '',
+              payment_mode: normalizePaymentMode(field(r, ['payment_mode', 'mode', 'method'])),
+              reference_number: field(r, ['reference_number', 'reference', 'invoice']) || undefined,
+              notes: field(r, ['notes', 'package']) || undefined,
             })),
           })
 

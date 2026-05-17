@@ -174,6 +174,11 @@ class MemberService:
             )
             base_query = base_query.where(Member.id.in_(subquery))
         elif status == "expired":
+            ever_had_membership_subquery = (
+                select(Membership.member_id)
+                .where(Membership.gym_id == gym_id)
+                .distinct()
+            )
             active_subquery = (
                 select(Membership.member_id)
                 .where(
@@ -183,7 +188,10 @@ class MemberService:
                 )
                 .distinct()
             )
-            base_query = base_query.where(Member.id.notin_(active_subquery))
+            base_query = base_query.where(
+                Member.id.in_(ever_had_membership_subquery),
+                Member.id.notin_(active_subquery),
+            )
         
         # Count total
         count_query = select(func.count()).select_from(base_query.subquery())
@@ -199,7 +207,7 @@ class MemberService:
         members = result.scalars().all()
         
         return MemberListResponse(
-            items=[MemberSummary.model_validate(m) for m in members],
+            items=[self._member_summary_with_membership(gym_id, m) for m in members],
             total=total,
             page=page,
             page_size=page_size,
@@ -322,3 +330,48 @@ class MemberService:
                     results.append(member_data)
         
         return results
+
+    def _member_summary_with_membership(
+        self,
+        gym_id: uuid.UUID,
+        member: Member,
+    ) -> MemberSummary:
+        today = date.today()
+        latest_membership = self.db.execute(
+            select(Membership)
+            .where(
+                Membership.gym_id == gym_id,
+                Membership.member_id == member.id,
+            )
+            .order_by(Membership.end_date.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+
+        current_status = None
+        current_end = None
+        current_plan = None
+
+        if latest_membership:
+            current_end = latest_membership.end_date
+            if latest_membership.status == MembershipStatus.ACTIVE and latest_membership.end_date < today:
+                current_status = MembershipStatus.EXPIRED
+            else:
+                current_status = latest_membership.status
+
+            plan = self.db.execute(
+                select(Plan).where(Plan.id == latest_membership.plan_id)
+            ).scalar_one_or_none()
+            if plan:
+                current_plan = plan.name
+
+        return MemberSummary(
+            id=member.id,
+            name=member.name,
+            phone=member.phone,
+            member_code=member.member_code,
+            joined_date=member.joined_date,
+            is_active=member.is_active,
+            current_membership_status=current_status,
+            current_membership_end=current_end,
+            current_plan_name=current_plan,
+        )

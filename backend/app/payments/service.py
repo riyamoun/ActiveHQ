@@ -9,9 +9,11 @@ from decimal import Decimal
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
-from app.models import Payment, Member, User, Membership
-from app.models.enums import PaymentMode
+from app.models import Notification, Payment, Member, User, Membership
+from app.models.enums import NotificationChannel, NotificationStatus, NotificationType, PaymentMode
+from app.core.config import settings
 from app.services.audit_service import log as audit_log
+from app.services.messaging import send_email, send_whatsapp_then_sms
 from app.payments.schemas import (
     PaymentCreate,
     PaymentResponse,
@@ -134,6 +136,7 @@ class PaymentService:
         )
         self.db.commit()
         self.db.refresh(payment)
+        self._send_payment_receipt(payment, member)
         return payment
     
     def get_payment(
@@ -260,3 +263,45 @@ class PaymentService:
             current_date += timedelta(days=1)
         
         return summaries
+
+    def _send_payment_receipt(self, payment: Payment, member: Member) -> None:
+        """Best-effort receipt notification. Never blocks payment collection."""
+        message = (
+            f"Hi {member.name}, payment received at ActiveHQ: "
+            f"Rs {payment.amount} via {payment.payment_mode.value.upper()} on {payment.payment_date}. "
+            f"Ref: {payment.reference_number or str(payment.id)[:8]}. Thank you."
+        )
+
+        try:
+            if settings.pickyassist_api_token:
+                result = send_whatsapp_then_sms(member.phone, message)
+                channel = (
+                    NotificationChannel.WHATSAPP
+                    if result.channel == "whatsapp"
+                    else NotificationChannel.SMS
+                )
+            elif settings.smtp_host and settings.smtp_user and settings.smtp_password and member.email:
+                result = send_email(
+                    member.email,
+                    "Payment receipt",
+                    message,
+                )
+                channel = NotificationChannel.EMAIL
+            else:
+                return
+
+            notification = Notification(
+                gym_id=payment.gym_id,
+                member_id=member.id,
+                notification_type=NotificationType.CUSTOM,
+                channel=channel,
+                message=message,
+                status=NotificationStatus.SENT if result.success else NotificationStatus.FAILED,
+                sent_at=payment.created_at if result.success else None,
+                error_message=result.error,
+                external_id=result.provider_message_id,
+            )
+            self.db.add(notification)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()

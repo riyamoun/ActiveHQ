@@ -95,6 +95,9 @@ export interface MemberSummary {
   member_code: string | null
   joined_date: string
   is_active: boolean
+  current_membership_status: MembershipStatus | null
+  current_membership_end: string | null
+  current_plan_name: string | null
 }
 
 export interface MemberListResponse {

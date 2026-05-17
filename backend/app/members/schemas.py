@@ -72,6 +72,9 @@ class MemberSummary(BaseModel):
     member_code: str | None
     joined_date: date
     is_active: bool
+    current_membership_status: MembershipStatus | None = None
+    current_membership_end: date | None = None
+    current_plan_name: str | None = None
     
     model_config = {"from_attributes": True}
 
