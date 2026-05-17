@@ -2,68 +2,85 @@
 
 ## 1. CORS (must do on Render)
 
-Frontend on Vercel is blocked because the API does not allow its origin. **You must add the frontend URL to the API’s CORS list.**
+The browser blocks API calls when the response has no `Access-Control-Allow-Origin`. That often happens when:
 
-1. Open **Render** → your **activehq-api** service → **Environment**.
-2. Add or edit **CORS_ORIGINS_STR** and set it to your frontend origins, **comma-separated, no spaces**:
+- **CORS env is wrong or missing** on Render, or
+- **The API is cold-starting** (free tier sleeps after ~15 min idle) and the first response is a gateway error **without** CORS headers — the console may still say "CORS" even though the root cause is sleep/502.
 
-   **For your current Vercel URLs, use:**
-   ```text
-   https://active-hq-git-main-riyamouns-projects.vercel.app,https://active-hq.vercel.app
-   ```
+### Fix on Render
 
-   If you use a custom domain (e.g. activehq.fit), add it too:
-   ```text
-   https://active-hq-git-main-riyamouns-projects.vercel.app,https://active-hq.vercel.app,https://activehq.fit,https://www.activehq.fit
-   ```
+1. Open **Render** → **activehq-api** → **Environment**.
+2. Set **both** variables exactly:
 
-3. **Save** and wait for the service to **redeploy** (or trigger a deploy).  
-   After redeploy, the browser will get `Access-Control-Allow-Origin` and the "blocked by CORS policy" error will go away.
+```env
+CORS_ORIGINS_STR=https://www.activehq.fit,https://activehq.fit,https://active-hq.vercel.app,https://active-gcylu4czt-riyamouns-projects.vercel.app
+CORS_ALLOW_ORIGIN_REGEX=^https://((.*\.vercel\.app)|(www\.)?activehq\.fit)$
+```
+
+3. **Save Changes** → **Manual Deploy** → **Deploy latest commit**.  
+   Env changes do not apply until the service restarts.
+
+4. Verify API is up:
+
+```text
+https://activehq-api.onrender.com/health
+```
+
+5. Retry register/login from `https://www.activehq.fit/register`.
+
+### Free-tier cold start
+
+Render free web services spin down after ~15 minutes without traffic. The next request can take ~1 minute and may fail once. For gym onboarding, use a **paid Starter** web service, or temporarily ping `/health` every 5–10 minutes (workaround only).
 
 ---
 
-## 2. 500 on login (backend error)
+## 2. Vercel: refresh gives 404 on `/register`, `/login`, `/dashboard`
+
+That is a **SPA routing** issue, not Render. Ensure `frontend/vercel.json` exists:
+
+```json
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+```
+
+Commit, push, and redeploy Vercel. Confirm the Vercel project **Root Directory** is `frontend` if you deploy from the monorepo.
+
+---
+
+## 3. 500 on login (backend error)
 
 If you still see a 500 after CORS is fixed:
 
 - **Run migrations on Render**  
   The API uses a `refresh_tokens` table. If migrations were never run there, login can 500.  
-  - In Render → **activehq-api** → **Shell** (or use a one-off job), run:
+  - In Render → **activehq-api** → **Shell**, run:
     ```bash
-    cd backend && alembic upgrade head
+    alembic upgrade head
     ```
-  - Or run the same in a **local** terminal with `DATABASE_URL` set to your **Render Postgres** URL.
+  - Or run locally with `DATABASE_URL` set to your **Render Postgres** URL.
 
 - **Check Render logs**  
-  In Render → **activehq-api** → **Logs**, look at the time of the login request. You’ll see the real error (e.g. missing table, connection error). Fix that (migrations, DB URL, etc.).
-
-Login is now written so that if storing the refresh token fails (e.g. table missing), it still returns tokens and logs a warning instead of returning 500. After you run migrations, refresh token storage will work fully.
+  Render → **activehq-api** → **Logs** at the time of the login request.
 
 ---
 
-## 3. Quick checklist
+## 4. Quick checklist
 
 | Step | Where | What |
 |------|--------|------|
-| 1 | Render → activehq-api → Environment | Set **CORS_ORIGINS_STR** = `https://active-hq-git-main-riyamouns-projects.vercel.app,https://active-hq.vercel.app` (and your custom domain if any). |
-| 2 | Save & redeploy | Wait for deploy to finish. |
-| 3 | Render Shell (or local with Render DB URL) | Run `alembic upgrade head` in the backend so `refresh_tokens` (and other new tables) exist. |
-| 4 | Retry login | Use demo credentials or your own; CORS and 500 should be resolved. |
+| 1 | Render → Environment | Set `CORS_ORIGINS_STR` + `CORS_ALLOW_ORIGIN_REGEX` (see above). |
+| 2 | Render | Manual deploy after saving env. |
+| 3 | Browser | Open `/health`, then retry register from `www.activehq.fit`. |
+| 4 | Vercel | `frontend/vercel.json` rewrites deployed; root dir = `frontend`. |
+| 5 | Render Shell | `alembic upgrade head` if login 500s. |
+| 6 | Before onboarding | Upgrade API to paid Starter if possible (no sleep). |
 
 ---
 
----
-
-## 4. Demo login returns 401 (Invalid email or password)
+## 5. Demo login returns 401 (Invalid email or password)
 
 If you use the **Try demo** flow (owner@fitzonegym.com / Owner@123) and get **401**:
 
-- The backend creates the demo account only when the database has **no gyms**. On first deploy, that data may not exist yet.
-- **Automatic fix:** The frontend now calls **GET /api/v1/public/seed-demo** when demo login returns 401. That endpoint creates the demo gym + owner once if the DB is empty, then you can retry **Start Demo** (or the page will retry once for you).
-- **Manual option:** You can also call once in the browser:  
-  `https://activehq-api.onrender.com/api/v1/public/seed-demo`  
-  Then log in with owner@fitzonegym.com / Owner@123.
-
----
-
-**Summary:** CORS = add Vercel (and custom) URLs to **CORS_ORIGINS_STR** on Render and redeploy. 500 = run **alembic upgrade head** against the Render DB. 401 on demo = seed-demo runs automatically on first failed demo login, or call **GET /api/v1/public/seed-demo** once.
+- Demo data must exist in the **same database** the deployed API uses (Render Postgres), not only your local DB.
+- Run seed/setup against production DB, or register a real gym owner on production.
