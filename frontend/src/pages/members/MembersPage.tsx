@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { memberService } from '@/services/memberService'
@@ -48,15 +49,16 @@ export default function MembersPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   
-  const [search, setSearch] = useState(searchParams.get('query') || '')
+  const [searchInput, setSearchInput] = useState(searchParams.get('query') || '')
+  const debouncedSearch = useDebouncedValue(searchInput, 350)
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [page, setPage] = useState(1)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['members', search, statusFilter, page],
+    queryKey: ['members', debouncedSearch, statusFilter, page],
     queryFn: () =>
       memberService.getMembers({
-        query: search || undefined,
+        query: debouncedSearch || undefined,
         status: statusFilter || undefined,
         page,
         page_size: 20,
@@ -64,7 +66,7 @@ export default function MembersPage() {
   })
 
   const handleSearch = (value: string) => {
-    setSearch(value)
+    setSearchInput(value)
     setPage(1)
   }
 
@@ -105,7 +107,7 @@ export default function MembersPage() {
           <input
             type="text"
             placeholder="Search by name, phone, or code..."
-            value={search}
+            value={searchInput}
             onChange={(e) => handleSearch(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-slate-900/60 border border-slate-800/60 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/40 transition-colors"
           />

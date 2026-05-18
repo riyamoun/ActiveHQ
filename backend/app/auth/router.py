@@ -20,6 +20,9 @@ from app.auth.schemas import (
     UserResponse,
     GymRegister,
     GymRegisterResponse,
+    TotpSetupResponse,
+    TotpEnableRequest,
+    TotpDisableRequest,
 )
 from app.auth.service import AuthService
 from app.auth.dependencies import (
@@ -103,17 +106,65 @@ def login(
     Rate limited per client IP. SlowAPI requires the first param to be named `request`.
     """
     service = AuthService(db)
-    result = service.login(body)
-    
+    try:
+        result = service.login(body)
+    except ValueError as exc:
+        if str(exc) == "totp_required":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="totp_required",
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from exc
+        raise
+
     if not result:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="Invalid email, password, or authenticator code",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
     user, tokens = result
     return tokens
+
+
+@router.post("/totp/setup", response_model=TotpSetupResponse)
+def setup_totp(
+    current_user: CurrentUserDep,
+    db: DbDep,
+):
+    """Start 2FA enrollment — scan provisioning_uri in an authenticator app."""
+    service = AuthService(db)
+    user = service.get_user_by_id(current_user.gym_id, current_user.id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return service.setup_totp(user)
+
+
+@router.post("/totp/enable", status_code=status.HTTP_204_NO_CONTENT)
+def enable_totp(
+    body: TotpEnableRequest,
+    current_user: CurrentUserDep,
+    db: DbDep,
+):
+    service = AuthService(db)
+    user = service.get_user_by_id(current_user.gym_id, current_user.id)
+    if not user or not service.enable_totp(user, body.code):
+        raise HTTPException(status_code=400, detail="Invalid authenticator code")
+    return None
+
+
+@router.post("/totp/disable", status_code=status.HTTP_204_NO_CONTENT)
+def disable_totp(
+    body: TotpDisableRequest,
+    current_user: CurrentUserDep,
+    db: DbDep,
+):
+    service = AuthService(db)
+    user = service.get_user_by_id(current_user.gym_id, current_user.id)
+    if not user or not service.disable_totp(user, body.password, body.code):
+        raise HTTPException(status_code=400, detail="Invalid password or authenticator code")
+    return None
 
 
 @router.post("/refresh", response_model=TokenResponse)

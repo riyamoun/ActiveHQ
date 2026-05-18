@@ -113,7 +113,8 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UniqueConstraint("gym_id", "phone", name="uq_member_gym_phone"),
         # Index for fast phone lookup
         Index("idx_member_gym_phone", "gym_id", "phone"),
-        # Index for joined_date queries
+        Index("idx_member_gym_name", "gym_id", "name"),
+        Index("idx_member_gym_active", "gym_id", "is_active"),
         Index("idx_member_joined_date", "gym_id", "joined_date"),
     )
     

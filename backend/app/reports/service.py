@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Member, Membership, Payment, Attendance, Plan
 from app.models.enums import MembershipStatus
+from app.core.cache import cache_get, cache_set
 from app.reports.schemas import (
     DashboardStats,
     MembershipStats,
@@ -31,7 +32,17 @@ class ReportsService:
         self.db = db
     
     def get_dashboard_stats(self, gym_id: uuid.UUID) -> DashboardStats:
-        """Get dashboard overview statistics."""
+        """Get dashboard overview statistics (cached 60s per gym)."""
+        cache_key = f"dashboard:{gym_id}"
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return DashboardStats.model_validate(cached)
+
+        stats = self._compute_dashboard_stats(gym_id)
+        cache_set(cache_key, stats.model_dump(mode="json"), ttl_seconds=60)
+        return stats
+
+    def _compute_dashboard_stats(self, gym_id: uuid.UUID) -> DashboardStats:
         today = date.today()
         week_from_now = today + timedelta(days=7)
         

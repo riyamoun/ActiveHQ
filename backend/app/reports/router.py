@@ -18,6 +18,7 @@ from app.reports.schemas import (
     ActivityFeedItem,
     InactiveMemberInfo,
 )
+from app.core.pagination import MAX_PAGE_SIZE, MAX_REPORT_PAGE_SIZE
 from app.reports.service import ReportsService
 
 
@@ -135,7 +136,7 @@ def get_expiring_members(
     db: DbDep,
     days: int = Query(7, ge=1, le=90, description="Days until expiry"),
     page: int = Query(1, ge=1),
-    page_size: int = Query(100, ge=1, le=500),
+    page_size: int = Query(50, ge=1, le=MAX_REPORT_PAGE_SIZE),
 ):
     """
     Get members with memberships expiring soon (paginated).
@@ -150,7 +151,7 @@ def get_members_with_dues(
     tenant: TenantDep,
     db: DbDep,
     page: int = Query(1, ge=1),
-    page_size: int = Query(100, ge=1, le=500),
+    page_size: int = Query(50, ge=1, le=MAX_REPORT_PAGE_SIZE),
 ):
     """
     Get members with pending payment dues (paginated).
@@ -197,7 +198,7 @@ def get_inactive_members(
     db: DbDep,
     days: int = Query(7, ge=1, le=90),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(50, ge=1, le=MAX_PAGE_SIZE),
 ):
     """Members with active membership but no check-in in last N days."""
     service = ReportsService(db)

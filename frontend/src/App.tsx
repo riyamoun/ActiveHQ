@@ -1,11 +1,10 @@
+import { lazy, Suspense } from 'react'
 import { Link, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { PageLoader } from '@/components/ui/LoadingSpinner'
 
-// Layouts
 import AuthLayout from '@/layouts/AuthLayout'
 import DashboardLayout from '@/layouts/DashboardLayout'
-
-// Public Site Pages (NEW - Premium B2B site)
 import {
   PublicLayout,
   HomePage,
@@ -16,59 +15,62 @@ import {
   PrivacyPage,
   TermsPage,
 } from '@/pages/public'
-
-// Operational Landing (internal preview)
-import LandingPage from '@/pages/landing'
-
-// Member Portal (mobile-first dark app for gym members)
 import {
   MemberLayout,
   MemberLoginPage,
   MemberSelectGymPage,
   MemberMagicLinkPage,
-  MemberDashboardPage,
-  MemberAttendancePage,
-  MemberPaymentsPage,
-  MemberProfilePage,
 } from '@/pages/member'
 
-// Auth Pages
-import LoginPage from '@/pages/auth/LoginPage'
-import RegisterPage from '@/pages/auth/RegisterPage'
+const LandingPage = lazy(() => import('@/pages/landing'))
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
+const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
+const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'))
+const MembersPage = lazy(() => import('@/pages/members/MembersPage'))
+const MemberDetailPage = lazy(() => import('@/pages/members/MemberDetailPage'))
+const AddMemberPage = lazy(() => import('@/pages/members/AddMemberPage'))
+const PlansPage = lazy(() => import('@/pages/plans/PlansPage'))
+const MembershipsPage = lazy(() => import('@/pages/memberships/MembershipsPage'))
+const PaymentsPage = lazy(() => import('@/pages/payments/PaymentsPage'))
+const AttendancePage = lazy(() => import('@/pages/attendance/AttendancePage'))
+const ReportsPage = lazy(() => import('@/pages/reports/ReportsPage'))
+const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'))
+const ImportDataPage = lazy(() => import('@/pages/settings/ImportDataPage'))
+const BiometricSettingsPage = lazy(() => import('@/pages/settings/BiometricSettingsPage'))
+const MemberDashboardPage = lazy(() =>
+  import('@/pages/member/MemberDashboardPage').then((m) => ({ default: m.MemberDashboardPage }))
+)
+const MemberAttendancePage = lazy(() =>
+  import('@/pages/member/MemberAttendancePage').then((m) => ({ default: m.MemberAttendancePage }))
+)
+const MemberPaymentsPage = lazy(() =>
+  import('@/pages/member/MemberPaymentsPage').then((m) => ({ default: m.MemberPaymentsPage }))
+)
+const MemberProfilePage = lazy(() =>
+  import('@/pages/member/MemberProfilePage').then((m) => ({ default: m.MemberProfilePage }))
+)
 
-// Dashboard Pages
-import DashboardPage from '@/pages/dashboard/DashboardPage'
-import MembersPage from '@/pages/members/MembersPage'
-import MemberDetailPage from '@/pages/members/MemberDetailPage'
-import AddMemberPage from '@/pages/members/AddMemberPage'
-import PlansPage from '@/pages/plans/PlansPage'
-import MembershipsPage from '@/pages/memberships/MembershipsPage'
-import PaymentsPage from '@/pages/payments/PaymentsPage'
-import AttendancePage from '@/pages/attendance/AttendancePage'
-import ReportsPage from '@/pages/reports/ReportsPage'
-import SettingsPage from '@/pages/settings/SettingsPage'
-import ImportDataPage from '@/pages/settings/ImportDataPage'
-import BiometricSettingsPage from '@/pages/settings/BiometricSettingsPage'
+function RouteFallback() {
+  return <PageLoader />
+}
 
-// Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
-  
+
   return <>{children}</>
 }
 
-// Public Route (redirect to dashboard if authenticated)
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />
   }
-  
+
   return <>{children}</>
 }
 
@@ -104,85 +106,72 @@ function NotFoundPage() {
 
 export default function App() {
   return (
-    <Routes>
-      {/* ═══════════════════════════════════════════════════════════════════
-          PUBLIC SITE - Premium B2B Product Website
-          3 core pages + contact
-      ═══════════════════════════════════════════════════════════════════ */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/coach" element={<CoachPage />} />
-        <Route path="/for-gym-owners" element={<ForGymOwnersPage />} />
-        <Route path="/gyms" element={<GymsOnActiveHQPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-      </Route>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/coach" element={<CoachPage />} />
+          <Route path="/for-gym-owners" element={<ForGymOwnersPage />} />
+          <Route path="/gyms" element={<GymsOnActiveHQPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+        </Route>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          AUTH ROUTES
-      ═══════════════════════════════════════════════════════════════════ */}
-      <Route element={<AuthLayout />}>
+        <Route element={<AuthLayout />}>
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <RegisterPage />
+              </PublicRoute>
+            }
+          />
+        </Route>
+
         <Route
-          path="/login"
           element={
-            <PublicRoute>
-              <LoginPage />
-            </PublicRoute>
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
           }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <RegisterPage />
-            </PublicRoute>
-          }
-        />
-      </Route>
+        >
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/members" element={<MembersPage />} />
+          <Route path="/members/add" element={<AddMemberPage />} />
+          <Route path="/members/:id" element={<MemberDetailPage />} />
+          <Route path="/plans" element={<PlansPage />} />
+          <Route path="/memberships" element={<MembershipsPage />} />
+          <Route path="/payments" element={<PaymentsPage />} />
+          <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/biometric" element={<BiometricSettingsPage />} />
+          <Route path="/settings/import" element={<ImportDataPage />} />
+        </Route>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          DASHBOARD ROUTES (Protected)
-      ═══════════════════════════════════════════════════════════════════ */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/members" element={<MembersPage />} />
-        <Route path="/members/add" element={<AddMemberPage />} />
-        <Route path="/members/:id" element={<MemberDetailPage />} />
-        <Route path="/plans" element={<PlansPage />} />
-        <Route path="/memberships" element={<MembershipsPage />} />
-        <Route path="/payments" element={<PaymentsPage />} />
-        <Route path="/attendance" element={<AttendancePage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/settings/biometric" element={<BiometricSettingsPage />} />
-        <Route path="/settings/import" element={<ImportDataPage />} />
-      </Route>
+        <Route path="/admin-preview" element={<LandingPage />} />
 
-      {/* Operational system preview (internal) */}
-      <Route path="/admin-preview" element={<LandingPage />} />
+        <Route path="/m/login" element={<MemberLoginPage />} />
+        <Route path="/m/select-gym" element={<MemberSelectGymPage />} />
+        <Route path="/m/auth/magic-link" element={<MemberMagicLinkPage />} />
+        <Route element={<MemberLayout />}>
+          <Route path="/m" element={<MemberDashboardPage />} />
+          <Route path="/m/attendance" element={<MemberAttendancePage />} />
+          <Route path="/m/payments" element={<MemberPaymentsPage />} />
+          <Route path="/m/profile" element={<MemberProfilePage />} />
+        </Route>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          MEMBER PORTAL (mobile-first, separate auth from staff)
-      ═══════════════════════════════════════════════════════════════════ */}
-      <Route path="/m/login" element={<MemberLoginPage />} />
-      <Route path="/m/select-gym" element={<MemberSelectGymPage />} />
-      <Route path="/m/auth/magic-link" element={<MemberMagicLinkPage />} />
-      <Route element={<MemberLayout />}>
-        <Route path="/m" element={<MemberDashboardPage />} />
-        <Route path="/m/attendance" element={<MemberAttendancePage />} />
-        <Route path="/m/payments" element={<MemberPaymentsPage />} />
-        <Route path="/m/profile" element={<MemberProfilePage />} />
-      </Route>
-
-      {/* 404 */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
   )
 }

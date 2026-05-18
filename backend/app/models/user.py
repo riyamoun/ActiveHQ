@@ -52,6 +52,10 @@ class User(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         default=UserRole.STAFF,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Optional TOTP 2FA (authenticator app)
+    totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
     # Tracking
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

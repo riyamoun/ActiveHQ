@@ -136,7 +136,6 @@ class PaymentService:
         )
         self.db.commit()
         self.db.refresh(payment)
-        self._send_payment_receipt(payment, member)
         return payment
     
     def get_payment(
@@ -202,13 +201,19 @@ class PaymentService:
         self,
         gym_id: uuid.UUID,
         member_id: uuid.UUID,
+        limit: int = 100,
     ) -> list[Payment]:
-        """Get all payments for a member."""
+        """Get recent payments for a member (capped)."""
+        from app.core.pagination import MAX_MEMBER_PAYMENT_HISTORY
+
+        cap = min(limit, MAX_MEMBER_PAYMENT_HISTORY)
         result = self.db.execute(
             select(Payment).where(
                 Payment.gym_id == gym_id,
                 Payment.member_id == member_id,
-            ).order_by(Payment.payment_date.desc())
+            )
+            .order_by(Payment.payment_date.desc())
+            .limit(cap)
         )
         return list(result.scalars().all())
     

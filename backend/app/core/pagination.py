@@ -1,0 +1,7 @@
+"""Shared pagination limits for list endpoints."""
+
+DEFAULT_PAGE_SIZE = 20
+MAX_PAGE_SIZE = 100
+MAX_REPORT_PAGE_SIZE = 100
+MAX_MEMBER_PAYMENT_HISTORY = 100
+MAX_PLAN_LIST = 100

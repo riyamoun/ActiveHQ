@@ -23,11 +23,13 @@ from app.models.enums import UserRole, SubscriptionStatus
 from app.auth.schemas import (
     LoginRequest,
     TokenResponse,
+    TotpSetupResponse,
     UserCreate,
     GymRegister,
     GymRegisterResponse,
     UserResponse,
 )
+from app.auth.totp import generate_totp_secret, provisioning_uri, verify_totp_code
 
 
 class AuthService:
@@ -168,6 +170,12 @@ class AuthService:
         user = self.authenticate_by_email_only(request.email, request.password)
         if not user:
             return None
+
+        if user.totp_enabled:
+            if not request.totp_code:
+                raise ValueError("totp_required")
+            if not user.totp_secret or not verify_totp_code(user.totp_secret, request.totp_code):
+                return None
 
         user.last_login_at = datetime.now(timezone.utc)
         self.db.commit()
@@ -367,6 +375,34 @@ class AuthService:
         user.password_hash = hash_password(new_password)
         self.db.commit()
         
+        return True
+
+    def setup_totp(self, user: User) -> TotpSetupResponse:
+        """Generate a new TOTP secret (does not enable until verified)."""
+        secret = generate_totp_secret()
+        user.totp_secret = secret
+        user.totp_enabled = False
+        self.db.commit()
+        return TotpSetupResponse(
+            secret=secret,
+            provisioning_uri=provisioning_uri(secret, user.email),
+        )
+
+    def enable_totp(self, user: User, code: str) -> bool:
+        if not user.totp_secret or not verify_totp_code(user.totp_secret, code):
+            return False
+        user.totp_enabled = True
+        self.db.commit()
+        return True
+
+    def disable_totp(self, user: User, password: str, code: str) -> bool:
+        if not verify_password(password, user.password_hash):
+            return False
+        if not user.totp_secret or not verify_totp_code(user.totp_secret, code):
+            return False
+        user.totp_secret = None
+        user.totp_enabled = False
+        self.db.commit()
         return True
 
     def revoke_refresh_token(self, refresh_token: str) -> bool:

@@ -12,6 +12,24 @@ class LoginRequest(BaseModel):
     """Login request body."""
     email: EmailStr
     password: str = Field(..., min_length=1)
+    totp_code: str | None = Field(None, max_length=8, description="6-digit authenticator code when 2FA is enabled")
+
+
+class TotpSetupResponse(BaseModel):
+    """Secret + URI for authenticator app enrollment."""
+    secret: str
+    provisioning_uri: str
+
+
+class TotpEnableRequest(BaseModel):
+    """Verify a TOTP code to turn on 2FA."""
+    code: str = Field(..., min_length=6, max_length=8)
+
+
+class TotpDisableRequest(BaseModel):
+    """Disable 2FA (requires password + current TOTP)."""
+    password: str = Field(..., min_length=1)
+    code: str = Field(..., min_length=6, max_length=8)
 
 
 class TokenResponse(BaseModel):
@@ -78,6 +96,7 @@ class UserResponse(BaseModel):
     gym_id: uuid.UUID
     email: str
     name: str
+    totp_enabled: bool = False
     phone: str | None
     role: UserRole
     is_active: bool

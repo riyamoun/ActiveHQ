@@ -19,6 +19,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [totpCode, setTotpCode] = useState('')
+  const [totpRequired, setTotpRequired] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -49,12 +51,20 @@ export default function LoginPage() {
     try {
       let tokens: Awaited<ReturnType<typeof authService.login>>
       try {
-        tokens = await authService.login({ email, password })
+        tokens = await authService.login({
+          email,
+          password,
+          totp_code: totpCode || undefined,
+        })
       } catch (firstError: unknown) {
         const is401 = (firstError as { response?: { status?: number } })?.response?.status === 401
         if (isDemo && is401) {
           await authService.seedDemo()
-          tokens = await authService.login({ email, password })
+          tokens = await authService.login({
+          email,
+          password,
+          totp_code: totpCode || undefined,
+        })
         } else {
           throw firstError
         }
@@ -71,7 +81,13 @@ export default function LoginPage() {
       trackEvent('login_success', { role: user.role })
       navigate('/dashboard')
     } catch (error) {
-      toast.error(getErrorMessage(error))
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      if (detail === 'totp_required') {
+        setTotpRequired(true)
+        toast.error('Enter the 6-digit code from your authenticator app')
+      } else {
+        toast.error(getErrorMessage(error))
+      }
       trackEvent('login_failed')
     } finally {
       setIsLoading(false)
@@ -150,6 +166,24 @@ export default function LoginPage() {
           </div>
           {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
         </div>
+
+        {(totpRequired || totpCode) && (
+          <div>
+            <label htmlFor="login-totp" className="block text-sm text-slate-400 mb-2">
+              Authenticator code
+            </label>
+            <input
+              id="login-totp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="6-digit code"
+              className="w-full px-0 py-3 bg-transparent border-0 border-b border-slate-700 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors tracking-widest"
+            />
+          </div>
+        )}
 
         <button
           type="submit"

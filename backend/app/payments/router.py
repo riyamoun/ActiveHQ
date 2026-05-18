@@ -2,10 +2,11 @@
 Payment management API endpoints.
 """
 
+import os
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
 
 from app.auth.dependencies import TenantDep, DbDep
 from app.models.enums import PaymentMode
@@ -15,6 +16,7 @@ from app.payments.schemas import (
     PaymentListResponse,
     DailyCollectionSummary,
 )
+from app.payments.receipt_tasks import deliver_payment_receipt
 from app.payments.service import PaymentService
 
 
@@ -24,6 +26,7 @@ router = APIRouter()
 @router.post("", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
 def create_payment(
     request: PaymentCreate,
+    background_tasks: BackgroundTasks,
     tenant: TenantDep,
     db: DbDep,
 ):
@@ -47,7 +50,10 @@ def create_payment(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
-    
+
+    # Skip async receipt in pytest (TestClient runs background tasks inline; can block on messaging).
+    if not os.environ.get("PYTEST_CURRENT_TEST"):
+        background_tasks.add_task(deliver_payment_receipt, payment.id, tenant.gym_id)
     return service._build_response(payment)
 
 

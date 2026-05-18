@@ -14,6 +14,7 @@ export interface User {
   phone: string | null
   role: UserRole
   is_active: boolean
+  totp_enabled?: boolean
 }
 
 export interface TokenResponse {
@@ -26,6 +27,12 @@ export interface TokenResponse {
 export interface LoginRequest {
   email: string
   password: string
+  totp_code?: string
+}
+
+export interface TotpSetupResponse {
+  secret: string
+  provisioning_uri: string
 }
 
 export interface RegisterRequest {

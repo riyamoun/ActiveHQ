@@ -1,5 +1,12 @@
 import { api, publicApi } from '@/lib/api'
-import type { User, TokenResponse, LoginRequest, RegisterRequest, Gym } from '@/types'
+import type {
+  User,
+  TokenResponse,
+  LoginRequest,
+  RegisterRequest,
+  Gym,
+  TotpSetupResponse,
+} from '@/types'
 
 interface RegisterResponse {
   gym_id: string
@@ -45,6 +52,19 @@ export const authService = {
   async getCurrentUser(): Promise<User> {
     const response = await api.get<User>('/auth/me')
     return response.data
+  },
+
+  async setupTotp(): Promise<TotpSetupResponse> {
+    const response = await api.post<TotpSetupResponse>('/auth/totp/setup')
+    return response.data
+  },
+
+  async enableTotp(code: string): Promise<void> {
+    await api.post('/auth/totp/enable', { code })
+  },
+
+  async disableTotp(password: string, code: string): Promise<void> {
+    await api.post('/auth/totp/disable', { password, code })
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {

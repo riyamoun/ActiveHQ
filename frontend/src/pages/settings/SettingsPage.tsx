@@ -13,6 +13,11 @@ import { Upload, Settings, Fingerprint } from 'lucide-react'
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { gym, user, setGym } = useAuthStore()
+  const [totpSetup, setTotpSetup] = useState<{ secret: string; provisioning_uri: string } | null>(null)
+  const [totpEnableCode, setTotpEnableCode] = useState('')
+  const [totpDisablePassword, setTotpDisablePassword] = useState('')
+  const [totpDisableCode, setTotpDisableCode] = useState('')
+  const [totpBusy, setTotpBusy] = useState(false)
 
   // Gym form state
   const [gymForm, setGymForm] = useState({
@@ -232,6 +237,56 @@ export default function SettingsPage() {
             </Button>
           </div>
         </form>
+      </div>
+
+      <div className={cardClass}>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-white">Two-factor authentication</h3>
+          <p className="text-sm text-slate-400 mt-0.5">Optional authenticator app</p>
+        </div>
+        {user?.totp_enabled ? (
+          <div className="space-y-4">
+            <p className="text-sm text-emerald-400">2FA is enabled.</p>
+            <Input label="Password" type="password" value={totpDisablePassword} onChange={(e) => setTotpDisablePassword(e.target.value)} className={inputClass} />
+            <Input label="Authenticator code" value={totpDisableCode} onChange={(e) => setTotpDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))} className={inputClass} />
+            <Button type="button" variant="secondary" isLoading={totpBusy} onClick={async () => {
+              setTotpBusy(true)
+              try {
+                await authService.disableTotp(totpDisablePassword, totpDisableCode)
+                toast.success('2FA disabled')
+                const me = await authService.getCurrentUser()
+                const { accessToken, refreshToken } = useAuthStore.getState()
+                if (accessToken && gym) {
+                  useAuthStore.getState().login(me, gym, accessToken, refreshToken ?? '')
+                }
+              } catch (e) { toast.error(getErrorMessage(e)) } finally { setTotpBusy(false) }
+            }}>Disable 2FA</Button>
+          </div>
+        ) : totpSetup ? (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-400 font-mono break-all">{totpSetup.secret}</p>
+            <a href={totpSetup.provisioning_uri} className="text-sm text-emerald-400 hover:underline">Add to authenticator app</a>
+            <Input label="Verification code" value={totpEnableCode} onChange={(e) => setTotpEnableCode(e.target.value.replace(/\D/g, '').slice(0, 6))} className={inputClass} />
+            <Button type="button" variant="primary" className={primaryBtnClass} isLoading={totpBusy} onClick={async () => {
+              setTotpBusy(true)
+              try {
+                await authService.enableTotp(totpEnableCode)
+                toast.success('2FA enabled')
+                const me = await authService.getCurrentUser()
+                const { accessToken, refreshToken } = useAuthStore.getState()
+                if (accessToken && gym) {
+                  useAuthStore.getState().login(me, gym, accessToken, refreshToken ?? '')
+                }
+                setTotpSetup(null)
+              } catch (e) { toast.error(getErrorMessage(e)) } finally { setTotpBusy(false) }
+            }}>Confirm & enable</Button>
+          </div>
+        ) : (
+          <Button type="button" variant="primary" className={primaryBtnClass} isLoading={totpBusy} onClick={async () => {
+            setTotpBusy(true)
+            try { setTotpSetup(await authService.setupTotp()) } catch (e) { toast.error(getErrorMessage(e)) } finally { setTotpBusy(false) }
+          }}>Set up authenticator</Button>
+        )}
       </div>
 
       {/* Change Password */}
