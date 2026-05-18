@@ -137,6 +137,39 @@ function normalizeStatus(value: string): 'active' | 'expired' | 'paused' | 'canc
   return 'active'
 }
 
+function normalizePhone(value: string): string {
+  const digits = value.replace(/\D/g, '')
+  if (!digits) return ''
+  let d = digits
+  if (d.length === 12 && d.startsWith('91')) d = d.slice(2)
+  if (d.length === 11 && d.startsWith('0')) d = d.slice(1)
+  if (d.length > 10) d = d.slice(-10)
+  return d
+}
+
+function detectCsvHint(step: Step, rows: Record<string, string>[]): string | null {
+  if (rows.length === 0) return null
+  const keys = Object.keys(rows[0])
+  const has = (names: string[]) => names.some((n) => keys.includes(normalizeHeader(n)))
+  const hasMemberExport = has(['name', 'member_name']) && has(['phone', 'mobile'])
+  const hasPaymentExport = has(['invoice']) || (has(['amount']) && has(['method', 'payment_mode']))
+  const hasMembershipDates = rows.some((r) =>
+    Boolean(normalizeDate(field(r, ['start_date', 'membership_start_date'])))
+    && Boolean(normalizeDate(field(r, ['end_date', 'membership_end_date'])))
+  )
+
+  if (step === 'memberships' && hasMemberExport && !hasMembershipDates) {
+    return 'This file looks like a member list without package dates. Import it on the Members step first. Use Memberships only when start_date and end_date are filled.'
+  }
+  if (step === 'payments' && hasMemberExport && !hasPaymentExport) {
+    return 'This file looks like a member export, not payments. Import members first, then upload the payment history export on this step.'
+  }
+  if (step === 'members' && hasPaymentExport && !hasMemberExport) {
+    return 'This file looks like a payment export. Use the Payments step instead.'
+  }
+  return null
+}
+
 function normalizePaymentMode(value: string): 'cash' | 'upi' | 'card' | 'bank_transfer' | 'other' {
   const mode = value.trim().toLowerCase().replace(/\s+/g, '_')
   if (mode === 'upi') return 'upi'
@@ -187,6 +220,16 @@ function ResultCard({ result, label }: { result: ImportResult; label: string }) 
         <Stat label="Skipped" value={(result.skipped_duplicates ?? 0) + (result.skipped_unknown_member ?? 0) + (result.skipped_duplicate ?? 0) + (result.skipped ?? 0) + (result.updated ?? 0)} color="text-amber-400" />
         <Stat label="Errors" value={result.errors.length} color={result.errors.length > 0 ? 'text-red-400' : 'text-slate-400'} />
       </div>
+      {'memberships_created' in result && (result.memberships_created ?? 0) > 0 && (
+        <p className="text-sm text-emerald-400">
+          Also created {result.memberships_created} membership(s) from package columns in the file.
+        </p>
+      )}
+      {'photos_imported' in result && (result.photos_imported ?? 0) > 0 && (
+        <p className="text-sm text-emerald-400">
+          Imported {result.photos_imported} profile photo(s).
+        </p>
+      )}
       {result.errors.length > 0 && (
         <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-4 max-h-40 overflow-y-auto">
           <p className="text-sm font-medium text-red-400 mb-2">Errors:</p>
@@ -367,17 +410,32 @@ function buildStepPayload(step: Step, csvRows: Record<string, string>[]) {
   switch (step) {
     case 'members':
       return {
-        members: csvRows.map((r) => ({
-          name: field(r, ['name', 'member', 'member_name']),
-          phone: field(r, ['phone', 'mobile', 'mobile_number', 'member_phone']),
-          email: field(r, ['email']) || undefined,
-          gender: normalizeGender(field(r, ['gender'])),
-          date_of_birth: normalizeDate(field(r, ['date_of_birth', 'dob'])) || undefined,
-          address: field(r, ['address']) || undefined,
-          joined_date: normalizeDate(field(r, ['joined_date', 'join_date'])) || undefined,
-          member_code: field(r, ['member_code', 'code', 'device_user_id']) || undefined,
-          notes: field(r, ['notes']) || undefined,
-        })),
+        members: csvRows.map((r) => {
+          const start = normalizeDate(field(r, ['start_date', 'membership_start_date']))
+          const end = normalizeDate(field(r, ['end_date', 'membership_end_date']))
+          return {
+            name: field(r, ['name', 'member', 'member_name']),
+            phone: normalizePhone(field(r, ['phone', 'mobile', 'mobile_number', 'member_phone'])),
+            email: field(r, ['email']) || undefined,
+            gender: normalizeGender(field(r, ['gender'])),
+            date_of_birth: normalizeDate(field(r, ['date_of_birth', 'dob'])) || undefined,
+            address: field(r, ['address']) || undefined,
+            joined_date: normalizeDate(field(r, ['joined_date', 'join_date'])) || undefined,
+            member_code: field(r, ['member_code', 'code', 'device_user_id', 'face_id', 'face_value']) || undefined,
+            notes: field(r, ['notes', 'remarks']) || undefined,
+            photo_url: field(r, [
+              'photo_url', 'photo', 'image', 'profile_photo', 'profile_image',
+              'member_photo', 'face', 'face_image', 'face_value', 'picture',
+            ]) || undefined,
+            plan_name: field(r, ['plan_name', 'plan', 'package', 'membership_type']) || undefined,
+            membership_start_date: start,
+            membership_end_date: end,
+            membership_amount: parseMoney(field(r, ['price', 'amount', 'package_price', 'amount_total'])) || undefined,
+            membership_status: start && end
+              ? normalizeStatus(field(r, ['status', 'package_status', 'membership_status']))
+              : undefined,
+          }
+        }),
         skip_duplicates: true,
       }
     case 'plans':
@@ -391,26 +449,40 @@ function buildStepPayload(step: Step, csvRows: Record<string, string>[]) {
       }
     case 'memberships':
       return {
-        memberships: csvRows.map((r) => ({
-          member_phone: field(r, ['member_phone', 'phone', 'mobile']),
-          plan_name: derivePlanName(r),
-          start_date: normalizeDate(field(r, ['start_date'])) || '',
-          end_date: normalizeDate(field(r, ['end_date'])) || '',
-          amount_total: parseMoney(field(r, ['amount_total', 'total', 'price', 'amount'])),
-          amount_paid: parseMoney(field(r, ['amount_paid', 'paid', 'price', 'amount'])),
-          status: normalizeStatus(field(r, ['status', 'package_status'])),
-        })),
+        memberships: csvRows
+          .map((r) => {
+            const start = normalizeDate(field(r, ['start_date', 'membership_start_date']))
+            const end = normalizeDate(field(r, ['end_date', 'membership_end_date']))
+            if (!start || !end) return null
+            return {
+              member_phone: normalizePhone(field(r, ['member_phone', 'phone', 'mobile'])),
+              plan_name: derivePlanName(r),
+              start_date: start,
+              end_date: end,
+              amount_total: parseMoney(field(r, ['amount_total', 'total', 'price', 'amount'])),
+              amount_paid: parseMoney(field(r, ['amount_paid', 'paid', 'price', 'amount'])),
+              status: normalizeStatus(field(r, ['status', 'package_status', 'membership_status'])),
+            }
+          })
+          .filter((row): row is NonNullable<typeof row> => row !== null && row.member_phone.length >= 10),
       }
     case 'payments':
       return {
-        payments: csvRows.map((r) => ({
-          member_phone: field(r, ['member_phone', 'phone', 'mobile']),
-          amount: parseMoney(field(r, ['amount', 'paid_amount'])),
-          payment_date: normalizeDate(field(r, ['payment_date', 'date'])) || '',
-          payment_mode: normalizePaymentMode(field(r, ['payment_mode', 'mode', 'method'])),
-          reference_number: field(r, ['reference_number', 'reference', 'invoice']) || undefined,
-          notes: field(r, ['notes', 'package']) || undefined,
-        })),
+        payments: csvRows
+          .map((r) => {
+            const paymentDate = normalizeDate(field(r, ['payment_date', 'date']))
+            const phone = normalizePhone(field(r, ['member_phone', 'phone', 'mobile']))
+            if (!paymentDate || phone.length < 10) return null
+            return {
+              member_phone: phone,
+              amount: parseMoney(field(r, ['amount', 'paid_amount'])),
+              payment_date: paymentDate,
+              payment_mode: normalizePaymentMode(field(r, ['payment_mode', 'mode', 'method'])),
+              reference_number: field(r, ['reference_number', 'reference', 'invoice']) || undefined,
+              notes: field(r, ['notes', 'package']) || undefined,
+            }
+          })
+          .filter((row): row is NonNullable<typeof row> => row !== null),
       }
     case 'attendance':
       return {
@@ -559,6 +631,8 @@ export default function ImportDataPage() {
     setError('')
   }
 
+  const csvHint = detectCsvHint(currentStep, csvRows)
+
   const previewMutation = useMutation({
     mutationFn: async () => {
       setError('')
@@ -566,6 +640,14 @@ export default function ImportDataPage() {
       if (csvRows.length === 0) throw new Error('No data loaded. Upload a CSV first.')
       const payload = buildStepPayload(currentStep, csvRows)
       if (!payload) throw new Error('Invalid step')
+      if (currentStep === 'memberships' && 'memberships' in payload && (payload.memberships?.length ?? 0) === 0) {
+        throw new Error(
+          'No rows with both start_date and end_date. Use the Members step for member-only exports, or export membership dates from AdviceFit.'
+        )
+      }
+      if (currentStep === 'payments' && 'payments' in payload && (payload.payments?.length ?? 0) === 0) {
+        throw new Error('No valid payment rows (need date, phone, and amount). Import members first.')
+      }
       return runPreview(currentStep, payload)
     },
     onSuccess: (result) => setPreview(result),
@@ -594,8 +676,8 @@ export default function ImportDataPage() {
 
   const sampleData: Record<Step, { headers: string; row: string }> = {
     members: {
-      headers: 'name,phone,email,gender,joined_date,member_code',
-      row: 'Rajesh Kumar,9876543210,rajesh@email.com,male,2025-01-15,101',
+      headers: 'name,phone,code,email,gender,join_date,package,start_date,end_date,price,package_status,photo_url',
+      row: 'Rajesh Kumar,9876543210,AD1001,rajesh@email.com,male,2025-01-15,Monthly,2026-03-01,2026-03-31,1500,active,https://…',
     },
     plans: {
       headers: 'name,duration_days,price,description',
@@ -606,8 +688,8 @@ export default function ImportDataPage() {
       row: '9876543210,Monthly,2026-03-01,2026-03-31,1500,1500,active',
     },
     payments: {
-      headers: 'member_phone,amount,payment_date,payment_mode,notes',
-      row: '9876543210,1500,2026-03-01,upi,Monthly fee',
+      headers: 'date,member,phone,package,amount,method,invoice',
+      row: '2026-05-15,Rajesh Kumar,9876543210,Monthly,1500,UPI,INV-001',
     },
     attendance: {
       headers: 'person_identifier,timestamp,punch_type',
@@ -667,6 +749,13 @@ export default function ImportDataPage() {
               sampleHeaders={sampleData[currentStep].headers}
               sampleRow={sampleData[currentStep].row}
             />
+
+            {csvHint && (
+              <div className="flex items-start gap-3 bg-amber-950/30 border border-amber-800/50 rounded-lg p-4">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-200">{csvHint}</p>
+              </div>
+            )}
 
             {csvRows.length > 0 && (
               <div className="space-y-4">

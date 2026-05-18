@@ -98,6 +98,16 @@ def import_memberships(
     return svc.import_memberships(tenant.gym_id, payload)
 
 
+@router.post("/payments/preview", response_model=ImportPreviewResult)
+def preview_payments(
+    payload: PaymentImportRequest,
+    tenant: TenantDep,
+    db: DbDep,
+    _: object = Depends(require_manager_or_above),
+):
+    return MigrationService(db).preview_payments(tenant.gym_id, payload)
+
+
 @router.post("/payments", response_model=PaymentImportResult)
 def import_payments(
     payload: PaymentImportRequest,

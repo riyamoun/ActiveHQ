@@ -32,6 +32,19 @@ class MemberImportRow(BaseModel):
     notes: str | None = None
     emergency_contact_name: str | None = None
     emergency_contact_phone: str | None = None
+    photo_url: str | None = Field(
+        None,
+        max_length=2000,
+        description="Profile photo URL or base64 from old software export",
+    )
+    plan_name: str | None = Field(
+        None,
+        description="If the member export includes package columns, membership is created too",
+    )
+    membership_start_date: date | None = None
+    membership_end_date: date | None = None
+    membership_amount: Decimal | None = Field(None, ge=0)
+    membership_status: MembershipStatus | None = None
 
 
 class MemberImportRequest(BaseModel):
@@ -45,6 +58,8 @@ class MemberImportResult(BaseModel):
     total_received: int
     created: int
     skipped_duplicates: int
+    memberships_created: int = 0
+    photos_imported: int = 0
     errors: list[str]
 
 

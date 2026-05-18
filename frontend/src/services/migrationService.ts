@@ -14,6 +14,12 @@ export interface MemberImportRow {
   notes?: string
   emergency_contact_name?: string
   emergency_contact_phone?: string
+  photo_url?: string
+  plan_name?: string
+  membership_start_date?: string
+  membership_end_date?: string
+  membership_amount?: number
+  membership_status?: 'active' | 'expired' | 'paused' | 'cancelled'
 }
 
 export interface MemberImportRequest {
@@ -65,6 +71,8 @@ export interface DeviceUserMappingRow {
 export interface ImportResult {
   total_received: number
   created: number
+  memberships_created?: number
+  photos_imported?: number
   skipped_duplicates?: number
   skipped_unknown_member?: number
   skipped_duplicate?: number

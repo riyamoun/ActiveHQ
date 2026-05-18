@@ -17,6 +17,8 @@ Always import in this order.
 1. Members
    - Use the old software member export.
    - Supported common headers include `Name`, `Member`, `Member Name`, `Phone`, `Mobile`, `Code`, `Email`, `Gender`, `Join Date`.
+   - Optional: `Photo URL` / `photo_url` (downloads profile photo), or base64 image in export.
+   - If the same file has `Start Date`, `End Date`, `Package`, and `Price`, memberships are created in this step too.
 
 2. Memberships
    - If the member export contains package dates, upload the same file again in the Memberships step.

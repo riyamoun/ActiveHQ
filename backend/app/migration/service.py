@@ -19,6 +19,8 @@ from app.models import (
 )
 from app.models.enums import BiometricEventStatus, BiometricEventType, MembershipStatus
 
+from app.migration.phone_utils import normalize_phone
+from app.migration.photo_import import import_member_photo_value
 from app.migration.schemas import (
     AttendanceImportRequest,
     AttendanceImportResult,
@@ -54,26 +56,36 @@ class MigrationService:
     ) -> MemberImportResult:
         created = 0
         skipped = 0
+        memberships_created = 0
+        photos_imported = 0
         errors: list[str] = []
 
-        existing_phones: set[str] = set(
-            self.db.execute(
-                select(Member.phone).where(Member.gym_id == gym_id)
-            ).scalars().all()
-        )
+        existing_phones: set[str] = set()
+        for raw_phone in self.db.execute(
+            select(Member.phone).where(Member.gym_id == gym_id)
+        ).scalars().all():
+            norm = normalize_phone(raw_phone)
+            if norm:
+                existing_phones.add(norm)
+
+        name_to_plan = self._name_to_plan_map(gym_id)
 
         for idx, row in enumerate(req.members, start=1):
-            if row.phone in existing_phones:
+            phone = normalize_phone(row.phone)
+            if not phone:
+                errors.append(f"Row {idx}: valid phone is required")
+                continue
+            if phone in existing_phones:
                 if req.skip_duplicates:
                     skipped += 1
                     continue
-                errors.append(f"Row {idx}: phone {row.phone} already exists")
+                errors.append(f"Row {idx}: phone {phone} already exists")
                 continue
             try:
                 member = Member(
                     gym_id=gym_id,
-                    name=row.name,
-                    phone=row.phone,
+                    name=row.name.strip(),
+                    phone=phone,
                     email=row.email,
                     gender=row.gender,
                     date_of_birth=row.date_of_birth,
@@ -82,12 +94,62 @@ class MigrationService:
                     member_code=row.member_code,
                     notes=row.notes,
                     emergency_contact_name=row.emergency_contact_name,
-                    emergency_contact_phone=row.emergency_contact_phone,
+                    emergency_contact_phone=normalize_phone(row.emergency_contact_phone)
+                    if row.emergency_contact_phone
+                    else None,
                     is_active=True,
                 )
                 self.db.add(member)
                 self.db.flush()
-                existing_phones.add(row.phone)
+
+                if row.photo_url:
+                    stored = import_member_photo_value(gym_id, member.id, row.photo_url)
+                    if stored:
+                        member.photo_url = stored
+                        photos_imported += 1
+
+                if (
+                    row.membership_start_date
+                    and row.membership_end_date
+                    and row.membership_end_date >= row.membership_start_date
+                ):
+                    plan_name = (row.plan_name or "").strip() or self._derive_plan_name(
+                        row.membership_start_date, row.membership_end_date
+                    )
+                    plan = name_to_plan.get(plan_name.lower())
+                    if not plan:
+                        duration_days = max(
+                            (row.membership_end_date - row.membership_start_date).days + 1, 1
+                        )
+                        amount = row.membership_amount or Decimal("0")
+                        plan = Plan(
+                            gym_id=gym_id,
+                            name=plan_name,
+                            duration_days=duration_days,
+                            price=amount,
+                            description="Created during member import",
+                            is_active=True,
+                        )
+                        self.db.add(plan)
+                        self.db.flush()
+                        name_to_plan[plan_name.lower()] = plan
+
+                    amount_total = row.membership_amount or plan.price
+                    membership = Membership(
+                        gym_id=gym_id,
+                        member_id=member.id,
+                        plan_id=plan.id,
+                        start_date=row.membership_start_date,
+                        end_date=row.membership_end_date,
+                        amount_total=amount_total,
+                        amount_paid=amount_total,
+                        status=row.membership_status or MembershipStatus.ACTIVE,
+                    )
+                    self.db.add(membership)
+                    self.db.flush()
+                    memberships_created += 1
+
+                existing_phones.add(phone)
                 created += 1
             except Exception as exc:
                 errors.append(f"Row {idx}: {exc}")
@@ -97,6 +159,8 @@ class MigrationService:
             total_received=len(req.members),
             created=created,
             skipped_duplicates=skipped,
+            memberships_created=memberships_created,
+            photos_imported=photos_imported,
             errors=errors,
         )
 
@@ -157,9 +221,10 @@ class MigrationService:
         name_to_plan = self._name_to_plan_map(gym_id)
 
         for idx, row in enumerate(req.memberships, start=1):
-            member = phone_to_member.get(row.member_phone)
+            phone = normalize_phone(row.member_phone) or row.member_phone.strip()
+            member = phone_to_member.get(phone)
             if not member:
-                errors.append(f"Row {idx}: member phone {row.member_phone} not found")
+                errors.append(f"Row {idx}: member phone {phone} not found")
                 continue
 
             plan_name = row.plan_name.strip() or self._derive_plan_name(row.start_date, row.end_date)
@@ -219,9 +284,10 @@ class MigrationService:
         phone_to_member = self._phone_to_member_map(gym_id)
 
         for idx, row in enumerate(req.payments, start=1):
-            member = phone_to_member.get(row.member_phone)
+            phone = normalize_phone(row.member_phone) or row.member_phone.strip()
+            member = phone_to_member.get(phone)
             if not member:
-                errors.append(f"Row {idx}: member phone {row.member_phone} not found")
+                errors.append(f"Row {idx}: member phone {phone} not found")
                 continue
 
             try:
@@ -580,16 +646,20 @@ class MigrationService:
     def preview_members(
         self, gym_id: uuid.UUID, req: MemberImportRequest
     ) -> ImportPreviewResult:
-        existing_phones: set[str] = set(
-            self.db.execute(
-                select(Member.phone).where(Member.gym_id == gym_id)
-            ).scalars().all()
-        )
+        existing_phones: set[str] = set()
+        for raw_phone in self.db.execute(
+            select(Member.phone).where(Member.gym_id == gym_id)
+        ).scalars().all():
+            norm = normalize_phone(raw_phone)
+            if norm:
+                existing_phones.add(norm)
+
+        name_to_plan = self._name_to_plan_map(gym_id)
         seen_in_file: set[str] = set()
         rows: list[ImportPreviewRow] = []
 
         for idx, row in enumerate(req.members, start=1):
-            phone = (row.phone or "").strip()
+            phone = normalize_phone(row.phone) or (row.phone or "").strip()
             name = (row.name or "").strip()
             if not name:
                 rows.append(ImportPreviewRow(
@@ -616,9 +686,23 @@ class MigrationService:
                     summary="Member already exists", identifier=phone,
                 ))
                 continue
+            extras: list[str] = []
+            if row.photo_url:
+                extras.append("photo")
+            if row.membership_start_date and row.membership_end_date:
+                plan_name = (row.plan_name or "").strip() or self._derive_plan_name(
+                    row.membership_start_date, row.membership_end_date
+                )
+                if plan_name.lower() in name_to_plan:
+                    extras.append(f"membership → {plan_name}")
+                else:
+                    extras.append(f"membership + new plan {plan_name}")
+            summary = f"Will add {name}"
+            if extras:
+                summary += f" ({', '.join(extras)})"
             rows.append(ImportPreviewRow(
                 row_number=idx, action=ImportPreviewAction.CREATE,
-                summary=f"Will add {name}", identifier=phone,
+                summary=summary, identifier=phone,
             ))
             existing_phones.add(phone)
 
@@ -675,7 +759,7 @@ class MigrationService:
         rows: list[ImportPreviewRow] = []
 
         for idx, row in enumerate(req.memberships, start=1):
-            phone = (row.member_phone or "").strip()
+            phone = normalize_phone(row.member_phone) or (row.member_phone or "").strip()
             if len(phone) < 10:
                 rows.append(ImportPreviewRow(
                     row_number=idx, action=ImportPreviewAction.ERROR,
@@ -805,7 +889,13 @@ class MigrationService:
         members = self.db.execute(
             select(Member).where(Member.gym_id == gym_id)
         ).scalars().all()
-        return {m.phone: m for m in members}
+        result: dict[str, Member] = {}
+        for member in members:
+            result[member.phone] = member
+            norm = normalize_phone(member.phone)
+            if norm:
+                result[norm] = member
+        return result
 
     def _code_to_member_map(self, gym_id: uuid.UUID) -> dict[str, Member]:
         members = self.db.execute(
