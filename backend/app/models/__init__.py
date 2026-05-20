@@ -32,6 +32,7 @@ from app.models.notification import Notification
 from app.models.demo_request import DemoRequest
 from app.models.biometric_device import BiometricDevice
 from app.models.biometric_event import BiometricEvent
+from app.models.biometric_face_encoding import BiometricFaceEncoding
 from app.models.automation_campaign import AutomationCampaign, CampaignDeliveryLog
 from app.models.refresh_token import RefreshToken
 from app.models.audit_log import AuditLog
@@ -65,6 +66,7 @@ __all__ = [
     "DemoRequest",
     "BiometricDevice",
     "BiometricEvent",
+    "BiometricFaceEncoding",
     "AutomationCampaign",
     "CampaignDeliveryLog",
     "RefreshToken",

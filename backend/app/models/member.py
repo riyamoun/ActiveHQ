@@ -5,6 +5,13 @@ Members can now optionally log in to the member portal (read-only).
 Auth happens via WhatsApp OTP, email magic-link or Google OAuth — there is
 NO password column. Staff still create / edit member records; this model
 just gains a few opt-in identifiers used by the portal.
+
+Enhanced with flexible import support:
+- source_system: Track data origin (GymSoft, eTimeTrack, Manual, etc.)
+- enrollment_status: NEW, ACTIVE, INACTIVE, PAUSED (better status tracking)
+- biometric_enrolled: Flag for biometric enrollment
+- import_metadata: Store extra unmapped fields from source systems (JSON)
+- aadhaar_verified: India-specific verification
 """
 
 import uuid
@@ -12,7 +19,7 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Text, Boolean, Date, DateTime, Enum, ForeignKey, UniqueConstraint, Index
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -74,6 +81,43 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Notes (internal staff notes)
     notes: Mapped[str | None] = mapped_column(Text)
     
+    # ── ENHANCED: Flexible import support ──
+    source_system: Mapped[str | None] = mapped_column(
+        String(100),
+        description="Which system data came from (GymSoft, eTimeTrack, Manual, etc.)",
+    )
+    alternative_phone: Mapped[str | None] = mapped_column(String(15), description="Additional contact number")
+    enrollment_status: Mapped[str] = mapped_column(
+        String(20),
+        default="ACTIVE",
+        nullable=False,
+        description="NEW, ACTIVE, INACTIVE, PAUSED (better status tracking than is_active)",
+    )
+    biometric_enrolled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        description="Flag for biometric enrollment status",
+    )
+    aadhaar_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        description="India-specific identity verification",
+    )
+    import_metadata: Mapped[dict | None] = mapped_column(
+        JSON,
+        description="Store extra unmapped fields from source systems",
+    )
+    last_biometric_sync: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        description="When this member was last synced with biometric device",
+    )
+    remarks: Mapped[str | None] = mapped_column(
+        Text,
+        description="More detailed notes for admin (gym closure, family groups, etc.)",
+    )
+    
     # Soft delete
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
@@ -107,6 +151,14 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         order_by="desc(Attendance.check_in_time)",
     )
     
+    # NEW: Biometric face encodings for multi-device enrollment
+    biometric_face_encodings: Mapped[list["BiometricFaceEncoding"]] = relationship(
+        "BiometricFaceEncoding",
+        back_populates="member",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+    
     # Constraints & Indexes
     __table_args__ = (
         # Phone must be unique within a gym
@@ -116,6 +168,8 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Index("idx_member_gym_name", "gym_id", "name"),
         Index("idx_member_gym_active", "gym_id", "is_active"),
         Index("idx_member_joined_date", "gym_id", "joined_date"),
+        # NEW: Index for enrollment status (reporting & filtering)
+        Index("idx_member_enrollment_status", "gym_id", "enrollment_status"),
     )
     
     def __repr__(self) -> str:

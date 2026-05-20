@@ -98,6 +98,15 @@ class MigrationService:
                     if row.emergency_contact_phone
                     else None,
                     is_active=True,
+                    # ── NEW: Flexible import fields ──
+                    source_system=row.source_system,
+                    alternative_phone=normalize_phone(row.alternative_phone)
+                    if row.alternative_phone
+                    else None,
+                    enrollment_status=row.enrollment_status or "ACTIVE",
+                    biometric_enrolled=False,  # Will be updated if face data available
+                    aadhaar_verified=row.aadhaar_verified or False,
+                    import_metadata=row.import_metadata,
                 )
                 self.db.add(member)
                 self.db.flush()
@@ -257,6 +266,14 @@ class MigrationService:
                     amount_total=row.amount_total,
                     amount_paid=row.amount_paid,
                     status=row.status,
+                    # ── NEW: Flexible membership fields ──
+                    renewal_date=row.renewal_date,
+                    freeze_start_date=row.freeze_start_date,
+                    freeze_end_date=row.freeze_end_date,
+                    discount_amount=row.discount_amount or Decimal("0"),
+                    payment_method=row.payment_method,
+                    auto_renewal=row.auto_renewal or False,
+                    import_ref=row.import_ref,
                 )
                 self.db.add(membership)
                 self.db.flush()

@@ -45,6 +45,31 @@ class MemberImportRow(BaseModel):
     membership_end_date: date | None = None
     membership_amount: Decimal | None = Field(None, ge=0)
     membership_status: MembershipStatus | None = None
+    
+    # ── NEW: Flexible import fields ──
+    source_system: str | None = Field(
+        None,
+        max_length=100,
+        description="Which system this record came from (GymSoft, eTimeTrack, Manual, etc.)"
+    )
+    alternative_phone: str | None = Field(
+        None,
+        max_length=15,
+        description="Additional contact number"
+    )
+    enrollment_status: str | None = Field(
+        None,
+        max_length=20,
+        description="Member status: NEW, ACTIVE, INACTIVE, PAUSED"
+    )
+    aadhaar_verified: bool | None = Field(
+        None,
+        description="India-specific identity verification"
+    )
+    import_metadata: dict | None = Field(
+        None,
+        description="Store extra unmapped fields from source systems"
+    )
 
 
 class MemberImportRequest(BaseModel):
@@ -94,6 +119,39 @@ class MembershipImportRow(BaseModel):
     amount_total: Decimal = Field(..., ge=0)
     amount_paid: Decimal = Field(Decimal("0"), ge=0)
     status: MembershipStatus = MembershipStatus.ACTIVE
+    
+    # ── NEW: Flexible membership import fields ──
+    renewal_date: date | None = Field(
+        None,
+        description="When this membership is due for renewal"
+    )
+    freeze_start_date: date | None = Field(
+        None,
+        description="Start of membership freeze period (for paused memberships)"
+    )
+    freeze_end_date: date | None = Field(
+        None,
+        description="End of membership freeze period"
+    )
+    discount_amount: Decimal | None = Field(
+        None,
+        ge=0,
+        description="Discount applied to this membership"
+    )
+    payment_method: str | None = Field(
+        None,
+        max_length=50,
+        description="Preferred payment method: CASH, UPI, CARD, CHEQUE, BANK_TRANSFER"
+    )
+    auto_renewal: bool | None = Field(
+        None,
+        description="Enable automatic renewal before expiry"
+    )
+    import_ref: str | None = Field(
+        None,
+        max_length=255,
+        description="Reference ID from source system for data reconciliation"
+    )
 
 
 class MembershipImportRequest(BaseModel):

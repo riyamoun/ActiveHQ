@@ -1,14 +1,23 @@
 """
 Membership model - A member's subscription to a plan.
 Tracks membership history, allows renewals and upgrades.
+
+Enhanced with flexible import and renewal support:
+- renewal_date: Explicit renewal tracking
+- freeze_start_date/freeze_end_date: For paused memberships
+- discount_amount: Track discounts separately
+- payment_method: Store preferred payment method
+- auto_renewal: Enable auto-renewal
+- import_ref: Reference to source system ID
+- renewal_reminder_sent_at: Track reminders
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, Date, Numeric, Enum, ForeignKey, Index
+from sqlalchemy import String, Text, Date, DateTime, Numeric, Enum, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -87,6 +96,44 @@ class Membership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Notes
     notes: Mapped[str | None] = mapped_column(Text)
     
+    # ── ENHANCED: Flexible renewal and payment tracking ──
+    renewal_date: Mapped[date | None] = mapped_column(
+        Date,
+        description="When this membership is due for renewal",
+    )
+    freeze_start_date: Mapped[date | None] = mapped_column(
+        Date,
+        description="Start of membership freeze period (for paused memberships)",
+    )
+    freeze_end_date: Mapped[date | None] = mapped_column(
+        Date,
+        description="End of membership freeze period",
+    )
+    discount_amount: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("0.00"),
+        nullable=False,
+        description="Discount applied to this membership",
+    )
+    payment_method: Mapped[str | None] = mapped_column(
+        String(50),
+        description="Preferred payment method: CASH, UPI, CARD, CHEQUE, BANK_TRANSFER",
+    )
+    auto_renewal: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        description="Enable automatic renewal before expiry",
+    )
+    import_ref: Mapped[str | None] = mapped_column(
+        String(255),
+        description="Reference ID from source system for data reconciliation",
+    )
+    renewal_reminder_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        description="When renewal reminder was last sent",
+    )
+    
     # Audit: who created this membership
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -118,6 +165,9 @@ class Membership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Index("idx_membership_member_status", "member_id", "status"),
         # Due amount tracking (memberships with balance)
         Index("idx_membership_gym_dates", "gym_id", "start_date", "end_date"),
+        # NEW: Renewal tracking
+        Index("idx_membership_renewal_date", "gym_id", "renewal_date"),
+        Index("idx_membership_auto_renewal", "gym_id", "auto_renewal"),
     )
     
     def __repr__(self) -> str:
