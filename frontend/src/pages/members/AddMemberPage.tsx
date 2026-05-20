@@ -26,6 +26,7 @@ export default function AddMemberPage() {
     emergency_contact_name: '',
     emergency_contact_phone: '',
     member_code: '',
+    external_id: '',
     notes: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -168,6 +169,14 @@ export default function AddMemberPage() {
                 helperText="Required for biometric check-in. Match the User ID on your eSSL screen."
               />
             </div>
+
+            <Input
+              label="Old software member ID (optional)"
+              value={formData.external_id || ''}
+              onChange={(e) => updateField('external_id', e.target.value)}
+              placeholder="ID from GymSoft / AdviceFit / etc."
+              helperText="Use when importing later so the same person updates instead of duplicating."
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input

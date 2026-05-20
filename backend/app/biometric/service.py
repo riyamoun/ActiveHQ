@@ -122,9 +122,37 @@ class BiometricService:
         if not member.member_code:
             member.member_code = device_user_id
 
+        now = datetime.now(timezone.utc)
+        mapping.is_enrolled = True
+        mapping.enrollment_date = now
+        member.biometric_enrolled = True
+        member.last_biometric_sync = now
+
         self.db.commit()
         self.db.refresh(mapping)
         return mapping
+
+    def list_conflict_events(
+        self,
+        tenant: TenantContext,
+        *,
+        limit: int = 50,
+        device_id=None,
+    ) -> list[BiometricEvent]:
+        conditions = [
+            BiometricEvent.gym_id == tenant.gym_id,
+            BiometricEvent.status == BiometricEventStatus.CONFLICT,
+        ]
+        if device_id:
+            conditions.append(BiometricEvent.device_id == device_id)
+        return list(
+            self.db.execute(
+                select(BiometricEvent)
+                .where(and_(*conditions))
+                .order_by(BiometricEvent.event_time.desc())
+                .limit(limit)
+            ).scalars().all()
+        )
 
     def delete_device_mapping(self, tenant: TenantContext, mapping_id) -> bool:
         row = self.db.execute(
@@ -264,7 +292,9 @@ class BiometricService:
             try:
                 status = self._apply_event_to_attendance(tenant, event, member)
                 event.status = status
-                if status == BiometricEventStatus.PROCESSED:
+                if status == BiometricEventStatus.PROCESSED and member:
+                    member.last_biometric_sync = event.event_time
+                    member.biometric_enrolled = True
                     processed += 1
                 elif status == BiometricEventStatus.DUPLICATE:
                     duplicates += 1

@@ -85,6 +85,17 @@ export interface Member {
   photo_url: string | null
   joined_date: string
   notes: string | null
+  remarks?: string | null
+  external_id?: string | null
+  city?: string | null
+  state?: string | null
+  pincode?: string | null
+  source_system?: string | null
+  enrollment_status?: string
+  biometric_enrolled?: boolean
+  aadhaar_verified?: boolean
+  import_metadata?: Record<string, unknown> | null
+  last_biometric_sync?: string | null
   is_active: boolean
 }
 
@@ -123,11 +134,18 @@ export interface MemberCreate {
   gender?: Gender
   date_of_birth?: string
   address?: string
+  city?: string
+  state?: string
+  pincode?: string
   emergency_contact_name?: string
   emergency_contact_phone?: string
   joined_date?: string
   notes?: string
+  remarks?: string
   member_code?: string
+  external_id?: string
+  source_system?: string
+  enrollment_status?: string
 }
 
 // Plan

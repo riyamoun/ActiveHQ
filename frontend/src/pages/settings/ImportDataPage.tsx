@@ -217,7 +217,10 @@ function ResultCard({ result, label }: { result: ImportResult; label: string }) 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Stat label="Received" value={result.total_received} />
         <Stat label="Created" value={result.created} color="text-emerald-400" />
-        <Stat label="Skipped" value={(result.skipped_duplicates ?? 0) + (result.skipped_unknown_member ?? 0) + (result.skipped_duplicate ?? 0) + (result.skipped ?? 0) + (result.updated ?? 0)} color="text-amber-400" />
+        {(result.updated ?? 0) > 0 && (
+          <Stat label="Updated" value={result.updated ?? 0} color="text-sky-400" />
+        )}
+        <Stat label="Skipped" value={(result.skipped_duplicates ?? 0) + (result.skipped_unknown_member ?? 0) + (result.skipped_duplicate ?? 0) + (result.skipped ?? 0)} color="text-amber-400" />
         <Stat label="Errors" value={result.errors.length} color={result.errors.length > 0 ? 'text-red-400' : 'text-slate-400'} />
       </div>
       {'memberships_created' in result && (result.memberships_created ?? 0) > 0 && (
@@ -406,7 +409,29 @@ const previewActionStyles: Record<string, string> = {
   error: 'bg-red-500/15 text-red-400 border-red-500/30',
 }
 
-function buildStepPayload(step: Step, csvRows: Record<string, string>[]) {
+const MEMBER_FIELD_HEADERS = new Set([
+  'name', 'member', 'member_name', 'phone', 'mobile', 'mobile_number', 'member_phone',
+  'email', 'gender', 'date_of_birth', 'dob', 'address', 'city', 'state', 'pincode',
+  'joined_date', 'join_date', 'member_code', 'code', 'device_user_id', 'face_id',
+  'external_id', 'old_id', 'member_id', 'user_id', 'alternate_phone', 'alternative_phone',
+  'source_system', 'enrollment_status', 'status', 'notes', 'remarks', 'photo_url', 'photo',
+  'plan_name', 'plan', 'package', 'membership_type', 'start_date', 'membership_start_date',
+  'end_date', 'membership_end_date', 'price', 'amount', 'package_price', 'amount_total',
+  'package_status', 'membership_status', 'emergency_contact_name', 'emergency_contact_phone',
+])
+
+function collectExtraMetadata(row: Record<string, string>): Record<string, string> | undefined {
+  const meta: Record<string, string> = {}
+  for (const [key, value] of Object.entries(row)) {
+    const nk = normalizeHeader(key)
+    if (value.trim() && !MEMBER_FIELD_HEADERS.has(nk)) {
+      meta[key] = value.trim()
+    }
+  }
+  return Object.keys(meta).length > 0 ? meta : undefined
+}
+
+function buildStepPayload(step: Step, csvRows: Record<string, string>[], updateExisting = false) {
   switch (step) {
     case 'members':
       return {
@@ -420,13 +445,24 @@ function buildStepPayload(step: Step, csvRows: Record<string, string>[]) {
             gender: normalizeGender(field(r, ['gender'])),
             date_of_birth: normalizeDate(field(r, ['date_of_birth', 'dob'])) || undefined,
             address: field(r, ['address']) || undefined,
+            city: field(r, ['city']) || undefined,
+            state: field(r, ['state']) || undefined,
+            pincode: field(r, ['pincode', 'zip', 'postal_code']) || undefined,
             joined_date: normalizeDate(field(r, ['joined_date', 'join_date'])) || undefined,
-            member_code: field(r, ['member_code', 'code', 'device_user_id', 'face_id', 'face_value']) || undefined,
-            notes: field(r, ['notes', 'remarks']) || undefined,
+            member_code: field(r, ['member_code', 'code', 'device_user_id', 'face_id', 'user_id', 'biometric_id']) || undefined,
+            external_id: field(r, ['external_id', 'old_id', 'old_member_id', 'member_id', 'legacy_id', 'source_id']) || undefined,
+            alternate_phone: normalizePhone(field(r, ['alternate_phone', 'alternative_phone', 'phone2', 'secondary_phone'])) || undefined,
+            source_system: field(r, ['source_system', 'software', 'imported_from']) || undefined,
+            enrollment_status: field(r, ['enrollment_status', 'member_status']) || undefined,
+            remarks: field(r, ['remarks', 'admin_notes']) || undefined,
+            notes: field(r, ['notes']) || undefined,
+            emergency_contact_name: field(r, ['emergency_contact_name', 'emergency_name']) || undefined,
+            emergency_contact_phone: normalizePhone(field(r, ['emergency_contact_phone', 'emergency_phone'])) || undefined,
             photo_url: field(r, [
               'photo_url', 'photo', 'image', 'profile_photo', 'profile_image',
-              'member_photo', 'face', 'face_image', 'face_value', 'picture',
+              'member_photo', 'picture',
             ]) || undefined,
+            import_metadata: collectExtraMetadata(r),
             plan_name: field(r, ['plan_name', 'plan', 'package', 'membership_type']) || undefined,
             membership_start_date: start,
             membership_end_date: end,
@@ -436,7 +472,8 @@ function buildStepPayload(step: Step, csvRows: Record<string, string>[]) {
               : undefined,
           }
         }),
-        skip_duplicates: true,
+        skip_duplicates: !updateExisting,
+        update_existing: updateExisting,
       }
     case 'plans':
       return {
@@ -456,12 +493,20 @@ function buildStepPayload(step: Step, csvRows: Record<string, string>[]) {
             if (!start || !end) return null
             return {
               member_phone: normalizePhone(field(r, ['member_phone', 'phone', 'mobile'])),
+              member_external_id: field(r, ['member_external_id', 'external_id', 'old_id', 'member_id']) || undefined,
               plan_name: derivePlanName(r),
               start_date: start,
               end_date: end,
               amount_total: parseMoney(field(r, ['amount_total', 'total', 'price', 'amount'])),
-              amount_paid: parseMoney(field(r, ['amount_paid', 'paid', 'price', 'amount'])),
+              amount_paid: parseMoney(field(r, ['amount_paid', 'paid', 'amount_paid'])),
               status: normalizeStatus(field(r, ['status', 'package_status', 'membership_status'])),
+              import_ref: field(r, ['import_ref', 'membership_id', 'subscription_id', 'invoice_id']) || undefined,
+              source_system: field(r, ['source_system', 'software']) || undefined,
+              renewal_date: normalizeDate(field(r, ['renewal_date'])) || undefined,
+              freeze_start_date: normalizeDate(field(r, ['freeze_start', 'freeze_start_date'])) || undefined,
+              freeze_end_date: normalizeDate(field(r, ['freeze_end', 'freeze_end_date'])) || undefined,
+              discount_amount: parseMoney(field(r, ['discount', 'discount_amount'])) || undefined,
+              payment_method: field(r, ['payment_method', 'method', 'payment_mode']) || undefined,
             }
           })
           .filter((row): row is NonNullable<typeof row> => row !== null && row.member_phone.length >= 10),
@@ -617,6 +662,7 @@ function PreviewPanel({
 export default function ImportDataPage() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState<Step>('members')
+  const [updateExisting, setUpdateExisting] = useState(false)
   const [csvRows, setCsvRows] = useState<Record<string, string>[]>([])
   const [preview, setPreview] = useState<ImportPreviewResult | null>(null)
   const [lastResult, setLastResult] = useState<ImportResult | null>(null)
@@ -638,7 +684,7 @@ export default function ImportDataPage() {
       setError('')
       setPreview(null)
       if (csvRows.length === 0) throw new Error('No data loaded. Upload a CSV first.')
-      const payload = buildStepPayload(currentStep, csvRows)
+      const payload = buildStepPayload(currentStep, csvRows, updateExisting)
       if (!payload) throw new Error('Invalid step')
       if (currentStep === 'memberships' && 'memberships' in payload && (payload.memberships?.length ?? 0) === 0) {
         throw new Error(
@@ -659,7 +705,7 @@ export default function ImportDataPage() {
       setError('')
       setLastResult(null)
       if (csvRows.length === 0) throw new Error('No data loaded. Upload a CSV first.')
-      const payload = buildStepPayload(currentStep, csvRows)
+      const payload = buildStepPayload(currentStep, csvRows, updateExisting)
       if (!payload) throw new Error('Invalid step')
       return runImport(currentStep, payload)
     },
@@ -676,16 +722,16 @@ export default function ImportDataPage() {
 
   const sampleData: Record<Step, { headers: string; row: string }> = {
     members: {
-      headers: 'name,phone,code,email,gender,join_date,package,start_date,end_date,price,package_status,photo_url',
-      row: 'Rajesh Kumar,9876543210,AD1001,rajesh@email.com,male,2025-01-15,Monthly,2026-03-01,2026-03-31,1500,active,https://…',
+      headers: 'name,phone,external_id,code,email,city,package,start_date,end_date,price,source_system,device_user_id',
+      row: 'Rajesh Kumar,9876543210,AD1001,4,rajesh@email.com,Mumbai,Monthly,2026-03-01,2026-03-31,1500,GymSoft,4',
     },
     plans: {
       headers: 'name,duration_days,price,description',
       row: 'Monthly,30,1500,Monthly gym access',
     },
     memberships: {
-      headers: 'member_phone,plan_name,start_date,end_date,amount_total,amount_paid,status',
-      row: '9876543210,Monthly,2026-03-01,2026-03-31,1500,1500,active',
+      headers: 'member_phone,external_id,plan_name,start_date,end_date,amount_total,amount_paid,import_ref,status',
+      row: '9876543210,AD1001,Monthly,2026-03-01,2026-03-31,1500,1500,SUB-8821,active',
     },
     payments: {
       headers: 'date,member,phone,package,amount,method,invoice',
@@ -755,6 +801,21 @@ export default function ImportDataPage() {
                 <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-200">{csvHint}</p>
               </div>
+            )}
+
+            {currentStep === 'members' && csvRows.length > 0 && (
+              <label className="flex items-start gap-3 rounded-lg border border-slate-800/60 bg-slate-800/30 p-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={updateExisting}
+                  onChange={(e) => { setUpdateExisting(e.target.checked); setPreview(null) }}
+                  className="mt-1 rounded border-slate-600"
+                />
+                <span className="text-sm text-slate-300">
+                  <span className="font-medium text-white">Update existing members</span>
+                  {' '}— match by old software ID (<code className="text-emerald-400">external_id</code>) or phone and merge new columns instead of skipping duplicates.
+                </span>
+              </label>
             )}
 
             {csvRows.length > 0 && (

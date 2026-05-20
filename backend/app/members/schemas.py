@@ -3,7 +3,7 @@ Pydantic schemas for member management.
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from pydantic import BaseModel, EmailStr, Field
 
 from app.models.enums import Gender, MembershipStatus
@@ -23,7 +23,15 @@ class MemberCreate(BaseModel):
     photo_url: str | None = Field(None, max_length=500)
     joined_date: date | None = None  # Defaults to today if not provided
     notes: str | None = None
+    remarks: str | None = None
     member_code: str | None = Field(None, max_length=50)
+    external_id: str | None = Field(None, max_length=255)
+    city: str | None = Field(None, max_length=100)
+    state: str | None = Field(None, max_length=100)
+    pincode: str | None = Field(None, max_length=10)
+    source_system: str | None = Field(None, max_length=100)
+    enrollment_status: str | None = Field(None, max_length=20)
+    biometric_enrolled: bool | None = None
 
 
 class MemberUpdate(BaseModel):
@@ -39,7 +47,16 @@ class MemberUpdate(BaseModel):
     emergency_contact_phone: str | None = Field(None, max_length=15)
     photo_url: str | None = Field(None, max_length=500)
     notes: str | None = None
+    remarks: str | None = None
     member_code: str | None = Field(None, max_length=50)
+    external_id: str | None = Field(None, max_length=255)
+    city: str | None = Field(None, max_length=100)
+    state: str | None = Field(None, max_length=100)
+    pincode: str | None = Field(None, max_length=10)
+    source_system: str | None = Field(None, max_length=100)
+    enrollment_status: str | None = Field(None, max_length=20)
+    biometric_enrolled: bool | None = None
+    is_active: bool | None = None
 
 
 class MemberResponse(BaseModel):
@@ -59,6 +76,17 @@ class MemberResponse(BaseModel):
     photo_url: str | None
     joined_date: date
     notes: str | None
+    remarks: str | None = None
+    external_id: str | None = None
+    city: str | None = None
+    state: str | None = None
+    pincode: str | None = None
+    source_system: str | None = None
+    enrollment_status: str = "ACTIVE"
+    biometric_enrolled: bool = False
+    aadhaar_verified: bool = False
+    import_metadata: dict | None = None
+    last_biometric_sync: datetime | None = None
     is_active: bool
     
     model_config = {"from_attributes": True}

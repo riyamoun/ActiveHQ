@@ -60,6 +60,17 @@ class DeviceUserMappingCreate(BaseModel):
         description="User ID shown on the eSSL device screen (e.g. 4)")
 
 
+class BiometricConflictEventResponse(BaseModel):
+    id: UUID
+    device_id: UUID
+    person_identifier: str
+    event_time: datetime
+    conflict_reason: str | None
+    member_id: UUID | None = None
+
+    model_config = {"from_attributes": True}
+
+
 class DeviceUserMappingResponse(BaseModel):
     id: UUID
     device_id: UUID

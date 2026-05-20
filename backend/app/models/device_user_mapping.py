@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Index, String, UniqueConstraint
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -37,6 +39,8 @@ class DeviceUserMapping(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         index=True,
     )
     device_user_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    is_enrolled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    enrollment_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         UniqueConstraint("gym_id", "device_id", "device_user_id", name="uq_device_user_per_gym_device"),

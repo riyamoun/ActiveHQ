@@ -68,43 +68,11 @@ class BiometricFaceEncoding(UUIDPrimaryKeyMixin, Base):
     
     # Binary face template (512-dimensional vector, JPEG2000, or other format)
     # Typical sizes: 512 floats = 2KB, JPEG2000 = 5-10KB
-    face_template: Mapped[bytes] = mapped_column(
-        LargeBinary,
-        nullable=False,
-        description="Binary face encoding (vector or image)",
-    )
-    
-    # Format descriptor for the template
-    # e.g., "vector_512" (512-dim float32), "jpeg2000", "arc_face"
-    face_template_format: Mapped[str] = mapped_column(
-        String(50),
-        default="unknown",
-        nullable=False,
-        description="Format of face template: vector_512, jpeg2000, arc_face, etc.",
-    )
-    
-    # Enrollment quality (confidence score 0.0 to 1.0)
-    # Returned by biometric device during enrollment
-    enrollment_quality: Mapped[float | None] = mapped_column(
-        Numeric(3, 2),
-        nullable=True,
-        description="Enrollment quality score (0.00 to 1.00)",
-    )
-    
-    # Is this the primary face for matching?
-    is_primary: Mapped[bool] = mapped_column(
-        Boolean,
-        default=True,
-        nullable=False,
-        description="Primary face for matching (each member should have one primary)",
-    )
-    
-    # Last successful face match timestamp
-    last_verified: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        description="When face match/verification last succeeded",
-    )
+    face_template: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    face_template_format: Mapped[str] = mapped_column(String(50), default="unknown", nullable=False)
+    enrollment_quality: Mapped[float | None] = mapped_column(Numeric(3, 2), nullable=True)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_verified: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth.dependencies import TenantDep, require_manager_or_above, DbDep, BiometricDeviceTenantDep
 from app.biometric.schemas import (
+    BiometricConflictEventResponse,
     BiometricDeviceCreate,
     BiometricDeviceResponse,
     BiometricDeviceTokenResponse,
@@ -118,6 +119,35 @@ def delete_mapping(
         raise HTTPException(status_code=400, detail="Invalid mapping id") from exc
     if not service.delete_device_mapping(tenant, mapping_uuid):
         raise HTTPException(status_code=404, detail="Mapping not found")
+
+
+@router.get("/events/conflicts", response_model=list[BiometricConflictEventResponse])
+def list_conflict_events(
+    tenant: TenantDep,
+    db: DbDep,
+    limit: int = Query(50, ge=1, le=200),
+    device_id: str | None = Query(None),
+    _: object = Depends(require_manager_or_above),
+):
+    service = BiometricService(db)
+    device_uuid = None
+    if device_id:
+        try:
+            device_uuid = uuid.UUID(device_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid device id") from exc
+    events = service.list_conflict_events(tenant, limit=limit, device_id=device_uuid)
+    return [
+        BiometricConflictEventResponse(
+            id=e.id,
+            device_id=e.device_id,
+            person_identifier=e.person_identifier,
+            event_time=e.event_time,
+            conflict_reason=e.conflict_reason,
+            member_id=e.member_id,
+        )
+        for e in events
+    ]
 
 
 @router.post("/events/ingest", response_model=BiometricIngestSummary)

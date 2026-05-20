@@ -9,12 +9,22 @@ export interface MemberImportRow {
   gender?: 'male' | 'female' | 'other'
   date_of_birth?: string
   address?: string
+  city?: string
+  state?: string
+  pincode?: string
   joined_date?: string
   member_code?: string
+  external_id?: string
+  alternate_phone?: string
+  alternative_phone?: string
+  source_system?: string
+  enrollment_status?: string
+  remarks?: string
   notes?: string
   emergency_contact_name?: string
   emergency_contact_phone?: string
   photo_url?: string
+  import_metadata?: Record<string, unknown>
   plan_name?: string
   membership_start_date?: string
   membership_end_date?: string
@@ -25,6 +35,7 @@ export interface MemberImportRow {
 export interface MemberImportRequest {
   members: MemberImportRow[]
   skip_duplicates?: boolean
+  update_existing?: boolean
 }
 
 export interface PlanImportRow {
@@ -42,6 +53,15 @@ export interface MembershipImportRow {
   amount_total: number
   amount_paid?: number
   status?: 'active' | 'expired' | 'paused' | 'cancelled'
+  import_ref?: string
+  source_system?: string
+  member_external_id?: string
+  renewal_date?: string
+  freeze_start_date?: string
+  freeze_end_date?: string
+  discount_amount?: number
+  payment_method?: string
+  auto_renewal?: boolean
 }
 
 export interface PaymentImportRow {

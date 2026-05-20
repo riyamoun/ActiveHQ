@@ -51,8 +51,11 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         index=True,
     )
     
-    # Gym-specific identifier (optional, e.g., "GYM001")
+    # Gym-specific identifier (optional, e.g., "GYM001") — also biometric device User ID
     member_code: Mapped[str | None] = mapped_column(String(50))
+
+    # ID from old gym software (for re-import / reconciliation)
+    external_id: Mapped[str | None] = mapped_column(String(255), index=True)
     
     # Personal Information
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -67,6 +70,9 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     
     # Address
     address: Mapped[str | None] = mapped_column(Text)
+    city: Mapped[str | None] = mapped_column(String(100))
+    state: Mapped[str | None] = mapped_column(String(100))
+    pincode: Mapped[str | None] = mapped_column(String(10))
     
     # Emergency Contact
     emergency_contact_name: Mapped[str | None] = mapped_column(String(255))
@@ -82,41 +88,18 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text)
     
     # ── ENHANCED: Flexible import support ──
-    source_system: Mapped[str | None] = mapped_column(
-        String(100),
-        description="Which system data came from (GymSoft, eTimeTrack, Manual, etc.)",
-    )
-    alternative_phone: Mapped[str | None] = mapped_column(String(15), description="Additional contact number")
+    source_system: Mapped[str | None] = mapped_column(String(100))
+    alternative_phone: Mapped[str | None] = mapped_column(String(15))
     enrollment_status: Mapped[str] = mapped_column(
         String(20),
         default="ACTIVE",
         nullable=False,
-        description="NEW, ACTIVE, INACTIVE, PAUSED (better status tracking than is_active)",
     )
-    biometric_enrolled: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        nullable=False,
-        description="Flag for biometric enrollment status",
-    )
-    aadhaar_verified: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        nullable=False,
-        description="India-specific identity verification",
-    )
-    import_metadata: Mapped[dict | None] = mapped_column(
-        JSON,
-        description="Store extra unmapped fields from source systems",
-    )
-    last_biometric_sync: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        description="When this member was last synced with biometric device",
-    )
-    remarks: Mapped[str | None] = mapped_column(
-        Text,
-        description="More detailed notes for admin (gym closure, family groups, etc.)",
-    )
+    biometric_enrolled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    aadhaar_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    import_metadata: Mapped[dict | None] = mapped_column(JSON)
+    last_biometric_sync: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    remarks: Mapped[str | None] = mapped_column(Text)
     
     # Soft delete
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -163,6 +146,7 @@ class Member(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (
         # Phone must be unique within a gym
         UniqueConstraint("gym_id", "phone", name="uq_member_gym_phone"),
+        UniqueConstraint("gym_id", "external_id", name="uq_member_gym_external_id"),
         # Index for fast phone lookup
         Index("idx_member_gym_phone", "gym_id", "phone"),
         Index("idx_member_gym_name", "gym_id", "name"),

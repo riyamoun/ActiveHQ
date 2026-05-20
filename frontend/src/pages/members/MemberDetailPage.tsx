@@ -301,13 +301,33 @@ export default function MemberDetailPage() {
               </div>
             </div>
 
+            {(member.external_id || member.source_system) && (
+              <div className="pt-4 border-t border-slate-800/60 space-y-1 text-sm">
+                {member.external_id && (
+                  <p className="text-slate-400">Old software ID: <span className="text-slate-200">{member.external_id}</span></p>
+                )}
+                {member.source_system && (
+                  <p className="text-slate-400">Imported from: <span className="text-slate-200">{member.source_system}</span></p>
+                )}
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-slate-800/60 flex flex-wrap gap-2">
+              <Badge variant={member.biometric_enrolled ? 'success' : 'warning'}>
+                {member.biometric_enrolled ? 'Biometric linked' : 'Biometric not linked'}
+              </Badge>
+              {member.enrollment_status && member.enrollment_status !== 'ACTIVE' && (
+                <Badge variant="gray">{member.enrollment_status}</Badge>
+              )}
+            </div>
+
             <div className="pt-4 border-t border-slate-800/60 space-y-2">
               <Input
                 label="Device User ID (eSSL)"
                 value={deviceUserId}
                 onChange={(e) => setDeviceUserId(e.target.value)}
                 placeholder="e.g. 4"
-                helperText="Must match the User ID shown on the biometric device when they scan."
+                helperText="Must match the User ID on the biometric device. Enroll their face on the device after import."
               />
               <Button
                 variant="secondary"

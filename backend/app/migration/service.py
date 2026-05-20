@@ -21,6 +21,11 @@ from app.models.enums import BiometricEventStatus, BiometricEventType, Membershi
 
 from app.migration.phone_utils import normalize_phone
 from app.migration.photo_import import import_member_photo_value
+from app.migration.row_apply import (
+    apply_member_import_row,
+    apply_membership_import_row,
+    build_member_from_import,
+)
 from app.migration.schemas import (
     AttendanceImportRequest,
     AttendanceImportResult,
@@ -55,19 +60,15 @@ class MigrationService:
         self, gym_id: uuid.UUID, req: MemberImportRequest
     ) -> MemberImportResult:
         created = 0
+        updated = 0
         skipped = 0
         memberships_created = 0
         photos_imported = 0
         errors: list[str] = []
 
-        existing_phones: set[str] = set()
-        for raw_phone in self.db.execute(
-            select(Member.phone).where(Member.gym_id == gym_id)
-        ).scalars().all():
-            norm = normalize_phone(raw_phone)
-            if norm:
-                existing_phones.add(norm)
-
+        phone_to_member = self._phone_to_member_map(gym_id)
+        external_to_member = self._external_id_to_member_map(gym_id)
+        existing_phones: set[str] = set(phone_to_member.keys())
         name_to_plan = self._name_to_plan_map(gym_id)
 
         for idx, row in enumerate(req.members, start=1):
@@ -75,103 +76,120 @@ class MigrationService:
             if not phone:
                 errors.append(f"Row {idx}: valid phone is required")
                 continue
-            if phone in existing_phones:
-                if req.skip_duplicates:
+
+            ext_key = (row.external_id or "").strip().lower() or None
+            existing = None
+            if ext_key and ext_key in external_to_member:
+                existing = external_to_member[ext_key]
+            elif phone in phone_to_member:
+                existing = phone_to_member[phone]
+
+            if existing:
+                if req.update_existing:
+                    try:
+                        apply_member_import_row(existing, row, is_create=False)
+                        if row.photo_url:
+                            stored = import_member_photo_value(gym_id, existing.id, row.photo_url)
+                            if stored:
+                                existing.photo_url = stored
+                                photos_imported += 1
+                        self.db.flush()
+                        updated += 1
+                        member = existing
+                    except Exception as exc:
+                        errors.append(f"Row {idx}: update failed — {exc}")
+                        continue
+                elif req.skip_duplicates:
                     skipped += 1
                     continue
-                errors.append(f"Row {idx}: phone {phone} already exists")
-                continue
+                else:
+                    errors.append(f"Row {idx}: phone {phone} already exists")
+                    continue
+            else:
+                try:
+                    member = build_member_from_import(gym_id, row, phone)
+                    self.db.add(member)
+                    self.db.flush()
+                    if row.photo_url:
+                        stored = import_member_photo_value(gym_id, member.id, row.photo_url)
+                        if stored:
+                            member.photo_url = stored
+                            photos_imported += 1
+                    phone_to_member[phone] = member
+                    if member.external_id:
+                        external_to_member[member.external_id.strip().lower()] = member
+                    existing_phones.add(phone)
+                    created += 1
+                except Exception as exc:
+                    errors.append(f"Row {idx}: {exc}")
+                    continue
+
             try:
-                member = Member(
-                    gym_id=gym_id,
-                    name=row.name.strip(),
-                    phone=phone,
-                    email=row.email,
-                    gender=row.gender,
-                    date_of_birth=row.date_of_birth,
-                    address=row.address,
-                    joined_date=row.joined_date or date.today(),
-                    member_code=row.member_code,
-                    notes=row.notes,
-                    emergency_contact_name=row.emergency_contact_name,
-                    emergency_contact_phone=normalize_phone(row.emergency_contact_phone)
-                    if row.emergency_contact_phone
-                    else None,
-                    is_active=True,
-                    # ── NEW: Flexible import fields ──
-                    source_system=row.source_system,
-                    alternative_phone=normalize_phone(row.alternative_phone)
-                    if row.alternative_phone
-                    else None,
-                    enrollment_status=row.enrollment_status or "ACTIVE",
-                    biometric_enrolled=False,  # Will be updated if face data available
-                    aadhaar_verified=row.aadhaar_verified or False,
-                    import_metadata=row.import_metadata,
-                )
-                self.db.add(member)
-                self.db.flush()
-
-                if row.photo_url:
-                    stored = import_member_photo_value(gym_id, member.id, row.photo_url)
-                    if stored:
-                        member.photo_url = stored
-                        photos_imported += 1
-
                 if (
                     row.membership_start_date
                     and row.membership_end_date
                     and row.membership_end_date >= row.membership_start_date
                 ):
-                    plan_name = (row.plan_name or "").strip() or self._derive_plan_name(
-                        row.membership_start_date, row.membership_end_date
+                    memberships_created += self._create_inline_membership_from_member_row(
+                        gym_id, member, row, name_to_plan
                     )
-                    plan = name_to_plan.get(plan_name.lower())
-                    if not plan:
-                        duration_days = max(
-                            (row.membership_end_date - row.membership_start_date).days + 1, 1
-                        )
-                        amount = row.membership_amount or Decimal("0")
-                        plan = Plan(
-                            gym_id=gym_id,
-                            name=plan_name,
-                            duration_days=duration_days,
-                            price=amount,
-                            description="Created during member import",
-                            is_active=True,
-                        )
-                        self.db.add(plan)
-                        self.db.flush()
-                        name_to_plan[plan_name.lower()] = plan
-
-                    amount_total = row.membership_amount or plan.price
-                    membership = Membership(
-                        gym_id=gym_id,
-                        member_id=member.id,
-                        plan_id=plan.id,
-                        start_date=row.membership_start_date,
-                        end_date=row.membership_end_date,
-                        amount_total=amount_total,
-                        amount_paid=amount_total,
-                        status=row.membership_status or MembershipStatus.ACTIVE,
-                    )
-                    self.db.add(membership)
-                    self.db.flush()
-                    memberships_created += 1
-
-                existing_phones.add(phone)
-                created += 1
             except Exception as exc:
-                errors.append(f"Row {idx}: {exc}")
+                errors.append(f"Row {idx}: membership — {exc}")
 
         self.db.commit()
         return MemberImportResult(
             total_received=len(req.members),
             created=created,
+            updated=updated,
             skipped_duplicates=skipped,
             memberships_created=memberships_created,
             photos_imported=photos_imported,
             errors=errors,
         )
+
+    def _create_inline_membership_from_member_row(
+        self,
+        gym_id: uuid.UUID,
+        member: Member,
+        row,
+        name_to_plan: dict[str, Plan],
+    ) -> int:
+        plan_name = (row.plan_name or "").strip() or self._derive_plan_name(
+            row.membership_start_date, row.membership_end_date
+        )
+        plan = name_to_plan.get(plan_name.lower())
+        if not plan:
+            duration_days = max(
+                (row.membership_end_date - row.membership_start_date).days + 1, 1
+            )
+            amount = row.membership_amount or Decimal("0")
+            plan = Plan(
+                gym_id=gym_id,
+                name=plan_name,
+                duration_days=duration_days,
+                price=amount,
+                description="Created during member import",
+                is_active=True,
+            )
+            self.db.add(plan)
+            self.db.flush()
+            name_to_plan[plan_name.lower()] = plan
+
+        amount_total = row.membership_amount or plan.price
+        membership = Membership(
+            gym_id=gym_id,
+            member_id=member.id,
+            plan_id=plan.id,
+            start_date=row.membership_start_date,
+            end_date=row.membership_end_date,
+            amount_total=amount_total,
+            amount_paid=amount_total,
+            status=row.membership_status or MembershipStatus.ACTIVE,
+            source_system=row.source_system,
+        )
+        self.db.add(membership)
+        self.db.flush()
+        return 1
 
     # ── Plans ──────────────────────────────────────────────────────
 
@@ -223,17 +241,29 @@ class MigrationService:
         self, gym_id: uuid.UUID, req: MembershipImportRequest
     ) -> MembershipImportResult:
         created = 0
+        updated = 0
         skipped = 0
         errors: list[str] = []
 
         phone_to_member = self._phone_to_member_map(gym_id)
+        external_to_member = self._external_id_to_member_map(gym_id)
         name_to_plan = self._name_to_plan_map(gym_id)
+        import_ref_index = self._import_ref_to_membership_map(gym_id)
 
         for idx, row in enumerate(req.memberships, start=1):
             phone = normalize_phone(row.member_phone) or row.member_phone.strip()
-            member = phone_to_member.get(phone)
+            member = None
+            if row.member_external_id:
+                member = external_to_member.get(row.member_external_id.strip().lower())
             if not member:
-                errors.append(f"Row {idx}: member phone {phone} not found")
+                member = phone_to_member.get(phone)
+            if not member:
+                errors.append(f"Row {idx}: member not found (phone {phone})")
+                continue
+
+            ref_key = (row.import_ref or "").strip()
+            if ref_key and ref_key in import_ref_index:
+                skipped += 1
                 continue
 
             plan_name = row.plan_name.strip() or self._derive_plan_name(row.start_date, row.end_date)
@@ -266,17 +296,14 @@ class MigrationService:
                     amount_total=row.amount_total,
                     amount_paid=row.amount_paid,
                     status=row.status,
-                    # ── NEW: Flexible membership fields ──
-                    renewal_date=row.renewal_date,
-                    freeze_start_date=row.freeze_start_date,
-                    freeze_end_date=row.freeze_end_date,
                     discount_amount=row.discount_amount or Decimal("0"),
-                    payment_method=row.payment_method,
                     auto_renewal=row.auto_renewal or False,
-                    import_ref=row.import_ref,
                 )
+                apply_membership_import_row(membership, row)
                 self.db.add(membership)
                 self.db.flush()
+                if ref_key:
+                    import_ref_index[ref_key] = membership
                 created += 1
             except Exception as exc:
                 errors.append(f"Row {idx}: {exc}")
@@ -285,6 +312,7 @@ class MigrationService:
         return MembershipImportResult(
             total_received=len(req.memberships),
             created=created,
+            updated=updated,
             skipped=skipped,
             errors=errors,
         )
@@ -446,8 +474,11 @@ class MigrationService:
                 )
             ).scalar_one_or_none()
 
+            now = datetime.now(timezone.utc)
             if existing:
                 existing.member_id = member.id
+                existing.is_enrolled = True
+                existing.enrollment_date = now
                 updated += 1
             else:
                 mapping = DeviceUserMapping(
@@ -455,12 +486,16 @@ class MigrationService:
                     device_id=device.id,
                     member_id=member.id,
                     device_user_id=row.device_user_id,
+                    is_enrolled=True,
+                    enrollment_date=now,
                 )
                 self.db.add(mapping)
                 created += 1
 
             if not member.member_code:
                 member.member_code = row.device_user_id
+            member.biometric_enrolled = True
+            member.last_biometric_sync = now
 
         self.db.commit()
         return DeviceUserMappingResult(
@@ -675,8 +710,11 @@ class MigrationService:
         seen_in_file: set[str] = set()
         rows: list[ImportPreviewRow] = []
 
+        external_to_member = self._external_id_to_member_map(gym_id)
+
         for idx, row in enumerate(req.members, start=1):
             phone = normalize_phone(row.phone) or (row.phone or "").strip()
+            ext_key = (row.external_id or "").strip().lower() or None
             name = (row.name or "").strip()
             if not name:
                 rows.append(ImportPreviewRow(
@@ -698,10 +736,28 @@ class MigrationService:
                 continue
             seen_in_file.add(phone)
             if phone in existing_phones:
-                rows.append(ImportPreviewRow(
-                    row_number=idx, action=ImportPreviewAction.SKIP,
-                    summary="Member already exists", identifier=phone,
-                ))
+                if req.update_existing:
+                    rows.append(ImportPreviewRow(
+                        row_number=idx, action=ImportPreviewAction.UPDATE,
+                        summary=f"Will update {name}", identifier=phone,
+                    ))
+                else:
+                    rows.append(ImportPreviewRow(
+                        row_number=idx, action=ImportPreviewAction.SKIP,
+                        summary="Member already exists", identifier=phone,
+                    ))
+                continue
+            if ext_key and ext_key in external_to_member:
+                if req.update_existing:
+                    rows.append(ImportPreviewRow(
+                        row_number=idx, action=ImportPreviewAction.UPDATE,
+                        summary=f"Will update {name} (external_id)", identifier=ext_key,
+                    ))
+                else:
+                    rows.append(ImportPreviewRow(
+                        row_number=idx, action=ImportPreviewAction.SKIP,
+                        summary="Member already exists (external_id)", identifier=ext_key,
+                    ))
                 continue
             extras: list[str] = []
             if row.photo_url:
@@ -927,6 +983,30 @@ class MigrationService:
             select(Plan).where(Plan.gym_id == gym_id)
         ).scalars().all()
         return {p.name.lower(): p for p in plans}
+
+    def _external_id_to_member_map(self, gym_id: uuid.UUID) -> dict[str, Member]:
+        members = self.db.execute(
+            select(Member).where(
+                and_(Member.gym_id == gym_id, Member.external_id.isnot(None))
+            )
+        ).scalars().all()
+        return {
+            (m.external_id or "").strip().lower(): m
+            for m in members
+            if (m.external_id or "").strip()
+        }
+
+    def _import_ref_to_membership_map(self, gym_id: uuid.UUID) -> dict[str, Membership]:
+        rows = self.db.execute(
+            select(Membership).where(
+                and_(Membership.gym_id == gym_id, Membership.import_ref.isnot(None))
+            )
+        ).scalars().all()
+        return {
+            (m.import_ref or "").strip(): m
+            for m in rows
+            if (m.import_ref or "").strip()
+        }
 
     def _derive_plan_name(self, start_date: date, end_date: date) -> str:
         duration_days = max((end_date - start_date).days + 1, 1)

@@ -1,288 +1,213 @@
-# 📚 Gym Owner's Import & Biometric Guide
+# Gym Owner Import Guide — ActiveHQ
 
-## Welcome! 👋
+This guide is for **owners and managers** moving members, memberships, and biometric attendance from another gym app (GymSoft, AdviceFit, eTimeTrack, Excel exports, etc.). You do **not** need technical skills.
 
-This guide explains the **new import features** in ActiveHQ that make it easier to bring data from your old gym software. No technical knowledge needed!
-
----
-
-## 🎯 Why These Changes?
-
-### The Problem
-- Old gym software exports don't have everything
-- Different systems have different fields
-- Biometric (face) data wasn't handled properly
-- When you paused a member's membership, there was no good way to track it
-
-### The Solution
-We've upgraded ActiveHQ to be **flexible** about data import:
-- Accept data even if some fields are missing
-- Track which system data came from
-- Store face/fingerprint data properly
-- Support membership freezes (for medical leaves, vacation, etc.)
+Use **Settings → Import Data** in ActiveHQ (not the small “bulk upload” on the Members page — that only adds name and phone).
 
 ---
 
-## 📋 What's New for You
+## Before you start
 
-### 1. Member Data - More Fields
-
-When importing members, you can now specify:
-
-| Field | Example | What It Means |
-|-------|---------|---------------|
-| **Name** | Raj Kumar | Member's name (required) |
-| **Phone** | 9876543210 | Primary contact (required) |
-| **Email** | raj@email.com | Email address (optional) |
-| **Alternate Phone** | 9123456789 | Extra phone number (for family/friend) |
-| **Source System** | "GymSoft" | Tells ActiveHQ which old software it came from |
-| **Enrollment Status** | ACTIVE / NEW / PAUSED | Is member active, new, or paused? |
-| **Biometric Status** | True / False | Does member have face/fingerprint enrolled? |
-| **Notes** | "Family of 3" | Any special info about the member |
-| **Extra Data** | JSON | Any other info from old software (stored safely) |
-
-### 2. Membership Data - Better Tracking
-
-When importing memberships, you can now specify:
-
-| Field | Example | What It Means |
-|-------|---------|---------------|
-| **Plan Name** | "Gold - 12 Month" | Type of membership plan |
-| **Start Date** | 2024-01-01 | When membership started |
-| **End Date** | 2025-01-01 | When membership expires |
-| **Renewal Date** | 2024-12-15 | When to send renewal reminder (optional) |
-| **Freeze Period** | Jan 1 - Mar 31 | When member paused membership (medical leave, etc.) |
-| **Amount Total** | ₹12,000 | Full membership price |
-| **Amount Paid** | ₹10,000 | What member has paid so far |
-| **Discount** | ₹2,000 | Amount discounted (tracked separately) |
-| **Payment Method** | CASH / UPI / CARD | How member prefers to pay |
-| **Auto Renewal** | Yes / No | Should we remind before expiry? |
-
-### 3. Biometric (Face/Fingerprint) - Better Management
-
-We now store face data **separately** so:
-- Same member can be enrolled on **multiple devices** (office + home)
-- Each device stores the face template safely
-- We track the **quality of enrollment** (how good the face scan was)
-- If enrollment fails on one device, you can use another
+1. **Export CSV** from your old software’s portal (Members, Memberships, Payments, Attendance if available).
+2. Open files in Excel or Google Sheets once — fix obvious broken phones and dates.
+3. **Run database migrations** on your server (your tech person or Render deploy): `alembic upgrade head`.
+4. Plan **one evening** for import + **next day** for biometric enrollment on the physical device.
 
 ---
 
-## 💡 Real-World Examples
+## Import order (follow this every time)
 
-### Example 1: Importing from GymSoft
+| Step | What | Why |
+|------|------|-----|
+| 1 | **Plans** (optional) | ActiveHQ can create plans from membership dates, but importing plans first avoids duplicate plan names. |
+| 2 | **Members** | Everything else links by phone or old software ID. |
+| 3 | **Memberships** | Needs members to exist first. |
+| 4 | **Payments** | Historical money records (optional). |
+| 5 | **Attendance** | Needs **Device User ID** on each member (see biometric section). |
+| 6 | **Verify** | Check totals and biometric device status. |
 
-**You have:**
-- Member list from GymSoft export (has name, phone, membership dates)
-- But NO email addresses
-- No information about special notes
+---
 
-**ActiveHQ lets you:**
-```
-Import what you have (name, phone, membership dates)
-Leave other fields empty
-Add extra notes later as you remember them
+## Step 1 — Members CSV
+
+### Required columns
+
+| Your export might say | ActiveHQ uses | Rule |
+|----------------------|---------------|------|
+| Name, Member Name | `name` | Required |
+| Phone, Mobile | `phone` | Required — 10-digit Indian mobile |
+
+### Strongly recommended
+
+| Column aliases we accept | Stored as | Why |
+|--------------------------|-----------|-----|
+| Old ID, Member ID, Legacy ID, Source ID | **external_id** | Same person on **re-import** from the portal — turn on **Update existing members** |
+| Code, Device User ID, Face ID, User ID, Biometric ID | **member_code** | Must match the number on your **eSSL device** after face enroll |
+| Email | email | Optional |
+| Join Date | joined_date | `YYYY-MM-DD` or `DD/MM/YYYY` |
+| City, State, Pincode | address fields | Optional |
+| Alternate Phone, Phone2 | alternate_phone | Optional |
+| Source System, Software | source_system | e.g. `GymSoft`, `AdviceFit` |
+| Package, Plan, Membership Type | plan_name | If start/end dates are in the same row, membership is created too |
+| Start Date, End Date | membership dates | Both needed to auto-create a membership |
+| Price, Amount | membership amount | Optional |
+| Photo URL | photo_url | URL only (not login-page screenshots) |
+
+### Any other columns
+
+Columns we do not recognize are saved in **import_metadata** (nothing is thrown away). You can view them on the member profile after import.
+
+### Example members CSV
+
+```csv
+name,phone,external_id,code,email,city,package,start_date,end_date,price,source_system
+Rajesh Kumar,9876543210,AD1001,4,rajesh@email.com,Mumbai,Monthly,2026-03-01,2026-03-31,1500,GymSoft
+Priya Sharma,9123456789,AD1002,5,,Delhi,Monthly,2026-03-01,2026-03-31,1500,GymSoft
 ```
 
-✅ No problem! Import works fine.
+### Re-importing from the portal (second export)
+
+1. Upload the new CSV on the **Members** step.
+2. Turn on **Update existing members**.
+3. Click **Review import** — you should see **update** (not skip) for rows that match `external_id` or phone.
+4. Confirm import.
+
+Empty cells in the new file **do not erase** data you already have.
 
 ---
 
-### Example 2: Member on Medical Leave
+## Step 2 — Memberships CSV
 
-**You have:**
-- Raj Kumar's membership was "ACTIVE" from Jan 1 - Dec 31
-- But he was on medical leave from Jan 1 - Mar 31
+### Required
 
-**Old system:** No way to track this. You had to manually manage it.
+| Column | Rule |
+|--------|------|
+| member_phone | Must match an imported member |
+| plan_name | e.g. Monthly, Gold 12 Month |
+| start_date, end_date | End must be on or after start |
+| amount_total | Package price |
 
-**ActiveHQ:**
-```
-Membership fields:
-  Start Date: Jan 1, 2024
-  End Date: Dec 31, 2024
-  Freeze Start: Jan 1, 2024 ← NEW
-  Freeze End: Mar 31, 2024 ← NEW
-  Status: PAUSED
-```
+### Recommended
 
-✅ Now ActiveHQ knows he was paused during that period!
+| Column | Purpose |
+|--------|---------|
+| import_ref, membership_id, subscription_id, invoice_id | Old system ID — **prevents importing the same membership twice** |
+| member_external_id, external_id | Use when phone changed in old software but ID stayed the same |
+| amount_paid | Balance tracking |
+| status | active / expired / paused / cancelled |
+| renewal_date, freeze_start, freeze_end | Paused / medical leave |
+| payment_method | CASH, UPI, CARD, etc. |
 
----
+### Example memberships CSV
 
-### Example 3: Face Data on Multiple Devices
-
-**You have:**
-- Device A (fingerprint machine at entrance)
-- Device B (face camera at gym floor)
-
-**Raj Kumar enrolls on both:**
-- Device A stores his fingerprint ID
-- Device B stores his face template
-
-**Old system:** Messy, confusing, data duplication.
-
-**ActiveHQ:** 
-```
-Separate face template storage
-Each device has its own record
-Same member, different devices
-All linked together properly
+```csv
+member_phone,external_id,plan_name,start_date,end_date,amount_total,amount_paid,import_ref,status
+9876543210,AD1001,Monthly,2026-03-01,2026-03-31,1500,1500,SUB-8821,active
 ```
 
-✅ Biometric data stays organized!
+**Tip:** If your export is only a member list **without** start/end dates, import it on the **Members** step, not Memberships.
 
 ---
 
-## 🚀 How to Use (Step by Step)
+## Step 3 — Payments & attendance (optional)
 
-### Step 1: Prepare Your Data
+**Payments:** need `date`, `phone`, `amount`. Import members first.
 
-Export from old software as CSV or JSON:
-- Members list (name, phone, etc.)
-- Memberships (plan name, dates, amounts)
-- Any other details available
-
-**❌ Don't worry if:**
-- Some columns are missing
-- Data format is different
-- Some fields are empty
-
-### Step 2: Login to ActiveHQ
-
-As **Owner** or **Manager**, go to:
-```
-Dashboard → Import Data
-```
-
-### Step 3: Choose What to Import
-
-Options:
-- Import Members
-- Import Memberships
-- Import Payments
-- Import Attendance
-
-### Step 4: Map Your Columns
-
-ActiveHQ will ask you to match your columns:
-```
-Your CSV Column → ActiveHQ Field
-"Member Name" → "name"
-"Phone Number" → "phone"
-"Old Software ID" → "import_metadata" (extra data)
-```
-
-### Step 5: Preview & Confirm
-
-ActiveHQ shows:
-- ✅ How many records will be imported
-- ⚠️ Any warnings or errors
-- ❌ Rows that can't be imported (why?)
-
-**You decide:** Import all, or fix errors first?
-
-### Step 6: Biometric Enrollment
-
-After importing:
-1. Members get check-in via app/SMS
-2. First check-in requires **face/fingerprint scan**
-3. ActiveHQ stores face template securely
-4. Future visits: automatic recognition!
+**Attendance:** need `person_identifier` (same as Device User ID / member code) and `timestamp`. Import members and set codes first, or map device users in **Settings → Biometric**.
 
 ---
 
-## ❓ Common Questions
+## Biometric (face) — critical for owners
 
-### Q: What if a member's phone number is missing?
-**A:** ActiveHQ will skip that row and show an error. Phone is required (we use it to find the member).
+ActiveHQ **does not** copy face photos from your old software or from the member profile picture. Faces must be enrolled **on the eSSL device** in your gym.
 
-### Q: Can I import the same member twice?
-**A:** No, ActiveHQ prevents duplicates. If same phone exists, it skips that row.
+### What you must do
 
-### Q: What if I made a mistake in import?
-**A:** Contact support or delete/re-import that member. All data is tracked by `import_ref` (reference number).
+1. **Settings → Biometric (eSSL)** — register device, copy agent token, run the agent on a **PC on the same Wi‑Fi** as the device.
+2. For each member, set **Device User ID** on the member profile (or in CSV as `code` / `device_user_id`). It must match the **User ID on the device screen** (e.g. `4`).
+3. On the **device**, enroll each member’s face (device menu — not ActiveHQ).
+4. Run the **biometric agent** so punches reach ActiveHQ.
 
-### Q: Do I need to re-enroll all members' faces?
-**A:** Yes. For security, ActiveHQ captures fresh face data on first check-in after import.
+### After import
 
-### Q: Can I import partial data and fill in later?
-**A:** Yes! Leave fields blank, add details later via dashboard.
+| Status on profile | Meaning |
+|-------------------|---------|
+| Biometric linked | ID is mapped; punches can match this member |
+| Biometric not linked | Set Device User ID and enroll on device |
 
-### Q: What's "Source System"?
-**A:** Which software the data came from (GymSoft, eTimeTrack, etc.). Helps you remember where each record originated.
+### If attendance does not show
 
-### Q: What if the freeze period doesn't match my membership dates?
-**A:** No problem! You can set:
-- Membership valid: Jan 1 - Dec 31
-- But paused: Jan 1 - Mar 31
-- Automatically tracks freeze periods separately
+- Agent running on gym LAN?
+- Device User ID on member = ID on device?
+- Face enrolled on device (not only photo in ActiveHQ)?
+- Check **Verify** step → “Unmapped device users” / conflicts.
 
----
+### Common mistakes
 
-## ✅ Import Checklist
-
-Before importing, verify:
-
-- [ ] Phone numbers are in correct format (10 digits)
-- [ ] Dates are formatted as YYYY-MM-DD
-- [ ] Amounts are positive numbers
-- [ ] No duplicate phone numbers in same file
-- [ ] Membership end_date is after start_date
-- [ ] Plans already exist in ActiveHQ (import plans first!)
+| Mistake | Result |
+|---------|--------|
+| Only uploaded profile photo | Device will not recognize them |
+| Wrong User ID | Punch appears as “unknown member” |
+| No agent on LAN | Device works locally but ActiveHQ sees nothing |
+| Import attendance before setting codes | Rows skipped as unknown |
 
 ---
 
-## 📊 After Import - What Happens?
+## Using the Import Data wizard
 
-### Immediate (Within 1 minute)
-✅ All records created in ActiveHQ
-✅ Members can log in via app/portal
-✅ Staff can see member data in dashboard
-
-### Within 24 hours
-✅ System sends SMS/WhatsApp: "Welcome to ActiveHQ"
-✅ Members can schedule face enrollment
-
-### First Check-in
-✅ Member's face is captured and stored
-✅ Future visits: automatic recognition
-✅ Attendance is logged
+1. Go to **Settings → Import Data**.
+2. Select step: Members → Plans → Memberships → …
+3. Upload CSV (UTF-8, comma-separated).
+4. Read any **yellow warning** (wrong file for this step).
+5. For members: optionally enable **Update existing members**.
+6. Click **Review import** — check create / update / skip / error per row.
+7. Click **Confirm import** only when errors are acceptable.
+8. Finish with **Verify** — compare member counts and biometric conflicts.
 
 ---
 
-## 🔐 Data Security & Privacy
+## Checklist before go-live
 
-Your data is safe:
-- ✅ All data encrypted in database
-- ✅ Face templates stored securely (binary, not photos)
-- ✅ Only your gym's staff can see member data
-- ✅ Audit trail tracks all changes
-- ✅ Complies with Indian privacy laws
-
----
-
-## 📞 Need Help?
-
-If import fails or you have questions:
-
-1. **Check preview errors** - ActiveHQ tells you what's wrong
-2. **Read this guide** - Answers common questions
-3. **Contact support** - We're here to help!
+- [ ] Phones are 10 digits (no country code, or we strip `91`)
+- [ ] No duplicate phones in the same CSV
+- [ ] Membership `end_date` ≥ `start_date`
+- [ ] `external_id` filled if you will re-export from old portal
+- [ ] `code` / Device User ID filled for members who use biometric
+- [ ] Plans/memberships imported in order
+- [ ] Faces enrolled on **device** after import
+- [ ] Biometric agent shows recent events on **Verify** step
+- [ ] Spot-check 3 members: profile, membership dates, test punch
 
 ---
 
-## 🎉 Next Steps
+## Quick FAQ
 
-1. Export data from old software
-2. Go to "Import Data" in ActiveHQ dashboard
-3. Follow the step-by-step wizard
-4. Verify imported records
-5. Share details with members
-6. Enroll biometric data as members check in
+**Can I import without email?**  
+Yes. Phone + name are enough.
 
-**Questions? Let us know!** We're here to make the transition smooth! 😊
+**Same member imported twice by mistake?**  
+Use `external_id` and **Update existing members**, or we skip duplicate phones.
+
+**Old software only gives a login portal, not a full export?**  
+Export whatever screens allow (members, subscriptions, invoices). Put odd columns in the CSV anyway — we store unmapped fields in `import_metadata`.
+
+**Member paid but membership shows due?**  
+Re-import payment history on the Payments step, or record payment manually.
+
+**Paused / medical leave?**  
+Use membership `status` = paused and optional freeze start/end columns.
+
+**Who can import?**  
+Owner or Manager.
 
 ---
 
-*For technical staff: See ENHANCED-DATA-IMPORT-GUIDE.md for detailed API documentation.*
+## Need help?
+
+1. Use **Review import** — every problem row is listed with a reason.  
+2. Share the first 5 error lines with support.  
+3. Technical API details: `ENHANCED-DATA-IMPORT-GUIDE.md`.
+
+---
+
+*Last updated: May 2026 — includes `external_id`, update-on-reimport, and biometric Device User ID workflow.*

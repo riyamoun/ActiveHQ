@@ -29,6 +29,16 @@ class MemberImportRow(BaseModel):
     member_code: str | None = Field(None, max_length=50,
         description="Device user ID from the biometric device. "
                     "Will be stored as member_code for attendance mapping.")
+    external_id: str | None = Field(
+        None,
+        max_length=255,
+        description="Member ID from old software — used to update the same person on re-import",
+    )
+    alternate_phone: str | None = Field(None, max_length=15)
+    city: str | None = Field(None, max_length=100)
+    state: str | None = Field(None, max_length=100)
+    pincode: str | None = Field(None, max_length=10)
+    remarks: str | None = None
     notes: str | None = None
     emergency_contact_name: str | None = None
     emergency_contact_phone: str | None = None
@@ -77,11 +87,16 @@ class MemberImportRequest(BaseModel):
     skip_duplicates: bool = Field(True,
         description="If true, skip rows whose phone already exists; "
                     "if false, reject entire batch on first duplicate.")
+    update_existing: bool = Field(
+        False,
+        description="If true, update members matched by external_id or phone instead of skipping",
+    )
 
 
 class MemberImportResult(BaseModel):
     total_received: int
     created: int
+    updated: int = 0
     skipped_duplicates: int
     memberships_created: int = 0
     photos_imported: int = 0
@@ -152,6 +167,12 @@ class MembershipImportRow(BaseModel):
         max_length=255,
         description="Reference ID from source system for data reconciliation"
     )
+    source_system: str | None = Field(None, max_length=100)
+    member_external_id: str | None = Field(
+        None,
+        max_length=255,
+        description="Resolve member by old-system ID when phone differs between exports",
+    )
 
 
 class MembershipImportRequest(BaseModel):
@@ -161,6 +182,7 @@ class MembershipImportRequest(BaseModel):
 class MembershipImportResult(BaseModel):
     total_received: int
     created: int
+    updated: int = 0
     skipped: int
     errors: list[str]
 
