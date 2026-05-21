@@ -105,7 +105,12 @@ class Settings(BaseSettings):
     smtp_from: str = ""
     
     # CORS - stored as comma-separated string, accessed as list via property
-    cors_origins_str: str = "http://localhost:3000,http://localhost:5173"
+    # capacitor:// (iOS) and https://localhost (Android Capacitor 6 default) are
+    # the WebView origins for the native mobile app.
+    cors_origins_str: str = (
+        "http://localhost:3000,http://localhost:5173,"
+        "capacitor://localhost,https://localhost,http://localhost"
+    )
     # Allows Vercel preview deployments and the production custom domain.
     # Examples: https://active-hq-git-feature-abc-hp.vercel.app, https://activehq.fit
     cors_allow_origin_regex: str = r"^https://((.*\.vercel\.app)|(www\.)?activehq\.fit)$"

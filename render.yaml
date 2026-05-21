@@ -24,7 +24,7 @@ services:
       - key: CORS_ORIGINS_STR
         sync: false
         # Set in Dashboard (no spaces), then Manual Deploy:
-        # https://www.activehq.fit,https://activehq.fit,https://active-hq.vercel.app,https://active-gcylu4czt-riyamouns-projects.vercel.app
+        # https://www.activehq.fit,https://activehq.fit,https://active-hq.vercel.app,capacitor://localhost,https://localhost
       - key: CORS_ALLOW_ORIGIN_REGEX
         value: ^https://((.*\.vercel\.app)|(www\.)?activehq\.fit)$
       - key: ACCESS_TOKEN_EXPIRE_MINUTES

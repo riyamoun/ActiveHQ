@@ -14,6 +14,7 @@ import {
   ContactPage,
   PrivacyPage,
   TermsPage,
+  AccountDeletePage,
 } from '@/pages/public'
 import {
   MemberLayout,
@@ -116,6 +117,7 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/account/delete" element={<AccountDeletePage />} />
         </Route>
 
         <Route element={<AuthLayout />}>

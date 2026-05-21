@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
+import StoreBadges from '@/components/mobile/StoreBadges';
 
 export function SimpleFooter() {
   return (
@@ -40,14 +41,18 @@ export function SimpleFooter() {
             <div className="space-y-2 text-sm">
               <Link to="/privacy" className="block text-slate-400 hover:text-white transition-colors">Privacy Policy</Link>
               <Link to="/terms" className="block text-slate-400 hover:text-white transition-colors">Terms of Service</Link>
+              <Link to="/account/delete" className="block text-slate-400 hover:text-white transition-colors">Delete Account</Link>
             </div>
           </div>
         </div>
 
         {/* Bottom */}
-        <div className="mt-8 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-8 pt-8 border-t border-slate-800 space-y-4">
+          <StoreBadges />
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-slate-600 text-sm">© 2026 ActiveHQ. All rights reserved.</p>
           <p className="text-slate-600 text-sm">Made in India 🇮🇳</p>
+          </div>
         </div>
       </div>
     </footer>

@@ -48,9 +48,13 @@ export const API_CONSTANTS = {
     // if VITE_API_URL is not configured on Vercel, default to Render API
     if (typeof window !== 'undefined') {
       const host = window.location.hostname
+      const isCapacitor =
+        host === 'localhost' ||
+        (typeof window !== 'undefined' &&
+          (window as Window & { Capacitor?: unknown }).Capacitor !== undefined)
       const isVercelPreview = host === 'active-hq.vercel.app' || host.endsWith('.vercel.app')
       const isCustomProdDomain = host === 'activehq.fit' || host === 'www.activehq.fit'
-      if (isVercelPreview || isCustomProdDomain) {
+      if (isCapacitor || isVercelPreview || isCustomProdDomain) {
         return 'https://activehq-api.onrender.com/api/v1'
       }
     }

@@ -9,3 +9,4 @@ export { GymsOnActiveHQPage } from './pages/GymsOnActiveHQPage';
 export { ContactPage } from './pages/ContactPage';
 export { PrivacyPage } from './pages/PrivacyPage';
 export { TermsPage } from './pages/TermsPage';
+export { AccountDeletePage } from './pages/AccountDeletePage';

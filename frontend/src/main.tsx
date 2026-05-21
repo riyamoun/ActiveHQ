@@ -8,6 +8,7 @@ import { HelmetProvider } from 'react-helmet-async'
 import App from './App'
 import { RouteAnalytics } from '@/components/analytics/RouteAnalytics'
 import { initializeAttribution } from '@/lib/analytics'
+import { initializeNativeApp } from '@/lib/native'
 import './index.css'
 
 if (import.meta.env.VITE_SENTRY_DSN) {
@@ -19,6 +20,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 }
 
 initializeAttribution()
+void initializeNativeApp()
 
 const queryClient = new QueryClient({
   defaultOptions: {

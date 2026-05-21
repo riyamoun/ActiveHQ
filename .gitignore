@@ -21,6 +21,23 @@ build/
 dist/
 *.egg-info/
 
+# Capacitor native build artifacts (projects are committed; not build outputs)
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/android/build/
+frontend/android/local.properties
+frontend/android/app/src/main/assets/public/
+frontend/ios/App/Pods/
+frontend/ios/App/App/public/
+frontend/ios/DerivedData/
+*.jks
+*.keystore
+frontend/android/keystore.properties
+!frontend/android/.gitkeep
+
+# Mobile env (may contain secrets)
+frontend/.env.mobile
+
 # Logs
 *.log
 logs/
