@@ -194,3 +194,39 @@ class TestChangePassword:
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert response.status_code == 422
+
+
+class TestDeleteMyAccount:
+    """Test self-service account deletion."""
+
+    def test_delete_my_account_success(self, client: TestClient, owner_token: str):
+        response = client.request(
+            "DELETE",
+            "/api/v1/auth/me",
+            json={"password": "Owner@123", "confirm_text": "DELETE"},
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        assert response.status_code == 200
+        assert response.json()["message"] == "Account deleted"
+
+        # Token should now be invalid because user is inactive.
+        me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {owner_token}"})
+        assert me.status_code in (401, 403)
+
+    def test_delete_my_account_wrong_password(self, client: TestClient, owner_token: str):
+        response = client.request(
+            "DELETE",
+            "/api/v1/auth/me",
+            json={"password": "WrongPass@123", "confirm_text": "DELETE"},
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        assert response.status_code == 400
+
+    def test_delete_my_account_requires_confirm_text(self, client: TestClient, owner_token: str):
+        response = client.request(
+            "DELETE",
+            "/api/v1/auth/me",
+            json={"password": "Owner@123", "confirm_text": "NOPE"},
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        assert response.status_code == 422

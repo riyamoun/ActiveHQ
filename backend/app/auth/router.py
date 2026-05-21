@@ -23,6 +23,7 @@ from app.auth.schemas import (
     TotpSetupResponse,
     TotpEnableRequest,
     TotpDisableRequest,
+    AccountDeleteRequest,
 )
 from app.auth.service import AuthService
 from app.auth.dependencies import (
@@ -234,6 +235,24 @@ def change_password(
         )
     
     return {"message": "Password changed successfully"}
+
+
+@router.delete("/me")
+def delete_my_account(
+    request: AccountDeleteRequest,
+    current_user: CurrentUserDep,
+    db: DbDep,
+):
+    """Self-service account deletion (soft delete)."""
+    service = AuthService(db)
+    try:
+        service.deactivate_own_account(current_user, request.password)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    return {"message": "Account deleted"}
 
 
 # Staff management endpoints (Owner/Manager only)

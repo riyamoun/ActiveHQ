@@ -11,8 +11,10 @@ from pydantic import BaseModel, Field
 
 from app.auth.dependencies import TenantDep, DbDep, require_manager_or_above
 from app.models.enums import NotificationChannel, NotificationType
+from app.models import MobilePushToken
 from app.notifications.service import NotificationService
 from app.core.logger import logger
+from app.notifications.push_schemas import PushTokenRegisterRequest, PushTokenRegisterResponse
 
 router = APIRouter()
 
@@ -54,6 +56,50 @@ class BulkWhatsAppRequest(BaseModel):
     """Send WhatsApp to multiple members."""
     member_ids: list[uuid.UUID] = Field(..., min_length=1)
     message: str = Field(..., min_length=1, max_length=1000)
+
+
+@router.post("/notifications/push-token", response_model=PushTokenRegisterResponse, status_code=status.HTTP_200_OK)
+def register_push_token(
+    payload: PushTokenRegisterRequest,
+    tenant: TenantDep,
+    db: DbDep,
+    _: object = Depends(require_manager_or_above),
+):
+    """
+    Register/update FCM/APNs token for staff push notifications.
+    Android-first rollout: this endpoint stores token metadata only.
+    """
+    from datetime import datetime, timezone
+    if not tenant.user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User identity required")
+
+    now = datetime.now(timezone.utc)
+    row = db.query(MobilePushToken).filter(
+        MobilePushToken.platform == payload.platform,
+        MobilePushToken.token == payload.token,
+    ).first()
+    if row:
+        row.gym_id = tenant.gym_id
+        row.user_id = tenant.user_id
+        row.device_id = payload.device_id
+        row.app_version = payload.app_version
+        row.last_seen_at = now
+        row.is_active = True
+    else:
+        db.add(
+            MobilePushToken(
+                gym_id=tenant.gym_id,
+                user_id=tenant.user_id,
+                platform=payload.platform,
+                token=payload.token,
+                device_id=payload.device_id,
+                app_version=payload.app_version,
+                last_seen_at=now,
+                is_active=True,
+            )
+        )
+    db.commit()
+    return PushTokenRegisterResponse(message="Push token registered")
 
 
 @router.post("/notifications/sms", status_code=status.HTTP_200_OK)

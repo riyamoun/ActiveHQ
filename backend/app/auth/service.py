@@ -19,6 +19,7 @@ from app.core.security import (
     hash_refresh_token,
 )
 from app.models import Gym, User, RefreshToken
+from app.models.mobile_push_token import MobilePushToken
 from app.models.enums import UserRole, SubscriptionStatus
 from app.auth.schemas import (
     LoginRequest,
@@ -422,3 +423,35 @@ class AuthService:
         row.revoked = True
         self.db.commit()
         return True
+
+    def deactivate_own_account(self, user: User, password: str) -> None:
+        """
+        Owner/staff self-service deletion (soft delete).
+        Also deactivates gym when the owner account is deleted.
+        """
+        if not verify_password(password, user.password_hash):
+            raise ValueError("Current password is incorrect")
+
+        # Revoke all refresh tokens for this user to force immediate logout on all devices.
+        self.db.query(RefreshToken).filter(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked == False,  # noqa: E712
+        ).update({"revoked": True}, synchronize_session=False)
+
+        # Deactivate all push tokens so no notifications are sent to a deleted account.
+        self.db.query(MobilePushToken).filter(
+            MobilePushToken.user_id == user.id,
+        ).update({"is_active": False}, synchronize_session=False)
+
+        user.is_active = False
+        user.totp_enabled = False
+        user.totp_secret = None
+
+        if user.role == UserRole.OWNER:
+            gym = self.db.execute(
+                select(Gym).where(Gym.id == user.gym_id)
+            ).scalar_one_or_none()
+            if gym:
+                gym.is_active = False
+
+        self.db.commit()

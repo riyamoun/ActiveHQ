@@ -74,6 +74,15 @@ export const authService = {
     })
   },
 
+  async deleteMyAccount(password: string): Promise<void> {
+    await api.delete('/auth/me', {
+      data: {
+        password,
+        confirm_text: 'DELETE',
+      },
+    })
+  },
+
   async getUsers(): Promise<User[]> {
     const response = await api.get<User[]>('/auth/users')
     return response.data
@@ -104,6 +113,18 @@ export const gymService = {
 
   async updateSettings(settings: Record<string, unknown>): Promise<Gym> {
     const response = await api.put<Gym>('/gym/current/settings', { settings })
+    return response.data
+  },
+}
+
+export const deviceService = {
+  async registerPushToken(data: {
+    platform: 'android' | 'ios' | 'web'
+    token: string
+    device_id?: string
+    app_version?: string
+  }): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/notifications/push-token', data)
     return response.data
   },
 }

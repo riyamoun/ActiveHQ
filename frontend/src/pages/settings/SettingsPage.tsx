@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
-import { gymService, authService } from '@/services/authService'
+import { gymService, authService, deviceService } from '@/services/authService'
 import { getErrorMessage } from '@/lib/api'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
 import { Upload, Settings, Fingerprint } from 'lucide-react'
+import { isNativeApp, nativePlatform, registerNativePushToken } from '@/lib/native'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
@@ -17,6 +18,8 @@ export default function SettingsPage() {
   const [totpEnableCode, setTotpEnableCode] = useState('')
   const [totpDisablePassword, setTotpDisablePassword] = useState('')
   const [totpDisableCode, setTotpDisableCode] = useState('')
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState('')
   const [totpBusy, setTotpBusy] = useState(false)
 
   // Gym form state
@@ -52,6 +55,34 @@ export default function SettingsPage() {
     onSuccess: () => {
       toast.success('Password changed successfully')
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  })
+
+  const registerPushMutation = useMutation({
+    mutationFn: async () => {
+      if (!isNativeApp) throw new Error('Push registration is only available in mobile app')
+      const token = await registerNativePushToken()
+      if (!token) throw new Error('Could not get push token from device')
+      return deviceService.registerPushToken({
+        platform: nativePlatform === 'android' ? 'android' : nativePlatform === 'ios' ? 'ios' : 'web',
+        token,
+      })
+    },
+    onSuccess: () => {
+      toast.success('Push notifications enabled for this device')
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  })
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => authService.deleteMyAccount(deletePassword),
+    onSuccess: async () => {
+      toast.success('Your account has been deleted')
+      const refresh = useAuthStore.getState().refreshToken
+      await authService.logout(refresh)
+      useAuthStore.getState().logout()
+      navigate('/account/delete', { replace: true })
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   })
@@ -340,6 +371,27 @@ export default function SettingsPage() {
         </form>
       </div>
 
+      {/* Push notifications (mobile) */}
+      {isNativeApp && (
+        <div className={cardClass}>
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-white">Push Notifications</h3>
+            <p className="text-sm text-slate-400 mt-0.5">
+              Register this device to receive important alerts (renewals, dues, campaigns)
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            className={primaryBtnClass}
+            isLoading={registerPushMutation.isPending}
+            onClick={() => registerPushMutation.mutate()}
+          >
+            Enable push on this device
+          </Button>
+        </div>
+      )}
+
       {/* Account Info */}
       <div className={cardClass}>
         <div className="mb-4">
@@ -361,6 +413,41 @@ export default function SettingsPage() {
               {user?.role?.toUpperCase()}
             </Badge>
           </div>
+        </div>
+      </div>
+
+      {/* Danger zone */}
+      <div className={`${cardClass} border-red-500/30`}>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-red-400">Danger Zone</h3>
+          <p className="text-sm text-slate-400 mt-0.5">
+            Permanently delete your account. Owner deletion will deactivate the entire gym workspace.
+          </p>
+        </div>
+        <div className="space-y-4">
+          <Input
+            label="Current Password"
+            type="password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            className={inputClass}
+          />
+          <Input
+            label='Type "DELETE" to confirm'
+            value={deleteConfirm}
+            onChange={(e) => setDeleteConfirm(e.target.value)}
+            className={inputClass}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            isLoading={deleteAccountMutation.isPending}
+            disabled={deleteConfirm.trim().toUpperCase() !== 'DELETE' || deletePassword.trim().length === 0}
+            onClick={() => deleteAccountMutation.mutate()}
+            className="!text-red-300 !border-red-500/50 hover:!bg-red-500/10"
+          >
+            Delete my account
+          </Button>
         </div>
       </div>
     </div>

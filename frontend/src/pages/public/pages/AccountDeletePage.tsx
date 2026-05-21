@@ -42,13 +42,13 @@ export function AccountDeletePage() {
           <ol className="list-decimal pl-6 space-y-2">
             <li>Log in to ActiveHQ (web or mobile).</li>
             <li>
-              Go to <span className="text-white">Settings → Profile</span>.
+              Go to <span className="text-white">Settings → Danger Zone</span>.
             </li>
             <li>
               Tap <span className="text-white">Delete my account</span> and
-              confirm. We email a verification link to your registered address.
+              confirm by entering your password and typing DELETE.
             </li>
-            <li>Click the link within 24 hours to confirm.</li>
+            <li>Account is immediately deactivated after confirmation.</li>
           </ol>
         </section>
 

@@ -90,6 +90,19 @@ class PasswordChange(BaseModel):
         return v
 
 
+class AccountDeleteRequest(BaseModel):
+    """Schema for deleting own account."""
+    password: str = Field(..., min_length=1)
+    confirm_text: str = Field(..., min_length=1)
+
+    @field_validator("confirm_text")
+    @classmethod
+    def validate_confirm_text(cls, v: str) -> str:
+        if v.strip().upper() != "DELETE":
+            raise ValueError("confirm_text must be DELETE")
+        return v
+
+
 class UserResponse(BaseModel):
     """User response schema (excludes password)."""
     id: uuid.UUID
